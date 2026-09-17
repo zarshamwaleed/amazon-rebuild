@@ -11,6 +11,8 @@ import ProductDetails from './pages/ProductDetails'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/OrderConfirmation'
+import Orders from './pages/Orders'
+import OrderDetails from './pages/OrderDetails'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Account from './pages/Account'
@@ -33,50 +35,16 @@ export default function App() {
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/cart" element={<Cart />} />
 
-                <Route
-                  path="/checkout"
-                  element={
-                    <ProtectedRoute>
-                      <Checkout />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/order-confirmation/:id"
-                  element={
-                    <ProtectedRoute>
-                      <OrderConfirmation />
-                    </ProtectedRoute>
-                  }
-                />
+                <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+                <Route path="/order-confirmation/:id" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
 
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
 
-                <Route
-                  path="/account"
-                  element={
-                    <ProtectedRoute>
-                      <Account />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/orders"
-                  element={
-                    <ProtectedRoute>
-                      <Placeholder title="Orders" />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/orders/:id"
-                  element={
-                    <ProtectedRoute>
-                      <Placeholder title="Order Details" />
-                    </ProtectedRoute>
-                  }
-                />
+                <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+                <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+                <Route path="/orders/:id" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
+
                 <Route path="/wishlist" element={<Placeholder title="Wishlist" />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
