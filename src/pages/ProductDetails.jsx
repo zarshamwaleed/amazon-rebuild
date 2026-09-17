@@ -9,19 +9,21 @@ import ProductGrid from '../components/ProductGrid'
 import EmptyState from '../components/EmptyState'
 import Button from '../components/Button'
 import WishlistButton from '../components/WishlistButton'
+import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { supabase } from '../services/supabase'
+import { getRecommendations } from '../services/recommendationService'
 import { useCart } from '../context/CartContext'
 import { useRecentlyViewed } from '../hooks/useRecentlyViewed'
-import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 
 export default function ProductDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addItem } = useCart()
-  useRecentlyViewed(id) // tracks current product
+  useRecentlyViewed(id)
 
   const [product, setProduct] = useState(null)
   const [related, setRelated] = useState([])
+  const [recommendations, setRecommendations] = useState([])
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -35,6 +37,7 @@ export default function ProductDetails() {
         setError(null)
         setProduct(null)
         setRelated([])
+        setRecommendations([])
         setQuantity(1)
 
         const { data, error: err } = await supabase
@@ -61,6 +64,9 @@ export default function ProductDetails() {
             .limit(4)
           if (!cancelled) setRelated(rel || [])
         }
+
+        const recs = await getRecommendations(data, 4)
+        if (!cancelled) setRecommendations(recs)
       } catch (err) {
         if (!cancelled) setError(err.message)
       } finally {
@@ -240,7 +246,11 @@ export default function ProductDetails() {
 
       <section>
         <h2 className="text-xl font-bold text-gray-900 mb-4">Customer reviews</h2>
-        <ReviewsList rating={product.rating} reviewCount={product.review_count} />
+        <ReviewsList
+          productId={product.id}
+          rating={product.rating}
+          reviewCount={product.review_count}
+        />
       </section>
 
       {related.length > 0 && (
@@ -250,8 +260,14 @@ export default function ProductDetails() {
         </section>
       )}
 
+      {recommendations.length > 0 && (
+        <section>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">You may also like</h2>
+          <ProductGrid products={recommendations} cols={4} />
+        </section>
+      )}
+
       <RecentlyViewedStrip excludeId={product.id} />
     </div>
   )
 }
-
