@@ -1,11 +1,21 @@
-﻿import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+﻿import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Search } from 'lucide-react'
 
 export default function SearchBar() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const location = useLocation()
+
+  // Sync the input with the URL whenever the search page is active
+  useEffect(() => {
+    if (location.pathname === '/search') {
+      setQuery(searchParams.get('q') || '')
+      setCategory(searchParams.get('category') || 'all')
+    }
+  }, [location.pathname, searchParams])
 
   function handleSubmit(e) {
     e.preventDefault()

@@ -4,6 +4,7 @@ import MainLayout from './layouts/MainLayout'
 import Home from './pages/Home'
 import Products from './pages/Products'
 import Category from './pages/Category'
+import SearchResults from './pages/SearchResults'
 import NotFound from './pages/NotFound'
 import Placeholder from './pages/Placeholder'
 
@@ -17,7 +18,7 @@ export default function App() {
             <Route path="/products" element={<Products />} />
             <Route path="/products/:id" element={<Placeholder title="Product Details" />} />
             <Route path="/category/:slug" element={<Category />} />
-            <Route path="/search" element={<Placeholder title="Search Results" />} />
+            <Route path="/search" element={<SearchResults />} />
             <Route path="/cart" element={<Placeholder title="Cart" />} />
             <Route path="/checkout" element={<Placeholder title="Checkout" />} />
             <Route path="/login" element={<Placeholder title="Login" />} />
