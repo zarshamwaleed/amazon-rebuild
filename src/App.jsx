@@ -1,35 +1,35 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+﻿import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import ErrorBoundary from './components/ErrorBoundary'
+import MainLayout from './layouts/MainLayout'
+import Home from './pages/Home'
+import NotFound from './pages/NotFound'
+import Placeholder from './pages/Placeholder'
 
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Home />} />
+
+            <Route path="/products" element={<Placeholder title="Products" />} />
+            <Route path="/products/:id" element={<Placeholder title="Product Details" />} />
+            <Route path="/category/:slug" element={<Placeholder title="Category" />} />
+            <Route path="/search" element={<Placeholder title="Search Results" />} />
+            <Route path="/cart" element={<Placeholder title="Cart" />} />
+            <Route path="/checkout" element={<Placeholder title="Checkout" />} />
+            <Route path="/login" element={<Placeholder title="Login" />} />
+            <Route path="/register" element={<Placeholder title="Register" />} />
+            <Route path="/account" element={<Placeholder title="Account" />} />
+            <Route path="/orders" element={<Placeholder title="Orders" />} />
+            <Route path="/orders/:id" element={<Placeholder title="Order Details" />} />
+            <Route path="/wishlist" element={<Placeholder title="Wishlist" />} />
+
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
-
-export default App
