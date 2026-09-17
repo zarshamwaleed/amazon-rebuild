@@ -5,14 +5,17 @@ import SearchBar from './SearchBar'
 import AccountMenu from './AccountMenu'
 import CartButton from './CartButton'
 import MobileNav from './MobileNav'
+import { useCart } from '../context/CartContext'
 
 export default function Header() {
+  const { count } = useCart()
+
   return (
     <header className="sticky top-0 z-40">
       <div className="bg-[#131921] text-white text-xs">
         <div className="max-w-[1500px] mx-auto flex items-center justify-between px-4 py-1">
           <div className="hidden sm:flex items-center gap-4">
-            <span className="hover:underline cursor-pointer">🇵🇰 Hello! Deliver to Pakistan</span>
+            <span className="hover:underline cursor-pointer">Hello! Deliver to Pakistan</span>
           </div>
           <div className="flex items-center gap-4 ml-auto">
             <span className="hover:underline cursor-pointer hidden md:inline">Customer Service</span>
@@ -40,7 +43,7 @@ export default function Header() {
           </Link>
 
           <AccountMenu />
-          <CartButton count={0} />
+          <CartButton count={count} />
         </div>
       </div>
     </header>
