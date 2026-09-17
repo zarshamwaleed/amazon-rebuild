@@ -1,4 +1,4 @@
-﻿export default function Input({ label, error, className = '', ...props }) {
+﻿export default function Input({ label, error, hint, className = '', ...props }) {
   return (
     <div className="w-full">
       {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
@@ -10,6 +10,7 @@
         }
         {...props}
       />
+      {hint && !error && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
     </div>
   )
