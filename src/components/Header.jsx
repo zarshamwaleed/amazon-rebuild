@@ -1,4 +1,5 @@
 ﻿import { Link } from 'react-router-dom'
+import { Heart } from 'lucide-react'
 import Logo from './Logo'
 import LocationSelector from './LocationSelector'
 import SearchBar from './SearchBar'
@@ -6,9 +7,11 @@ import AccountMenu from './AccountMenu'
 import CartButton from './CartButton'
 import MobileNav from './MobileNav'
 import { useCart } from '../context/CartContext'
+import { useWishlist } from '../context/WishlistContext'
 
 export default function Header() {
   const { count } = useCart()
+  const { count: wishlistCount } = useWishlist()
 
   return (
     <header className="sticky top-0 z-40">
@@ -18,6 +21,18 @@ export default function Header() {
             <span className="hover:underline cursor-pointer">Hello! Deliver to Pakistan</span>
           </div>
           <div className="flex items-center gap-4 ml-auto">
+            <Link
+              to="/wishlist"
+              className="hover:underline hidden md:inline-flex items-center gap-1"
+            >
+              <Heart className="w-3 h-3" />
+              Wishlist
+              {wishlistCount > 0 && (
+                <span className="ml-1 bg-[#febd69] text-[#131921] rounded-full px-1.5 py-0 text-[10px] font-bold">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
             <span className="hover:underline cursor-pointer hidden md:inline">Customer Service</span>
             <span className="hover:underline cursor-pointer hidden md:inline">Registry</span>
             <span className="hover:underline cursor-pointer hidden md:inline">Gift Cards</span>

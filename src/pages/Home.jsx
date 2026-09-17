@@ -6,6 +6,7 @@ import ProductGrid from '../components/ProductGrid'
 import PromoStrip from '../components/PromoStrip'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import EmptyState from '../components/EmptyState'
+import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { getAllCategories } from '../services/categoryService'
 import { getFeaturedProducts, getDeals } from '../services/productService'
 
@@ -107,6 +108,8 @@ export default function Home() {
           <ProductGrid products={featured.slice(0, 4)} cols={4} />
         )}
       </section>
+
+      <RecentlyViewedStrip />
     </div>
   )
 }

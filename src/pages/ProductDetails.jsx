@@ -6,18 +6,19 @@ import ProductGallery from '../components/ProductGallery'
 import QuantitySelector from '../components/QuantitySelector'
 import ReviewsList from '../components/ReviewsList'
 import ProductGrid from '../components/ProductGrid'
-import LoadingSkeleton from '../components/LoadingSkeleton'
 import EmptyState from '../components/EmptyState'
 import Button from '../components/Button'
+import WishlistButton from '../components/WishlistButton'
 import { supabase } from '../services/supabase'
 import { useCart } from '../context/CartContext'
 import { useRecentlyViewed } from '../hooks/useRecentlyViewed'
+import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 
 export default function ProductDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addItem } = useCart()
-  const recentlyViewedIds = useRecentlyViewed(id)
+  useRecentlyViewed(id) // tracks current product
 
   const [product, setProduct] = useState(null)
   const [related, setRelated] = useState([])
@@ -50,7 +51,6 @@ export default function ProductDetails() {
         }
         setProduct(data)
 
-        // Fetch related: same category, different product, top rated
         if (data.category_id) {
           const { data: rel } = await supabase
             .from('products')
@@ -108,11 +108,9 @@ export default function ProductDetails() {
       />
     )
   }
-
   if (error) {
     return <EmptyState title="Could not load product" message={error} />
   }
-
   if (!product) return null
 
   const hasDiscount = product.old_price && Number(product.old_price) > Number(product.price)
@@ -123,7 +121,6 @@ export default function ProductDetails() {
 
   return (
     <div className="space-y-10">
-      {/* Breadcrumb */}
       <nav className="text-xs text-gray-600">
         <Link to="/" className="hover:underline">Home</Link>
         <span className="mx-1">/</span>
@@ -132,14 +129,11 @@ export default function ProductDetails() {
         <span className="text-gray-900">{product.title}</span>
       </nav>
 
-      {/* Main product area */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        {/* Gallery */}
         <div className="md:col-span-5">
           <ProductGallery image={product.image_url} title={product.title} />
         </div>
 
-        {/* Info */}
         <div className="md:col-span-4 space-y-3">
           <h1 className="text-2xl font-medium text-gray-900">{product.title}</h1>
           {product.brand && (
@@ -193,7 +187,6 @@ export default function ProductDetails() {
           </div>
         </div>
 
-        {/* Buy box */}
         <div className="md:col-span-3">
           <div className="border border-gray-300 rounded-lg p-4 space-y-3 sticky top-40">
             <div className="text-2xl font-medium text-gray-900">
@@ -234,6 +227,8 @@ export default function ProductDetails() {
               <Zap className="w-4 h-4" /> Buy Now
             </Button>
 
+            <WishlistButton product={product} variant="text" className="w-full justify-center" />
+
             {addedToast && (
               <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2 text-center">
                 Added to cart
@@ -243,13 +238,11 @@ export default function ProductDetails() {
         </div>
       </div>
 
-      {/* Reviews */}
       <section>
         <h2 className="text-xl font-bold text-gray-900 mb-4">Customer reviews</h2>
         <ReviewsList rating={product.rating} reviewCount={product.review_count} />
       </section>
 
-      {/* Related products */}
       {related.length > 0 && (
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Related products</h2>
@@ -257,12 +250,8 @@ export default function ProductDetails() {
         </section>
       )}
 
-      {/* Recently viewed (deferred to Module 12 for the visual list; IDs are already tracked) */}
-      {recentlyViewedIds.length > 1 && (
-        <p className="text-xs text-gray-500">
-          You've viewed {recentlyViewedIds.length} products recently.
-        </p>
-      )}
+      <RecentlyViewedStrip excludeId={product.id} />
     </div>
   )
 }
+

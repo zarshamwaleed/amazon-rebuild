@@ -1,6 +1,6 @@
 ﻿import { Link } from 'react-router-dom'
 import Rating from './Rating'
-import { formatPrice } from '../lib/utils'
+import WishlistButton from './WishlistButton'
 
 export default function ProductCard({ product }) {
   if (!product) return null
@@ -12,8 +12,12 @@ export default function ProductCard({ product }) {
   return (
     <Link
       to={'/products/' + product.id}
-      className="group bg-white border border-gray-200 rounded-md p-3 flex flex-col hover:shadow-lg transition-shadow"
+      className="group bg-white border border-gray-200 rounded-md p-3 flex flex-col hover:shadow-lg transition-shadow relative"
     >
+      <div className="absolute top-4 right-4 z-10">
+        <WishlistButton product={product} />
+      </div>
+
       <div className="aspect-square bg-gray-50 rounded mb-3 overflow-hidden flex items-center justify-center">
         {product.image_url ? (
           <img
@@ -47,9 +51,7 @@ export default function ProductCard({ product }) {
         )}
       </div>
 
-      {product.brand && (
-        <div className="mt-1 text-xs text-gray-500">{product.brand}</div>
-      )}
+      {product.brand && <div className="mt-1 text-xs text-gray-500">{product.brand}</div>}
 
       <div className="mt-2 text-xs text-gray-600">
         {product.stock > 0 ? 'In Stock' : <span className="text-red-600">Out of Stock</span>}
