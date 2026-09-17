@@ -88,7 +88,7 @@ export default function Cart() {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="sticky top-40">
+          <div className="lg:sticky lg:top-40">
             <CartSummary
               subtotal={subtotal}
               shipping={shipping}
@@ -109,3 +109,4 @@ export default function Cart() {
     </div>
   )
 }
+

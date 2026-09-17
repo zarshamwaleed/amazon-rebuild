@@ -27,7 +27,7 @@ export default function ProductDetails() {
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [addedToast, setAddedToast] = useState(false)
+ 
 
   useEffect(() => {
     let cancelled = false
@@ -82,8 +82,7 @@ export default function ProductDetails() {
   function handleAddToCart() {
     if (!product) return
     addItem(product, quantity)
-    setAddedToast(true)
-    setTimeout(() => setAddedToast(false), 2500)
+
   }
 
   function handleBuyNow() {
@@ -194,7 +193,7 @@ export default function ProductDetails() {
         </div>
 
         <div className="md:col-span-3">
-          <div className="border border-gray-300 rounded-lg p-4 space-y-3 sticky top-40">
+          <div className="border border-gray-300 rounded-lg p-4 space-y-3 lg:sticky lg:top-40">
             <div className="text-2xl font-medium text-gray-900">
               ${Number(product.price).toFixed(2)}
             </div>
@@ -235,11 +234,7 @@ export default function ProductDetails() {
 
             <WishlistButton product={product} variant="text" className="w-full justify-center" />
 
-            {addedToast && (
-              <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2 text-center">
-                Added to cart
-              </div>
-            )}
+            
           </div>
         </div>
       </div>
@@ -271,3 +266,4 @@ export default function ProductDetails() {
     </div>
   )
 }
+

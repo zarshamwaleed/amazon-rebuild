@@ -1,5 +1,6 @@
 ﻿import { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthContext'
+import { useToast } from './ToastContext'
 import {
   getUserWishlist,
   addToWishlistDB,
@@ -11,10 +12,10 @@ const STORAGE_KEY = 'amazon-rebuild-wishlist-v1'
 
 export function WishlistProvider({ children }) {
   const { user, loading: authLoading } = useAuth()
-  const [items, setItems] = useState([]) // { product, id? } — id only when DB-backed
+  const { pushToast } = useToast()
+  const [items, setItems] = useState([])
   const [ready, setReady] = useState(false)
 
-  // Load wishlist when auth settles
   useEffect(() => {
     if (authLoading) return
     let cancelled = false
@@ -40,7 +41,6 @@ export function WishlistProvider({ children }) {
     }
   }, [user, authLoading])
 
-  // Persist guest wishlist
   useEffect(() => {
     if (!ready || user || authLoading) return
     try {
@@ -54,41 +54,43 @@ export function WishlistProvider({ children }) {
 
   async function toggleWishlist(product) {
     const exists = isWishlisted(product.id)
-    if (user) {
-      if (exists) {
-        await removeFromWishlistDB(user.id, product.id)
+    try {
+      if (user) {
+        if (exists) await removeFromWishlistDB(user.id, product.id)
+        else await addToWishlistDB(user.id, product.id)
+        const fresh = await getUserWishlist(user.id)
+        setItems(fresh)
       } else {
-        await addToWishlistDB(user.id, product.id)
+        setItems((prev) => {
+          if (exists) return prev.filter((i) => i.product.id !== product.id)
+          return [{ product }, ...prev]
+        })
       }
-      const fresh = await getUserWishlist(user.id)
-      setItems(fresh)
-    } else {
-      setItems((prev) => {
-        if (exists) return prev.filter((i) => i.product.id !== product.id)
-        return [{ product }, ...prev]
+      pushToast(exists ? 'Removed from wishlist' : 'Added to wishlist', {
+        type: exists ? 'info' : 'success',
       })
+    } catch (err) {
+      pushToast('Could not update wishlist', { type: 'error' })
     }
   }
 
   async function removeFromWishlist(productId) {
-    if (user) {
-      await removeFromWishlistDB(user.id, productId)
-      setItems((prev) => prev.filter((i) => i.product.id !== productId))
-    } else {
-      setItems((prev) => prev.filter((i) => i.product.id !== productId))
+    try {
+      if (user) {
+        await removeFromWishlistDB(user.id, productId)
+        setItems((prev) => prev.filter((i) => i.product.id !== productId))
+      } else {
+        setItems((prev) => prev.filter((i) => i.product.id !== productId))
+      }
+      pushToast('Removed from wishlist', { type: 'info' })
+    } catch (err) {
+      pushToast('Could not remove item', { type: 'error' })
     }
   }
 
   const count = items.length
 
-  const value = {
-    items,
-    count,
-    ready,
-    isWishlisted,
-    toggleWishlist,
-    removeFromWishlist,
-  }
+  const value = { items, count, ready, isWishlisted, toggleWishlist, removeFromWishlist }
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>
 }

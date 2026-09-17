@@ -1,5 +1,6 @@
 ﻿import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from './AuthContext'
+import { useToast } from './ToastContext'
 import {
   getCartItems,
   upsertCartItem,
@@ -13,11 +14,11 @@ const STORAGE_KEY = 'amazon-rebuild-cart-v1'
 
 export function CartProvider({ children }) {
   const { user, loading: authLoading } = useAuth()
+  const { pushToast } = useToast()
   const [items, setItems] = useState([])
   const [ready, setReady] = useState(false)
   const syncedFromGuest = useRef(false)
 
-  // -------- Load cart when auth state settles --------
   useEffect(() => {
     if (authLoading) return
     let cancelled = false
@@ -25,10 +26,7 @@ export function CartProvider({ children }) {
     async function load() {
       try {
         if (user) {
-          // Signed-in: load from DB
           const dbItems = await getCartItems(user.id)
-
-          // Merge guest cart once per sign-in
           if (!syncedFromGuest.current) {
             const raw = localStorage.getItem(STORAGE_KEY)
             const guest = raw ? JSON.parse(raw) : []
@@ -47,7 +45,6 @@ export function CartProvider({ children }) {
             setItems(dbItems)
           }
         } else {
-          // Guest: load from localStorage
           const raw = localStorage.getItem(STORAGE_KEY)
           if (!cancelled) setItems(raw ? JSON.parse(raw) : [])
           syncedFromGuest.current = false
@@ -64,10 +61,9 @@ export function CartProvider({ children }) {
     }
   }, [user, authLoading])
 
-  // -------- Persist guest cart to localStorage --------
   useEffect(() => {
     if (authLoading || !ready) return
-    if (user) return // no localStorage when signed in
+    if (user) return
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
     } catch (err) {
@@ -75,30 +71,34 @@ export function CartProvider({ children }) {
     }
   }, [items, ready, user, authLoading])
 
-  // -------- Actions --------
-
   async function addItem(product, quantity = 1) {
-    if (user) {
-      const existing = items.find((i) => i.product.id === product.id)
-      const next = Math.min((existing?.quantity || 0) + quantity, product.stock || 999)
-      await upsertCartItem(user.id, product.id, next)
-      setItems((prev) => {
-        const found = prev.find((i) => i.product.id === product.id)
-        if (found) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: next } : i))
-        return [...prev, { product, quantity: next }]
-      })
-    } else {
-      setItems((prev) => {
-        const existing = prev.find((i) => i.product.id === product.id)
-        if (existing) {
-          return prev.map((i) =>
-            i.product.id === product.id
-              ? { ...i, quantity: Math.min(i.quantity + quantity, product.stock || 999) }
-              : i
-          )
-        }
-        return [...prev, { product, quantity }]
-      })
+    try {
+      if (user) {
+        const existing = items.find((i) => i.product.id === product.id)
+        const next = Math.min((existing?.quantity || 0) + quantity, product.stock || 999)
+        await upsertCartItem(user.id, product.id, next)
+        setItems((prev) => {
+          const found = prev.find((i) => i.product.id === product.id)
+          if (found) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: next } : i))
+          return [...prev, { product, quantity: next }]
+        })
+      } else {
+        setItems((prev) => {
+          const existing = prev.find((i) => i.product.id === product.id)
+          if (existing) {
+            return prev.map((i) =>
+              i.product.id === product.id
+                ? { ...i, quantity: Math.min(i.quantity + quantity, product.stock || 999) }
+                : i
+            )
+          }
+          return [...prev, { product, quantity }]
+        })
+      }
+      pushToast('Added to cart', { type: 'success' })
+    } catch (err) {
+      pushToast('Could not add to cart', { type: 'error' })
+      throw err
     }
   }
 
@@ -107,48 +107,48 @@ export function CartProvider({ children }) {
     const item = items.find((i) => i.product.id === productId)
     const max = item?.product.stock || 999
     const clamped = Math.min(quantity, max)
-
-    if (user) {
-      await updateCartItemQuantity(user.id, productId, clamped)
+    try {
+      if (user) await updateCartItemQuantity(user.id, productId, clamped)
+      setItems((prev) =>
+        prev.map((i) => (i.product.id === productId ? { ...i, quantity: clamped } : i))
+      )
+    } catch (err) {
+      pushToast('Could not update quantity', { type: 'error' })
     }
-    setItems((prev) =>
-      prev.map((i) => (i.product.id === productId ? { ...i, quantity: clamped } : i))
-    )
   }
 
   async function removeItem(productId) {
-    if (user) {
-      await removeCartItem(user.id, productId)
+    try {
+      if (user) await removeCartItem(user.id, productId)
+      setItems((prev) => prev.filter((i) => i.product.id !== productId))
+      pushToast('Removed from cart', { type: 'info' })
+    } catch (err) {
+      pushToast('Could not remove item', { type: 'error' })
     }
-    setItems((prev) => prev.filter((i) => i.product.id !== productId))
   }
 
   async function clearCart() {
-    if (user) {
-      await clearCartDB(user.id)
-    }
-    setItems([])
     try {
-      localStorage.removeItem(STORAGE_KEY)
-    } catch {}
+      if (user) await clearCartDB(user.id)
+      setItems([])
+      try {
+        localStorage.removeItem(STORAGE_KEY)
+      } catch {}
+    } catch (err) {
+      pushToast('Could not clear cart', { type: 'error' })
+    }
   }
 
-  // -------- Derived --------
-
   const count = useMemo(() => items.reduce((s, i) => s + i.quantity, 0), [items])
-
   const subtotal = useMemo(
     () => items.reduce((s, i) => s + Number(i.product.price) * i.quantity, 0),
     [items]
   )
-
   const shipping = useMemo(() => {
     if (subtotal === 0) return 0
     return subtotal >= 50 ? 0 : 5.99
   }, [subtotal])
-
   const tax = useMemo(() => +(subtotal * 0.08).toFixed(2), [subtotal])
-
   const total = useMemo(() => +(subtotal + shipping + tax).toFixed(2), [subtotal, shipping, tax])
 
   const value = {

@@ -229,7 +229,7 @@ export default function Checkout() {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="sticky top-40 space-y-3">
+          <div className="lg:sticky lg:top-40 space-y-3">
             <CartSummary
               subtotal={subtotal}
               shipping={deliveryFee}
@@ -257,3 +257,4 @@ export default function Checkout() {
     </div>
   )
 }
+
