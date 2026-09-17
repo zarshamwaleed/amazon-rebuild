@@ -9,6 +9,8 @@ import Category from './pages/Category'
 import SearchResults from './pages/SearchResults'
 import ProductDetails from './pages/ProductDetails'
 import Cart from './pages/Cart'
+import Checkout from './pages/Checkout'
+import OrderConfirmation from './pages/OrderConfirmation'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Account from './pages/Account'
@@ -30,7 +32,23 @@ export default function App() {
                 <Route path="/category/:slug" element={<Category />} />
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout" element={<Placeholder title="Checkout" />} />
+
+                <Route
+                  path="/checkout"
+                  element={
+                    <ProtectedRoute>
+                      <Checkout />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/order-confirmation/:id"
+                  element={
+                    <ProtectedRoute>
+                      <OrderConfirmation />
+                    </ProtectedRoute>
+                  }
+                />
 
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
