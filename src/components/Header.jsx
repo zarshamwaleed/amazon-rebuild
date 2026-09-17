@@ -15,7 +15,6 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40">
-      {/* Thin top bar */}
       <div className="bg-[#131921] text-white text-xs">
         <div className="max-w-[1500px] mx-auto flex items-center justify-between px-3 sm:px-4 py-1">
           <div className="hidden sm:flex items-center gap-4">
@@ -34,17 +33,24 @@ export default function Header() {
                 </span>
               )}
             </Link>
-            <span className="hover:underline cursor-pointer hidden md:inline">Customer Service</span>
-            <span className="hover:underline cursor-pointer hidden md:inline">Registry</span>
-            <span className="hover:underline cursor-pointer hidden md:inline">Gift Cards</span>
+            <Link
+              to="/customer-service"
+              className="hover:underline hidden md:inline"
+            >
+              Customer Service
+            </Link>
+            <Link to="/registry" className="hover:underline hidden md:inline">
+              Registry
+            </Link>
+            <Link to="/gift-cards" className="hover:underline hidden md:inline">
+              Gift Cards
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Main header */}
       <div className="bg-[#131921] text-white">
         <div className="max-w-[1500px] mx-auto px-3 sm:px-4">
-          {/* Desktop single row (md and up) */}
           <div className="hidden md:flex items-center gap-2 py-2">
             <Logo />
             <LocationSelector />
@@ -62,7 +68,6 @@ export default function Header() {
             <CartButton count={count} />
           </div>
 
-          {/* Mobile rows (below md) */}
           <div className="md:hidden py-2 space-y-2">
             <div className="flex items-center gap-2">
               <MobileNav />

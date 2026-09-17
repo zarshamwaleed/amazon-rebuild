@@ -19,6 +19,10 @@ import Wishlist from './pages/Wishlist'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Account from './pages/Account'
+import InfoPage from './pages/InfoPage'
+import CustomerService from './pages/CustomerService'
+import GiftCards from './pages/GiftCards'
+import Registry from './pages/Registry'
 import ProtectedRoute from './components/ProtectedRoute'
 import NotFound from './pages/NotFound'
 
@@ -50,6 +54,19 @@ export default function App() {
                     <Route path="/orders/:id" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
 
                     <Route path="/wishlist" element={<Wishlist />} />
+
+                    {/* Info & supporting pages */}
+                    <Route path="/about" element={<InfoPage />} />
+                    <Route path="/careers" element={<InfoPage />} />
+                    <Route path="/press" element={<InfoPage />} />
+                    <Route path="/investor-relations" element={<InfoPage />} />
+                    <Route path="/sustainability" element={<InfoPage />} />
+                    <Route path="/accessibility" element={<InfoPage />} />
+
+                    <Route path="/customer-service" element={<CustomerService />} />
+                    <Route path="/gift-cards" element={<GiftCards />} />
+                    <Route path="/registry" element={<Registry />} />
+
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>
