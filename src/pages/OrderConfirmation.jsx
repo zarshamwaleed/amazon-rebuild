@@ -125,7 +125,7 @@ export default function OrderConfirmation() {
           </ul>
         </div>
 
-        <div className="border-t pt-4 flex gap-3">
+        <div className="border-t pt-4 flex gap-3 flex-wrap">
           <Link
             to="/orders"
             className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded transition text-sm"
@@ -138,6 +138,14 @@ export default function OrderConfirmation() {
           >
             Continue shopping
           </Link>
+          {order.registry_id && (
+            <Link
+              to={`/registry/${order.registry_id}`}
+              className="border border-gray-300 hover:bg-gray-50 text-gray-900 font-medium px-5 py-2 rounded transition text-sm"
+            >
+              View Registry
+            </Link>
+          )}
         </div>
       </div>
     </div>

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { useCart } from '../context/CartContext'
 import {
   getRegistryById,
   getRegistryItems,
@@ -39,6 +40,7 @@ export default function RegistryDetail() {
   const { id } = useParams()
   const { user } = useAuth()
   const { pushToast } = useToast()
+  const { addItem } = useCart()
   const navigate = useNavigate()
 
   const [registry, setRegistry] = useState(null)
@@ -90,6 +92,19 @@ export default function RegistryDetail() {
     } catch {
       pushToast('Could not update', { type: 'error' })
     }
+  }
+
+  function handleBuyForRegistry(item) {
+    if (!item.product) return
+    const qty = Math.max(
+      1,
+      item.quantity_requested - item.quantity_purchased
+    )
+    addItem(item.product, qty, {
+      registryId: registry.id,
+      registryItemId: item.id,
+    })
+    pushToast(`Added ${qty} to cart · for ${registry.name}`, { type: 'success' })
   }
 
   function copyLink() {
@@ -302,6 +317,7 @@ export default function RegistryDetail() {
                 isOwner={isOwner}
                 onRemove={() => handleRemoveItem(item)}
                 onEdit={() => setEditingItem(item)}
+                onBuyForRegistry={() => handleBuyForRegistry(item)}
               />
             ))}
           </div>
@@ -329,7 +345,7 @@ export default function RegistryDetail() {
   )
 }
 
-function RegistryItemCard({ item, isOwner, onRemove, onEdit }) {
+function RegistryItemCard({ item, isOwner, onRemove, onEdit, onBuyForRegistry }) {
   const product = item.product
   if (!product) return null
 
@@ -426,13 +442,13 @@ function RegistryItemCard({ item, isOwner, onRemove, onEdit }) {
 
         <div className="mt-auto space-y-2">
           {!purchased && (
-            <Link
-              to={`/products/${product.id}`}
+            <button
+              onClick={onBuyForRegistry}
               className="w-full text-center text-sm font-medium bg-[#febd69] hover:bg-[#f3a847] text-gray-900 py-2 rounded flex items-center justify-center gap-1.5 transition"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               Buy for Registry
-            </Link>
+            </button>
           )}
           {isOwner && (
             <div className="flex gap-2">

@@ -1,5 +1,6 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Gift } from 'lucide-react'
 import Button from '../components/Button'
 import AddressForm from '../components/AddressForm'
 import PaymentSelector from '../components/PaymentSelector'
@@ -31,6 +32,17 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
+
+  // If all cart items belong to the same registry, we tag the order
+  const registryId = useMemo(() => {
+    const ids = items
+      .map((i) => i.registryId)
+      .filter(Boolean)
+    if (ids.length === 0) return null
+    // If they're all the same, return it. Otherwise pick the first.
+    const unique = [...new Set(ids)]
+    return unique.length === 1 ? unique[0] : unique[0]
+  }, [items])
 
   // Redirect to /cart if empty — BUT ONLY if we have not just placed an order
   useEffect(() => {
@@ -90,6 +102,7 @@ export default function Checkout() {
         tax,
         total: finalTotal,
         paymentMethod: payment,
+        registryId,
       })
 
       // Mark as placed BEFORE clearing so the guard effect does not fire
@@ -170,48 +183,48 @@ export default function Checkout() {
             )}
           </section>
 
-<section className="bg-white border border-gray-200 rounded-md p-5">
-  <h2 className="text-lg font-bold text-gray-900 mb-3">2. Delivery method</h2>
-  <div className="space-y-2">
-    {DELIVERY_OPTIONS.map((d) => {
-      // Standard is only free when subtotal ≥ 50
-      const realFee =
-        d.id === 'standard' ? (subtotal >= 50 ? 0 : 5.99) : d.fee
-      return (
-        <label
-          key={d.id}
-          className={
-            'flex items-center justify-between gap-3 p-3 rounded border cursor-pointer ' +
-            (delivery === d.id
-              ? 'border-[#c7511f] bg-orange-50'
-              : 'border-gray-300 hover:border-gray-400')
-          }
-        >
-          <div className="flex items-center gap-3">
-            <input
-              type="radio"
-              name="delivery"
-              checked={delivery === d.id}
-              onChange={() => setDelivery(d.id)}
-            />
-            <div>
-              <div className="text-sm font-medium text-gray-900">{d.label}</div>
-              <div className="text-xs text-gray-600">{d.description}</div>
+          <section className="bg-white border border-gray-200 rounded-md p-5">
+            <h2 className="text-lg font-bold text-gray-900 mb-3">2. Delivery method</h2>
+            <div className="space-y-2">
+              {DELIVERY_OPTIONS.map((d) => {
+                // Standard is only free when subtotal ≥ 50
+                const realFee =
+                  d.id === 'standard' ? (subtotal >= 50 ? 0 : 5.99) : d.fee
+                return (
+                  <label
+                    key={d.id}
+                    className={
+                      'flex items-center justify-between gap-3 p-3 rounded border cursor-pointer ' +
+                      (delivery === d.id
+                        ? 'border-[#c7511f] bg-orange-50'
+                        : 'border-gray-300 hover:border-gray-400')
+                    }
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="delivery"
+                        checked={delivery === d.id}
+                        onChange={() => setDelivery(d.id)}
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{d.label}</div>
+                        <div className="text-xs text-gray-600">{d.description}</div>
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {realFee === 0 ? 'FREE' : '$' + realFee.toFixed(2)}
+                    </span>
+                  </label>
+                )
+              })}
             </div>
-          </div>
-          <span className="text-sm font-medium text-gray-900">
-            {realFee === 0 ? 'FREE' : '$' + realFee.toFixed(2)}
-          </span>
-        </label>
-      )
-    })}
-  </div>
-  {subtotal < 50 && (
-    <p className="text-xs text-gray-500 mt-3">
-      Add ${(50 - subtotal).toFixed(2)} more to qualify for free Standard Delivery.
-    </p>
-  )}
-</section>
+            {subtotal < 50 && (
+              <p className="text-xs text-gray-500 mt-3">
+                Add ${(50 - subtotal).toFixed(2)} more to qualify for free Standard Delivery.
+              </p>
+            )}
+          </section>
 
           <section className="bg-white border border-gray-200 rounded-md p-5">
             <h2 className="text-lg font-bold text-gray-900 mb-3">3. Payment method</h2>
@@ -223,6 +236,13 @@ export default function Checkout() {
 
           <section className="bg-white border border-gray-200 rounded-md p-5">
             <h2 className="text-lg font-bold text-gray-900 mb-3">4. Review items</h2>
+            {registryId && (
+              <div className="bg-orange-50 border border-orange-200 rounded p-3 text-sm text-orange-900 flex items-center gap-2 mb-3">
+                <Gift className="w-4 h-4" />
+                This order includes items from a registry. The registry owner will be
+                notified of your purchase.
+              </div>
+            )}
             <ul className="text-sm divide-y">
               {items.map((i) => (
                 <li key={i.product.id} className="py-2 flex justify-between gap-3">
@@ -267,4 +287,3 @@ export default function Checkout() {
     </div>
   )
 }
-

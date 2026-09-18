@@ -312,3 +312,31 @@ export function canViewRegistry(registry, userId) {
   if (userId && registry.user_id === userId) return true
   return registry.privacy === 'public' || registry.privacy === 'shared'
 }
+
+/**
+ * Fetch all purchases for a registry item (owner only via RLS).
+ */
+export async function getRegistryItemPurchases(registryItemId) {
+  const { data, error } = await supabase
+    .from('registry_purchases')
+    .select('*')
+    .eq('registry_item_id', registryItemId)
+    .order('purchased_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Number of registries a product currently belongs to for this user.
+ */
+export async function countProductInUserRegistries(userId, productId) {
+  if (!userId || !productId) return 0
+  const { data, error } = await supabase
+    .from('registry_items')
+    .select('id, registry_id, registries!inner(user_id)')
+    .eq('product_id', productId)
+    .eq('registries.user_id', userId)
+    .neq('status', 'removed')
+  if (error) return 0
+  return (data || []).length
+}

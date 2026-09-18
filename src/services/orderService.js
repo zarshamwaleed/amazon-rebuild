@@ -13,8 +13,8 @@ export async function createOrder({
   tax,
   total,
   paymentMethod,
+  registryId = null,
 }) {
-  // 1. Create the order
   const { data: order, error: orderErr } = await supabase
     .from('orders')
     .insert({
@@ -27,12 +27,13 @@ export async function createOrder({
       payment_method: paymentMethod,
       payment_status: 'paid',
       order_status: 'order_placed',
+      registry_id: registryId,
     })
     .select()
     .maybeSingle()
   if (orderErr) throw orderErr
 
-  // 2. Create order items (denormalized snapshot)
+  // Create order items (denormalized snapshot)
   const rows = items.map((i) => ({
     order_id: order.id,
     product_id: i.product.id,

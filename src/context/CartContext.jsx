@@ -129,36 +129,57 @@ export function CartProvider({ children }) {
     }
   }, [items, ready, user, authLoading])
 
-  async function addItem(product, quantity = 1) {
-    try {
-      if (user) {
-        const existing = items.find((i) => i.product.id === product.id)
-        const next = Math.min((existing?.quantity || 0) + quantity, product.stock || 999)
-        await upsertCartItem(user.id, product.id, next)
-        setItems((prev) => {
-          const found = prev.find((i) => i.product.id === product.id)
-          if (found) return prev.map((i) => (i.product.id === product.id ? { ...i, quantity: next } : i))
-          return [...prev, { product, quantity: next }]
-        })
-      } else {
-        setItems((prev) => {
-          const existing = prev.find((i) => i.product.id === product.id)
-          if (existing) {
-            return prev.map((i) =>
-              i.product.id === product.id
-                ? { ...i, quantity: Math.min(i.quantity + quantity, product.stock || 999) }
-                : i
-            )
-          }
-          return [...prev, { product, quantity }]
-        })
-      }
-      pushToast('Added to cart', { type: 'success' })
-    } catch (err) {
-      pushToast('Could not add to cart', { type: 'error' })
-      throw err
+async function addItem(product, quantity = 1, options = {}) {
+  const { registryId = null, registryItemId = null } = options || {}
+  try {
+    if (user) {
+      const existing = items.find((i) => i.product.id === product.id)
+      const next = Math.min((existing?.quantity || 0) + quantity, product.stock || 999)
+      await upsertCartItem(user.id, product.id, next)
+      setItems((prev) => {
+        const found = prev.find((i) => i.product.id === product.id)
+        if (found) {
+          return prev.map((i) =>
+            i.product.id === product.id
+              ? {
+                  ...i,
+                  quantity: next,
+                  // preserve the registry link if provided
+                  registryId: registryId || i.registryId,
+                  registryItemId: registryItemId || i.registryItemId,
+                }
+              : i
+          )
+        }
+        return [
+          ...prev,
+          { product, quantity: next, registryId, registryItemId },
+        ]
+      })
+    } else {
+      setItems((prev) => {
+        const existing = prev.find((i) => i.product.id === product.id)
+        if (existing) {
+          return prev.map((i) =>
+            i.product.id === product.id
+              ? {
+                  ...i,
+                  quantity: Math.min(i.quantity + quantity, product.stock || 999),
+                  registryId: registryId || i.registryId,
+                  registryItemId: registryItemId || i.registryItemId,
+                }
+              : i
+          )
+        }
+        return [...prev, { product, quantity, registryId, registryItemId }]
+      })
     }
+    pushToast('Added to cart', { type: 'success' })
+  } catch (err) {
+    pushToast('Could not add to cart', { type: 'error' })
+    throw err
   }
+}
 
   async function updateQuantity(productId, quantity) {
     if (quantity <= 0) return removeItem(productId)
