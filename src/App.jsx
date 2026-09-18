@@ -10,6 +10,7 @@ import SellerReports from './pages/seller/SellerReports'
 import SellerPayments from './pages/seller/SellerPayments'
 import SellerAccountHealth from './pages/seller/SellerAccountHealth'
 import SellerNotifications from './pages/seller/SellerNotifications'
+import AppsLanding from './pages/seller/apps/AppsLanding'
 import PublicSeller from './pages/PublicSeller'
 import SellerReviews from './pages/seller/SellerReviews'
 import SellerUsers from './pages/seller/SellerUsers'
@@ -101,6 +102,7 @@ export default function App() {
                       <Route path="messages" element={<SellerMessages />} />
                       <Route path="help" element={<SellerSupport />} />
                       <Route path="notifications" element={<SellerNotifications />} />
+                      <Route path="apps-services" element={<AppsLanding />} />
 
                       {/* Catalog / Products */}
                       <Route path="products" element={<SellerProducts />} />

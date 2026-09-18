@@ -223,13 +223,14 @@ export default function SellerHeader({ onToggleSidebar, sidebarOpen }) {
           </Link>
 
           {/* Apps */}
-          <button
-            className="p-2 rounded hover:bg-white/10 hidden sm:block"
-            aria-label="Apps"
-            title="Apps & Services"
-          >
-            <Grid3x3 className="w-5 h-5" />
-          </button>
+          <Link
+  to="/seller/apps-services"
+  className="p-2 rounded hover:bg-white/10 hidden sm:block"
+  aria-label="Apps & Services"
+  title="Apps & Services"
+>
+  <Grid3x3 className="w-5 h-5" />
+</Link>
 
           {/* Account dropdown */}
           <div className="relative ml-2 pl-3 border-l border-white/20" ref={menuRef}>

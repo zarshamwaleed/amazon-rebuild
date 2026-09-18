@@ -1,10 +1,25 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
-  Home, Package, Box, ShoppingCart, DollarSign, Megaphone, Store,
-  TrendingUp, FileText, CreditCard, Activity, Users, Grid3x3,
-  Settings as SettingsIcon, ChevronDown, ChevronRight, Truck, Tag,
-  TrendingDown, Star,
+  Home,
+  Package,
+  Box,
+  ShoppingCart,
+  DollarSign,
+  Megaphone,
+  Store,
+  TrendingUp,
+  FileText,
+  CreditCard,
+  Activity,
+  Users,
+  Grid3x3,
+  Settings as SettingsIcon,
+  ChevronDown,
+  ChevronRight,
+  Truck,
+  Tag,
+  TrendingDown,
 } from 'lucide-react'
 
 const NAV = [
@@ -80,7 +95,17 @@ const NAV = [
       { label: 'Messages', to: '/seller/messages' },
     ],
   },
-  { label: 'Apps & Services', to: '/seller/apps', icon: Grid3x3 },
+  {
+  label: 'Apps & Services',
+  icon: Grid3x3,
+  children: [
+    { label: 'Explore Apps', to: '/seller/apps-services' },
+    { label: 'Selling Partner Appstore', to: '/seller/apps-services/appstore' },
+    { label: 'Service Providers', to: '/seller/apps-services/providers' },
+    { label: 'Manage Your Apps', to: '/seller/apps-services/manage' },
+    { label: 'Amazon Tools', to: '/seller/apps-services/tools' },
+  ],
+},
   { label: 'Settings', to: '/seller/settings', icon: SettingsIcon },
 ]
 
