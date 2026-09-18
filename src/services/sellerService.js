@@ -151,25 +151,29 @@ export async function getSellerProduct(userId, productId) {
   return data
 }
 
-/**
- * Create a new product owned by this seller.
- */
-export async function createSellerProduct(userId, payload) {
-  const slug =
-    (payload.title || 'product')
+function slugify(title) {
+  return (
+    (title || 'product')
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') +
     '-' +
     Date.now().toString(36)
+  )
+}
 
+/**
+ * Create a new product owned by this seller.
+ * status: 'published' | 'draft'
+ */
+export async function createSellerProduct(userId, payload, status = 'published') {
   const { data, error } = await supabase
     .from('products')
     .insert({
       seller_id: userId,
-      title: payload.title,
-      slug,
+      title: payload.title || 'Untitled product',
+      slug: slugify(payload.title),
       description: payload.description || '',
       price: Number(payload.price) || 0,
       old_price: payload.old_price ? Number(payload.old_price) : null,
@@ -179,6 +183,18 @@ export async function createSellerProduct(userId, payload) {
       stock: Number(payload.stock) || 0,
       brand: payload.brand || null,
       category_id: payload.category_id || null,
+      sku: payload.sku || null,
+      manufacturer: payload.manufacturer || null,
+      product_type: payload.product_type || null,
+      bullet_points: payload.bullet_points || [],
+      keywords: payload.keywords || null,
+      additional_images: payload.additional_images || [],
+      variations: payload.variations || [],
+      msrp: payload.msrp ? Number(payload.msrp) : null,
+      fulfillment_method: payload.fulfillment_method || 'FBM',
+      low_stock_threshold: Number(payload.low_stock_threshold) || 5,
+      status,
+      is_active: status === 'published',
     })
     .select()
     .maybeSingle()
@@ -187,14 +203,23 @@ export async function createSellerProduct(userId, payload) {
 }
 
 /**
- * Update an existing seller product.
+ * Update an existing seller product. Preserves status unless passed in.
  */
 export async function updateSellerProduct(userId, productId, updates) {
   const clean = { ...updates }
+
+  // Coerce numeric fields
   if (clean.price !== undefined) clean.price = Number(clean.price) || 0
   if (clean.old_price !== undefined)
     clean.old_price = clean.old_price ? Number(clean.old_price) : null
+  if (clean.msrp !== undefined) clean.msrp = clean.msrp ? Number(clean.msrp) : null
   if (clean.stock !== undefined) clean.stock = Number(clean.stock) || 0
+  if (clean.low_stock_threshold !== undefined)
+    clean.low_stock_threshold = Number(clean.low_stock_threshold) || 5
+
+  // Never overwrite slug with title change
+  delete clean.slug
+  delete clean.seller_id
 
   const { data, error } = await supabase
     .from('products')
@@ -205,6 +230,16 @@ export async function updateSellerProduct(userId, productId, updates) {
     .maybeSingle()
   if (error) throw error
   return data
+}
+
+/**
+ * Publish an existing draft.
+ */
+export async function publishProduct(userId, productId) {
+  return updateSellerProduct(userId, productId, {
+    status: 'published',
+    is_active: true,
+  })
 }
 
 /**
