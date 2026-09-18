@@ -1,37 +1,45 @@
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-
   if (req.method === 'OPTIONS') {
-    return res.status(200).end()
+    res.status(204).end()
+    return
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    res.status(405).json({ error: 'Method not allowed' })
+    return
   }
 
-  const { systemPrompt, userPrompt } = req.body || {}
+  let body
+  try {
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {}
+  } catch {
+    res.status(400).json({ error: 'Invalid JSON body' })
+    return
+  }
+
+  const systemPrompt = body.systemPrompt
+  const userPrompt = body.userPrompt
+
   if (!systemPrompt || !userPrompt) {
-    return res.status(400).json({ error: 'Missing systemPrompt or userPrompt' })
+    res.status(400).json({ error: 'Missing systemPrompt or userPrompt' })
+    return
   }
 
   const key = process.env.GROQ_API_KEY
   if (!key) {
-    return res.status(500).json({
-      error: 'GROQ_API_KEY is not set. Add it to .env.local',
-    })
+    res.status(500).json({ error: 'GROQ_API_KEY not set' })
+    return
   }
 
   try {
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + key,
+        Authorization: `Bearer ${key}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -41,18 +49,17 @@ export default async function handler(req, res) {
       }),
     })
 
-    const data = await r.json()
+    const data = await resp.json()
 
-    if (!r.ok) {
-      const msg =
-        data?.error?.message ||
-        (typeof data?.error === 'string' ? data.error : 'Groq request failed')
-      return res.status(r.status).json({ error: msg })
+    if (!resp.ok) {
+      return res.status(resp.status).json({
+        error: data?.error?.message || 'Groq request failed',
+      })
     }
 
     const content = data?.choices?.[0]?.message?.content || ''
-    return res.status(200).json({ content })
+    res.status(200).json({ content })
   } catch (err) {
-    return res.status(500).json({ error: err.message || 'Unknown error' })
+    res.status(500).json({ error: String(err?.message || err) })
   }
 }
