@@ -10,7 +10,11 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { getUserAddresses, createAddress } from '../services/addressService'
 import { createOrder } from '../services/orderService'
-import { issueGiftCardsForOrder } from '../services/giftCardService'
+import {
+  issueGiftCardsForOrder,
+  getUserGiftCardBalance,
+  applyGiftCardBalanceToOrder,
+} from '../services/giftCardService'
 import { supabase } from '../services/supabase'
 
 const DELIVERY_OPTIONS = [
@@ -34,6 +38,9 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
+
+  const [giftCardBalance, setGiftCardBalance] = useState(0)
+  const [applyBalance, setApplyBalance] = useState(true)
 
   // If all cart items belong to the same registry, we tag the order
   const registryId = useMemo(() => {
@@ -78,6 +85,17 @@ export default function Checkout() {
     }
   }, [user])
 
+  // Load gift card balance
+  useEffect(() => {
+    if (!user) return
+    getUserGiftCardBalance(user.id)
+      .then((b) => {
+        setGiftCardBalance(b)
+        setApplyBalance(b > 0) // auto-enable if user has balance
+      })
+      .catch(() => {})
+  }, [user])
+
   async function handleAddAddress(data) {
     const created = await createAddress(user.id, data)
     setAddresses((prev) => [created, ...prev])
@@ -87,6 +105,11 @@ export default function Checkout() {
 
   const deliveryFee = delivery === 'express' ? 7.99 : subtotal >= 50 ? 0 : shipping || 0
   const finalTotal = +(subtotal + deliveryFee + tax).toFixed(2)
+
+  const appliedGiftCard = applyBalance
+    ? Math.min(giftCardBalance, finalTotal)
+    : 0
+  const amountDue = Math.max(0, finalTotal - appliedGiftCard)
 
   async function handlePlaceOrder() {
     setError(null)
@@ -114,6 +137,16 @@ export default function Checkout() {
           .select('*')
           .eq('order_id', order.id)
         await issueGiftCardsForOrder(user.id, order.id, orderItems || [], items)
+      }
+
+      // Apply gift card balance to order (deduct from user's balance)
+      if (appliedGiftCard > 0) {
+        try {
+          await applyGiftCardBalanceToOrder(user.id, appliedGiftCard)
+        } catch (err) {
+          console.warn('Failed to deduct balance:', err)
+          // Non-fatal — the order is placed; log for admin
+        }
       }
 
       // Mark as placed BEFORE clearing so the guard effect does not fire
@@ -277,15 +310,41 @@ export default function Checkout() {
               tax={tax}
               total={finalTotal}
               count={count}
+              giftCardBalance={giftCardBalance}
+              appliedGiftCard={appliedGiftCard}
               showCheckout={false}
             />
+
+            {giftCardBalance > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={applyBalance}
+                    onChange={(e) => setApplyBalance(e.target.checked)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 text-sm">
+                    <div className="font-medium text-green-900">
+                      Apply gift card balance (${giftCardBalance.toFixed(2)} available)
+                    </div>
+                    {applyBalance && appliedGiftCard > 0 && (
+                      <div className="text-xs text-green-800 mt-1">
+                        -${appliedGiftCard.toFixed(2)} will be applied to this order
+                      </div>
+                    )}
+                  </div>
+                </label>
+              </div>
+            )}
+
             <Button
               variant="secondary"
               onClick={handlePlaceOrder}
               disabled={placing}
               className="w-full"
             >
-              {placing ? 'Placing order…' : 'Place your order'}
+              {placing ? 'Placing order…' : `Place your order · $${amountDue.toFixed(2)}`}
             </Button>
             {error && (
               <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">

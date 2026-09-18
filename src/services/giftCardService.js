@@ -124,3 +124,44 @@ export async function getGiftCardsForOrder(orderId) {
   if (error) throw error
   return data || []
 }
+
+/**
+ * Redeem a gift card code. Returns { success, amount, new_balance } or { success: false, error }.
+ */
+export async function redeemGiftCardCode(code) {
+  const { data, error } = await supabase.rpc('redeem_gift_card_code', { p_code: code })
+  if (error) throw error
+  return data
+}
+
+/**
+ * Get the current user's gift card balance (or 0 if none).
+ */
+export async function getUserGiftCardBalance(userId) {
+  if (!userId) return 0
+  const { data, error } = await supabase
+    .from('user_gift_card_balances')
+    .select('balance')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) return 0
+  return Number(data?.balance || 0)
+}
+
+/**
+ * Deduct an amount from the user's balance (called after applying at checkout).
+ * Uses an atomic RPC so concurrent orders can't overspend.
+ */
+
+
+/**
+ * Atomic balance deduction via RPC.
+ */
+export async function applyGiftCardBalanceToOrder(userId, amount) {
+  const { data, error } = await supabase.rpc('apply_gift_card_balance', {
+    p_user_id: userId,
+    p_amount: amount,
+  })
+  if (error) throw error
+  return data
+}

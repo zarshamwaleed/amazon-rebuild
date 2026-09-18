@@ -6,6 +6,8 @@ import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import SellerGrowthOpportunity from './pages/seller/SellerGrowthOpportunity'
 import RegistrySearch from './pages/RegistrySearch'
+import GiftCardRedeem from './pages/GiftCardRedeem'
+import GiftCardBalance from './pages/GiftCardBalance'
 import EditRegistry from './pages/EditRegistry'
 import MyReturns from './pages/MyReturns'
 import RegistryDetail from './pages/RegistryDetail'
@@ -217,6 +219,8 @@ export default function App() {
 
                       <Route path="/customer-service" element={<CustomerService />} />
                       <Route path="/gift-cards" element={<GiftCards />} />
+<Route path="/gift-cards/redeem" element={<GiftCardRedeem />} />
+<Route path="/gift-cards/balance" element={<GiftCardBalance />} />
 <Route path="/registry" element={<RegistryLanding />} />
 <Route path="/registry/create" element={<ProtectedRoute><CreateRegistry /></ProtectedRoute>} />
 <Route path="/registry/manage" element={<ProtectedRoute><ManageRegistries /></ProtectedRoute>} />

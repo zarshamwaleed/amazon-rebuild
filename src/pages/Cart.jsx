@@ -1,10 +1,12 @@
-﻿import { Link, useNavigate } from 'react-router-dom'
+﻿import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import CartItem from '../components/CartItem'
 import CartSummary from '../components/CartSummary'
 import EmptyState from '../components/EmptyState'
 import Button from '../components/Button'
+import { getUserGiftCardBalance } from '../services/giftCardService'
 
 export default function Cart() {
   const navigate = useNavigate()
@@ -21,6 +23,13 @@ export default function Cart() {
     clearCart,
     ready,
   } = useCart()
+
+  const [giftCardBalance, setGiftCardBalance] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    getUserGiftCardBalance(user.id).then(setGiftCardBalance).catch(() => {})
+  }, [user])
 
   if (!ready) {
     return (
@@ -89,12 +98,20 @@ export default function Cart() {
 
         <div className="lg:col-span-1">
           <div className="lg:sticky lg:top-40">
+            {giftCardBalance > 0 && (
+              <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2 mb-2">
+                You have <strong>${giftCardBalance.toFixed(2)}</strong> in gift card balance. It
+                will be applied at checkout.
+              </div>
+            )}
             <CartSummary
               subtotal={subtotal}
               shipping={shipping}
               tax={tax}
               total={total}
               count={count}
+              giftCardBalance={giftCardBalance}
+              appliedGiftCard={0}
               onCheckout={handleCheckout}
             >
               {!user && (
@@ -109,4 +126,3 @@ export default function Cart() {
     </div>
   )
 }
-

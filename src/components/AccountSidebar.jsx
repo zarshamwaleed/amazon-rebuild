@@ -1,5 +1,5 @@
 ﻿import { NavLink } from 'react-router-dom'
-import { User, Package, Heart, LogOut, Mail, RotateCcw } from 'lucide-react'
+import { User, Package, Heart, LogOut, Mail, RotateCcw, Gift } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
@@ -9,6 +9,7 @@ const links = [
   { to: '/wishlist', label: 'Your Wishlist', icon: Heart },
   { to: '/messages', label: 'Your Messages', icon: Mail },
   { to: '/returns', label: 'Your Returns', icon: RotateCcw },
+  { to: '/gift-cards/balance', label: 'Gift Card Balance', icon: Gift },
 ]
 
 export default function AccountSidebar() {
