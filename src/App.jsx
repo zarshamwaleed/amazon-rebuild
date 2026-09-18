@@ -11,6 +11,7 @@ import SellerFulfillment from './pages/seller/SellerFulfillment'
 import SellerPricing from './pages/seller/SellerPricing'
 import SellerAutomatePricing from './pages/seller/SellerAutomatePricing'
 import SellerCoupons from './pages/seller/SellerCoupons'
+import SellerDeals from './pages/seller/SellerDeals'
 
 import SellerOrders from './pages/seller/SellerOrders'
 import SellerOrderDetail from './pages/seller/SellerOrderDetail'
@@ -100,6 +101,7 @@ export default function App() {
   <Route path="growth" element={<SellerPlaceholder title="Growth" />} />
   <Route path="reports" element={<SellerPlaceholder title="Reports" />} />
   <Route path="coupons" element={<SellerCoupons />} />
+  <Route path="deals" element={<SellerDeals />} />
   <Route path="payments" element={<SellerPlaceholder title="Payments" />} />
   <Route path="account-health" element={<SellerPlaceholder title="Account Health" />} />
   <Route path="customers" element={<SellerPlaceholder title="Customers" />} />

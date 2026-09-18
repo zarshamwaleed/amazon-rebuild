@@ -649,3 +649,90 @@ export async function toggleCouponStatus(userId, couponId, status) {
     .eq('seller_id', userId)
   if (error) throw error
 }
+
+/**
+ * Fetch deals created by this seller, grouped by lifecycle.
+ * Returns { active: [...], upcoming: [...], completed: [...] }
+ */
+export async function getSellerDeals(userId) {
+  const { data, error } = await supabase
+    .from('deals')
+    .select('*, products(id, title, price, image_url, sku)')
+    .eq('seller_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+
+  const now = new Date()
+  const buckets = { active: [], upcoming: [], completed: [] }
+
+  for (const d of data || []) {
+    const start = d.start_date ? new Date(d.start_date) : null
+    const end = d.end_date ? new Date(d.end_date) : null
+    const enriched = { ...d, product: d.products }
+    if (d.status === 'cancelled') continue
+    if (end && end < now) buckets.completed.push(enriched)
+    else if (start && start > now) buckets.upcoming.push(enriched)
+    else buckets.active.push(enriched)
+  }
+
+  return buckets
+}
+
+/**
+ * Create a seller deal. Sets the product's old_price to the original price
+ * and price to the deal price while the deal is active.
+ */
+export async function createSellerDeal(userId, payload) {
+  const { product_id, deal_price, start_date, end_date, quantity_limit } = payload
+
+  // Fetch original price
+  const { data: product, error: pErr } = await supabase
+    .from('products')
+    .select('id, price')
+    .eq('id', product_id)
+    .eq('seller_id', userId)
+    .maybeSingle()
+  if (pErr) throw pErr
+  if (!product) throw new Error('Product not found or not owned by you')
+
+  const originalPrice = Number(product.price)
+
+  const { data, error } = await supabase
+    .from('deals')
+    .insert({
+      seller_id: userId,
+      product_id,
+      deal_price: Number(deal_price),
+      original_price: originalPrice,
+      start_date,
+      end_date,
+      quantity_limit: Number(quantity_limit) || 100,
+      status: new Date(start_date) <= new Date() ? 'active' : 'upcoming',
+    })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+
+  // If the deal is already active, apply the deal price to the product
+  if (data.status === 'active') {
+    await supabase
+      .from('products')
+      .update({ price: Number(deal_price), old_price: originalPrice })
+      .eq('id', product_id)
+      .eq('seller_id', userId)
+  }
+
+  return data
+}
+
+/**
+ * Cancel a deal.
+ */
+export async function cancelSellerDeal(userId, dealId) {
+  const { error } = await supabase
+    .from('deals')
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+    .eq('id', dealId)
+    .eq('seller_id', userId)
+  if (error) throw error
+}

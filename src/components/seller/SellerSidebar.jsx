@@ -1,24 +1,10 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
-  Home,
-  Package,
-  Box,
-  ShoppingCart,
-  DollarSign,
-  Megaphone,
-  Store,
-  TrendingUp,
-  FileText,
-  CreditCard,
-  Activity,
-  Users,
-  Grid3x3,
-  Settings as SettingsIcon,
-  ChevronDown,
-  ChevronRight,
-  Truck,
-  Tag,
+  Home, Package, Box, ShoppingCart, DollarSign, Megaphone, Store,
+  TrendingUp, FileText, CreditCard, Activity, Users, Grid3x3,
+  Settings as SettingsIcon, ChevronDown, ChevronRight, Truck, Tag,
+  TrendingDown,
 } from 'lucide-react'
 
 const NAV = [
@@ -63,12 +49,13 @@ const NAV = [
       { label: 'Automate Pricing', to: '/seller/pricing/automate' },
     ],
   },
-  {
+   {
     label: 'Advertising',
     icon: Megaphone,
     children: [
       { label: 'Campaign Manager', to: '/seller/advertising' },
       { label: 'Coupons', to: '/seller/coupons' },
+      { label: 'Deals', to: '/seller/deals' },
     ],
   },
   {
