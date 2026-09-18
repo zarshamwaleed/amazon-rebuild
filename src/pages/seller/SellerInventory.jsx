@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import {
   Search,
   Package,
@@ -30,7 +31,11 @@ export default function SellerInventory() {
 
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('all')
+  const [searchParams, setSearchParams] = useSearchParams()
+const [tab, setTab] = useState(() => {
+  const t = searchParams.get('tab')
+  return t && TABS.find((x) => x.id === t) ? t : 'all'
+})
   const [query, setQuery] = useState('')
   const [editing, setEditing] = useState(null) // { id, stock, price }
 
@@ -161,7 +166,14 @@ export default function SellerInventory() {
         {TABS.map((t) => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => {
+  setTab(t.id)
+  if (t.id === 'all') {
+    setSearchParams({})
+  } else {
+    setSearchParams({ tab: t.id })
+  }
+}}
             className={
               'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition flex items-center gap-2 ' +
               (tab === t.id

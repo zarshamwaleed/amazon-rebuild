@@ -32,14 +32,14 @@ const NAV = [
       { label: 'Manage Products', to: '/seller/products' },
     ],
   },
-  {
-    label: 'Inventory',
-    icon: Box,
-    children: [
-      { label: 'Manage Inventory', to: '/seller/inventory' },
-      { label: 'FBA Inventory', to: '/seller/inventory/fba' },
-    ],
-  },
+ {
+  label: 'Inventory',
+  icon: Box,
+  children: [
+    { label: 'Manage Inventory', to: '/seller/inventory' },
+    { label: 'FBA Inventory', to: '/seller/inventory?tab=fba' },
+  ],
+},
   {
     label: 'Orders',
     icon: ShoppingCart,

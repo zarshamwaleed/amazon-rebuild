@@ -170,38 +170,48 @@ export default function Checkout() {
             )}
           </section>
 
-          <section className="bg-white border border-gray-200 rounded-md p-5">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">2. Delivery method</h2>
-            <div className="space-y-2">
-              {DELIVERY_OPTIONS.map((d) => (
-                <label
-                  key={d.id}
-                  className={
-                    'flex items-center justify-between gap-3 p-3 rounded border cursor-pointer ' +
-                    (delivery === d.id
-                      ? 'border-[#c7511f] bg-orange-50'
-                      : 'border-gray-300 hover:border-gray-400')
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="delivery"
-                      checked={delivery === d.id}
-                      onChange={() => setDelivery(d.id)}
-                    />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{d.label}</div>
-                      <div className="text-xs text-gray-600">{d.description}</div>
-                    </div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">
-                    {d.fee === 0 ? 'FREE' : '$' + d.fee.toFixed(2)}
-                  </span>
-                </label>
-              ))}
+<section className="bg-white border border-gray-200 rounded-md p-5">
+  <h2 className="text-lg font-bold text-gray-900 mb-3">2. Delivery method</h2>
+  <div className="space-y-2">
+    {DELIVERY_OPTIONS.map((d) => {
+      // Standard is only free when subtotal ≥ 50
+      const realFee =
+        d.id === 'standard' ? (subtotal >= 50 ? 0 : 5.99) : d.fee
+      return (
+        <label
+          key={d.id}
+          className={
+            'flex items-center justify-between gap-3 p-3 rounded border cursor-pointer ' +
+            (delivery === d.id
+              ? 'border-[#c7511f] bg-orange-50'
+              : 'border-gray-300 hover:border-gray-400')
+          }
+        >
+          <div className="flex items-center gap-3">
+            <input
+              type="radio"
+              name="delivery"
+              checked={delivery === d.id}
+              onChange={() => setDelivery(d.id)}
+            />
+            <div>
+              <div className="text-sm font-medium text-gray-900">{d.label}</div>
+              <div className="text-xs text-gray-600">{d.description}</div>
             </div>
-          </section>
+          </div>
+          <span className="text-sm font-medium text-gray-900">
+            {realFee === 0 ? 'FREE' : '$' + realFee.toFixed(2)}
+          </span>
+        </label>
+      )
+    })}
+  </div>
+  {subtotal < 50 && (
+    <p className="text-xs text-gray-500 mt-3">
+      Add ${(50 - subtotal).toFixed(2)} more to qualify for free Standard Delivery.
+    </p>
+  )}
+</section>
 
           <section className="bg-white border border-gray-200 rounded-md p-5">
             <h2 className="text-lg font-bold text-gray-900 mb-3">3. Payment method</h2>

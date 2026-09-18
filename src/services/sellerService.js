@@ -2553,3 +2553,51 @@ export async function updateOpportunityStatus(userId, oppId, status) {
 export async function markOpportunityInProgress(userId, oppId) {
   return updateOpportunityStatus(userId, oppId, 'in_progress')
 }
+
+/**
+ * Fetch all returns for a seller, optionally filtered.
+ */
+export async function getSellerReturns(userId) {
+  const { data, error } = await supabase
+    .from('returns')
+    .select('*')
+    .eq('seller_id', userId)
+    .order('requested_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Fetch a single return by ID.
+ */
+export async function getSellerReturn(userId, returnId) {
+  const { data, error } = await supabase
+    .from('returns')
+    .select('*')
+    .eq('seller_id', userId)
+    .eq('id', returnId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Aggregate counts for the summary tiles.
+ */
+export function computeReturnsSummary(returns) {
+  const now = Date.now()
+  return {
+    pendingActions: returns.filter((r) =>
+      ['requested', 'pending_authorization'].includes(r.status)
+    ).length,
+    inTransit: returns.filter((r) => r.status === 'return_in_transit').length,
+    received: returns.filter((r) => r.status === 'return_received').length,
+    refundPending: returns.filter((r) => r.status === 'refund_pending').length,
+    refunded: returns.filter((r) => r.status === 'refunded').length,
+    declined: returns.filter((r) => r.status === 'declined').length,
+    total: returns.length,
+    refundedAmount: returns
+      .filter((r) => r.status === 'refunded')
+      .reduce((s, r) => s + Number(r.refund_amount || 0), 0),
+  }
+}
