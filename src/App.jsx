@@ -12,6 +12,7 @@ import SellerPricing from './pages/seller/SellerPricing'
 import SellerAutomatePricing from './pages/seller/SellerAutomatePricing'
 import SellerCoupons from './pages/seller/SellerCoupons'
 import SellerDeals from './pages/seller/SellerDeals'
+import SellerAdvertising from './pages/seller/SellerAdvertising'
 
 import SellerOrders from './pages/seller/SellerOrders'
 import SellerOrderDetail from './pages/seller/SellerOrderDetail'
@@ -96,7 +97,7 @@ export default function App() {
   <Route path="fulfillment" element={<SellerFulfillment />} />
   <Route path="pricing" element={<SellerPricing />} />
 <Route path="pricing/automate" element={<SellerAutomatePricing />} />
-  <Route path="advertising" element={<SellerPlaceholder title="Campaign Manager" />} />
+  <Route path="advertising" element={<SellerAdvertising />} />
   <Route path="store" element={<SellerPlaceholder title="Brand Store" />} />
   <Route path="growth" element={<SellerPlaceholder title="Growth" />} />
   <Route path="reports" element={<SellerPlaceholder title="Reports" />} />

@@ -736,3 +736,104 @@ export async function cancelSellerDeal(userId, dealId) {
     .eq('seller_id', userId)
   if (error) throw error
 }
+
+/**
+ * Fetch advertising campaigns for this seller.
+ */
+export async function getSellerCampaigns(userId) {
+  const { data, error } = await supabase
+    .from('ad_campaigns')
+    .select('*, products(id, title, price, image_url)')
+    .eq('seller_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+
+  return (data || []).map((c) => ({
+    ...c,
+    product: c.products,
+    metrics: simulateCampaignMetrics(c),
+  }))
+}
+
+/**
+ * Create a new ad campaign.
+ */
+export async function createCampaign(userId, payload) {
+  const { data, error } = await supabase
+    .from('ad_campaigns')
+    .insert({
+      seller_id: userId,
+      product_id: payload.product_id,
+      name: payload.name,
+      campaign_type: payload.campaign_type,
+      daily_budget: Number(payload.daily_budget) || 20,
+      bid: Number(payload.bid) || 0.75,
+      targeting: payload.targeting || 'auto',
+      status: 'active',
+    })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Toggle a campaign between active and paused.
+ */
+export async function toggleCampaignStatus(userId, campaignId, status) {
+  const { error } = await supabase
+    .from('ad_campaigns')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', campaignId)
+    .eq('seller_id', userId)
+  if (error) throw error
+}
+
+/**
+ * Delete a campaign.
+ */
+export async function deleteCampaign(userId, campaignId) {
+  const { error } = await supabase
+    .from('ad_campaigns')
+    .delete()
+    .eq('id', campaignId)
+    .eq('seller_id', userId)
+  if (error) throw error
+}
+
+/**
+ * Deterministically simulate ad metrics.
+ * The seed comes from the campaign id + created_at so numbers stay
+ * consistent across reloads but vary meaningfully between campaigns.
+ */
+function simulateCampaignMetrics(campaign) {
+  // Simple hash from id + created_at
+  const seedStr = (campaign.id || '') + (campaign.created_at || '')
+  let hash = 0
+  for (let i = 0; i < seedStr.length; i++) {
+    hash = (hash * 31 + seedStr.charCodeAt(i)) >>> 0
+  }
+  const rand = (n) => (hash % n) / n
+
+  const daysSince = Math.max(
+    1,
+    Math.floor((Date.now() - new Date(campaign.created_at).getTime()) / 86400000)
+  )
+  const daysRunning = Math.min(daysSince, 30)
+
+  // Impressions scale with budget and days
+  const budgetScale = Number(campaign.daily_budget) || 20
+  const impressions = Math.floor(budgetScale * 200 * daysRunning * (0.7 + rand(30) / 100))
+  const ctr = 0.02 + rand(40) / 1000 // 2% – 6%
+  const clicks = Math.floor(impressions * ctr)
+  const spend = +(clicks * (Number(campaign.bid) || 0.75)).toFixed(2)
+  const conversionRate = 0.03 + rand(50) / 1000 // 3% – 8%
+  const orders = Math.max(0, Math.floor(clicks * conversionRate))
+
+  // Avg product price assumption
+  const productPrice = Number(campaign.product?.price) || 49.99
+  const sales = +(orders * productPrice).toFixed(2)
+  const roas = spend > 0 ? +(sales / spend).toFixed(2) : 0
+
+  return { impressions, clicks, spend, sales, roas, orders }
+}
