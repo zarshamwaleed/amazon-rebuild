@@ -933,3 +933,215 @@ export function slugifyStoreName(name) {
     Math.random().toString(36).slice(2, 6)
   )
 }
+
+/**
+ * Aggregate a full business report for the seller across a date range.
+ *
+ * @param {string} userId
+ * @param {Date|string} from
+ * @param {Date|string} to
+ */
+export async function getSellerReport(userId, from, to) {
+  const fromIso = new Date(from).toISOString()
+  const toIso = new Date(to).toISOString()
+
+  // 1. Seller's products
+  const { data: products, error: pErr } = await supabase
+    .from('products')
+        .select('*')
+    .eq('seller_id', userId)
+  if (pErr) throw pErr
+
+  const productIds = (products || []).map((p) => p.id)
+  const productById = Object.fromEntries((products || []).map((p) => [p.id, p]))
+
+  if (productIds.length === 0) {
+    return emptyReport(from, to)
+  }
+
+  // 2. Order items in range for these products
+  const { data: items, error: iErr } = await supabase
+    .from('order_items')
+        .select('*')
+    .in('product_id', productIds)
+  if (iErr) throw iErr
+
+  // Fetch parent orders in range (to get created_at and status)
+  const orderIds = [...new Set((items || []).map((i) => i.order_id))]
+  let orders = []
+  if (orderIds.length) {
+    const { data: oData, error: oErr } = await supabase
+      .from('orders')
+      .select('id, created_at, order_status, total, payment_status')
+      .in('id', orderIds)
+      .gte('created_at', fromIso)
+      .lte('created_at', toIso)
+    if (oErr) throw oErr
+    orders = oData || []
+  }
+
+  const ordersById = Object.fromEntries(orders.map((o) => [o.id, o]))
+
+  // Filter items whose parent order is in range
+  const inRangeItems = (items || []).filter((i) => ordersById[i.order_id])
+
+  // 3. Compute KPIs
+  let sales = 0
+  let units = 0
+  const uniqueOrders = new Set()
+  for (const it of inRangeItems) {
+    sales += Number(it.price) * Number(it.quantity)
+    units += Number(it.quantity)
+    uniqueOrders.add(it.order_id)
+  }
+
+  const orderCount = uniqueOrders.size
+  // Sessions is simulated — a multiple of order count
+  const sessions = orderCount > 0 ? orderCount * 42 + 17 : 0
+  const conversionRate = sessions > 0 ? (orderCount / sessions) * 100 : 0
+
+  // 4. Sales + orders over time (by day)
+  const daysMap = buildDayMap(from, to)
+  for (const it of inRangeItems) {
+    const o = ordersById[it.order_id]
+    if (!o) continue
+    const day = dayKey(o.created_at)
+    if (daysMap[day]) {
+      daysMap[day].sales += Number(it.price) * Number(it.quantity)
+      daysMap[day].units += Number(it.quantity)
+    }
+  }
+  for (const o of orders) {
+    const day = dayKey(o.created_at)
+    if (daysMap[day]) daysMap[day].orders += 1
+    if (daysMap[day]) daysMap[day].sessions += 43
+  }
+
+  const series = Object.values(daysMap).map((d) => ({
+    label: d.shortLabel,
+    fullDate: d.date,
+    sales: +d.sales.toFixed(2),
+    orders: d.orders,
+    units: d.units,
+    sessions: d.sessions,
+  }))
+
+  // 5. Traffic summary
+  const totalSessions = series.reduce((s, d) => s + d.sessions, 0)
+
+  // 6. Inventory snapshot
+  const lowStock = (products || []).filter(
+    (p) => p.stock > 0 && p.stock <= (p.low_stock_threshold || 5)
+  )
+  const outOfStock = (products || []).filter((p) => p.stock === 0)
+  const inventoryValue = (products || []).reduce(
+    (s, p) => s + Number(p.price) * p.stock,
+    0
+  )
+
+  // 7. Advertising summary from ad_campaigns
+  const { data: campaigns } = await supabase
+    .from('ad_campaigns')
+    .select('*')
+    .eq('seller_id', userId)
+  let adSpend = 0
+  let adSales = 0
+  let adImpressions = 0
+  let adClicks = 0
+  for (const c of campaigns || []) {
+    const m = simulateCampaignMetrics(c)
+    adImpressions += m.impressions
+    adClicks += m.clicks
+    adSpend += m.spend
+    adSales += m.sales
+  }
+  const adRoas = adSpend > 0 ? +(adSales / adSpend).toFixed(2) : 0
+
+  // 8. Payments summary
+  const platformFeeRate = 0.15
+  const grossSales = +sales.toFixed(2)
+  const platformFees = +(grossSales * platformFeeRate).toFixed(2)
+  const netProceeds = +(grossSales - platformFees).toFixed(2)
+
+  return {
+    range: { from: fromIso, to: toIso },
+    kpis: {
+      sales: grossSales,
+      orders: orderCount,
+      units,
+      sessions: totalSessions,
+      conversionRate: +conversionRate.toFixed(2),
+      aov: orderCount > 0 ? +(grossSales / orderCount).toFixed(2) : 0,
+    },
+    series,
+    traffic: {
+      sessions: totalSessions,
+      pageViews: totalSessions * 3,
+      conversionRate: +conversionRate.toFixed(2),
+    },
+    inventory: {
+      totalSkus: products.length,
+      lowStock: lowStock.length,
+      outOfStock: outOfStock.length,
+      totalUnits: products.reduce((s, p) => s + (p.stock || 0), 0),
+      inventoryValue: +inventoryValue.toFixed(2),
+    },
+    returns: {
+      count: 0,
+      value: 0,
+    },
+    advertising: {
+      impressions: adImpressions,
+      clicks: adClicks,
+      spend: +adSpend.toFixed(2),
+      sales: +adSales.toFixed(2),
+      roas: adRoas,
+    },
+    payments: {
+      gross: grossSales,
+      fees: platformFees,
+      net: netProceeds,
+      feeRate: platformFeeRate * 100,
+    },
+  }
+}
+
+function dayKey(iso) {
+  const d = new Date(iso)
+  return d.toISOString().slice(0, 10)
+}
+
+function buildDayMap(from, to) {
+  const out = {}
+  const start = new Date(from)
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(to)
+  end.setHours(0, 0, 0, 0)
+  const cursor = new Date(start)
+  while (cursor <= end) {
+    const key = cursor.toISOString().slice(0, 10)
+    out[key] = {
+      date: key,
+      shortLabel: cursor.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      sales: 0,
+      orders: 0,
+      units: 0,
+      sessions: 0,
+    }
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return out
+}
+
+function emptyReport(from, to) {
+  return {
+    range: { from: new Date(from).toISOString(), to: new Date(to).toISOString() },
+    kpis: { sales: 0, orders: 0, units: 0, sessions: 0, conversionRate: 0, aov: 0 },
+    series: [],
+    traffic: { sessions: 0, pageViews: 0, conversionRate: 0 },
+    inventory: { totalSkus: 0, lowStock: 0, outOfStock: 0, totalUnits: 0, inventoryValue: 0 },
+    returns: { count: 0, value: 0 },
+    advertising: { impressions: 0, clicks: 0, spend: 0, sales: 0, roas: 0 },
+    payments: { gross: 0, fees: 0, net: 0, feeRate: 15 },
+  }
+}

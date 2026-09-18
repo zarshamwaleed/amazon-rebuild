@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { WishlistProvider } from './context/WishlistContext'
 import { CouponsProvider } from './context/CouponsContext'
+import SellerReports from './pages/seller/SellerReports'
 
 // Seller Central
 import SellerLayout from './components/seller/SellerLayout'
@@ -114,6 +115,7 @@ export default function App() {
                       <Route path="advertising" element={<SellerAdvertising />} />
                       <Route path="coupons" element={<SellerCoupons />} />
                       <Route path="deals" element={<SellerDeals />} />
+                      
 
                       {/* Brand Store */}
                       <Route path="store" element={<SellerStore />} />
@@ -121,7 +123,7 @@ export default function App() {
 
                       {/* Placeholder pages for later modules */}
                       <Route path="growth" element={<SellerPlaceholder title="Growth" />} />
-                      <Route path="reports" element={<SellerPlaceholder title="Reports" />} />
+                      <Route path="reports" element={<SellerReports />} />
                       <Route path="payments" element={<SellerPlaceholder title="Payments" />} />
                       <Route path="account-health" element={<SellerPlaceholder title="Account Health" />} />
                       <Route path="customers" element={<SellerPlaceholder title="Customers" />} />
