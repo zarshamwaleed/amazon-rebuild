@@ -2766,3 +2766,144 @@ function generateTracking() {
   for (let i = 0; i < 14; i++) s += chars[Math.floor(Math.random() * chars.length)]
   return s
 }
+
+/**
+ * Fetch return settings for a seller (or null if none yet).
+ */
+export async function getReturnSettings(userId) {
+  const { data, error } = await supabase
+    .from('return_settings')
+    .select('*')
+    .eq('seller_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Upsert return settings.
+ */
+export async function saveReturnSettings(userId, settings) {
+  const { data, error } = await supabase
+    .from('return_settings')
+    .upsert(
+      { seller_id: userId, ...settings, updated_at: new Date().toISOString() },
+      { onConflict: 'seller_id' }
+    )
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Compute return analytics for the seller.
+ * Returns metrics + reason breakdown + top products by return rate.
+ */
+export async function getReturnsAnalytics(userId) {
+  // 1. All returns for this seller
+  const { data: returns, error } = await supabase
+    .from('returns')
+    .select('*')
+    .eq('seller_id', userId)
+  if (error) throw error
+
+  const all = returns || []
+  const totalReturns = all.length
+
+  // 2. Refund total
+  const refundTotal = all.reduce(
+    (s, r) => s + Number(r.refund_amount || 0),
+    0
+  )
+  const avgReturnValue = totalReturns > 0 ? refundTotal / totalReturns : 0
+
+  // 3. Reason breakdown
+  const reasonCounts = {}
+  for (const r of all) {
+    const reason = r.return_reason || 'Other'
+    reasonCounts[reason] = (reasonCounts[reason] || 0) + 1
+  }
+  const reasonBreakdown = Object.entries(reasonCounts)
+    .map(([reason, count]) => ({
+      reason,
+      count,
+      percent: totalReturns > 0 ? (count / totalReturns) * 100 : 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  const topReason = reasonBreakdown[0]?.reason || '—'
+
+  // 4. Top products by return count
+  const productCounts = {}
+  for (const r of all) {
+    const key = r.product_id || 'unknown'
+    if (!productCounts[key]) {
+      productCounts[key] = {
+        product_id: r.product_id,
+        product_title: r.product_title || 'Unknown product',
+        product_image: r.product_image,
+        count: 0,
+        refundTotal: 0,
+      }
+    }
+    productCounts[key].count += 1
+    productCounts[key].refundTotal += Number(r.refund_amount || 0)
+  }
+
+  // 5. Compute return rate per product (returns / total orders containing that product)
+  const productIds = Object.keys(productCounts)
+  let productSalesMap = {}
+  if (productIds.length > 0) {
+    const { data: items } = await supabase
+      .from('order_items')
+      .select('product_id, quantity')
+      .in('product_id', productIds)
+    for (const it of items || []) {
+      if (!productSalesMap[it.product_id]) productSalesMap[it.product_id] = 0
+      productSalesMap[it.product_id] += Number(it.quantity) || 0
+    }
+  }
+
+  const topProducts = Object.values(productCounts)
+    .map((p) => {
+      const sold = productSalesMap[p.product_id] || 0
+      const rate = sold > 0 ? (p.count / sold) * 100 : 0
+      return { ...p, sold, returnRate: +rate.toFixed(2) }
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8)
+
+  // 6. Timeline: returns per month over last 6 months
+  const now = new Date()
+  const months = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    months.push({
+      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      label: d.toLocaleDateString('en-US', { month: 'short' }),
+      count: 0,
+      refund: 0,
+    })
+  }
+  for (const r of all) {
+    const created = r.requested_at || r.created_at
+    if (!created) continue
+    const key = created.slice(0, 7)
+    const bucket = months.find((m) => m.key === key)
+    if (bucket) {
+      bucket.count += 1
+      bucket.refund += Number(r.refund_amount || 0)
+    }
+  }
+
+  return {
+    totalReturns,
+    refundTotal: +refundTotal.toFixed(2),
+    avgReturnValue: +avgReturnValue.toFixed(2),
+    topReason,
+    reasonBreakdown,
+    topProducts,
+    months,
+  }
+}

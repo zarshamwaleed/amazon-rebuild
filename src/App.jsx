@@ -20,6 +20,8 @@ import SellerAccountHealth from './pages/seller/SellerAccountHealth'
 import SellerNotifications from './pages/seller/SellerNotifications'
 import AppsLanding from './pages/seller/apps/AppsLanding'
 import PublicSeller from './pages/PublicSeller'
+import SellerReturnsSettings from './pages/seller/SellerReturnsSettings'
+import SellerReturnsAnalytics from './pages/seller/SellerReturnsAnalytics'
 import SellerReviews from './pages/seller/SellerReviews'
 import SellerUsers from './pages/seller/SellerUsers'
 import SellerMessages from './pages/seller/SellerMessages'
@@ -133,6 +135,8 @@ export default function App() {
                       {/* Orders */}
                       <Route path="orders" element={<SellerOrders />} />
                       <Route path="orders/returns" element={<SellerReturns />} />
+                      <Route path="orders/returns/settings" element={<SellerReturnsSettings />} />
+                      <Route path="orders/returns/analytics" element={<SellerReturnsAnalytics />} />
                       <Route path="orders/returns/:returnId" element={<SellerReturnDetail />} />
                       <Route path="orders/:id" element={<SellerOrderDetail />} />
 
