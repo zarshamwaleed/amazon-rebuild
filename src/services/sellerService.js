@@ -326,3 +326,94 @@ export async function updateInventory(userId, productId, updates) {
   if (error) throw error
   return data
 }
+
+/**
+ * Fetch every order containing this seller's products.
+ * Returns an array of { order, seller_items } where seller_items are only
+ * the line items belonging to this seller.
+ */
+export async function getSellerOrders(userId) {
+  // 1. Products owned by seller
+  const { data: products, error: pErr } = await supabase
+    .from('products')
+    .select('id')
+    .eq('seller_id', userId)
+  if (pErr) throw pErr
+
+  const productIds = (products || []).map((p) => p.id)
+  if (productIds.length === 0) return []
+
+  // 2. Order items for those products
+  const { data: items, error: iErr } = await supabase
+    .from('order_items')
+    .select('id, order_id, product_id, product_title, product_image, price, quantity')
+    .in('product_id', productIds)
+  if (iErr) throw iErr
+
+  const orderIds = [...new Set((items || []).map((i) => i.order_id))]
+  if (orderIds.length === 0) return []
+
+  // 3. Parent orders
+  const { data: orders, error: oErr } = await supabase
+    .from('orders')
+    .select('*, addresses(*)')
+    .in('id', orderIds)
+    .order('created_at', { ascending: false })
+  if (oErr) throw oErr
+
+  // 4. Group items by order
+  const itemsByOrder = {}
+  for (const it of items || []) {
+    if (!itemsByOrder[it.order_id]) itemsByOrder[it.order_id] = []
+    itemsByOrder[it.order_id].push(it)
+  }
+
+  return (orders || []).map((order) => ({
+    order,
+    seller_items: itemsByOrder[order.id] || [],
+  }))
+}
+
+/**
+ * Fetch a single order for a seller (validates ownership of at least one item).
+ */
+export async function getSellerOrder(userId, orderId) {
+  const { data: products } = await supabase
+    .from('products')
+    .select('id')
+    .eq('seller_id', userId)
+  const productIds = (products || []).map((p) => p.id)
+  if (productIds.length === 0) return null
+
+  const { data: items, error: iErr } = await supabase
+    .from('order_items')
+    .select('id, order_id, product_id, product_title, product_image, price, quantity')
+    .eq('order_id', orderId)
+    .in('product_id', productIds)
+  if (iErr) throw iErr
+  if (!items || items.length === 0) return null
+
+  const { data: order, error: oErr } = await supabase
+    .from('orders')
+    .select('*, addresses(*)')
+    .eq('id', orderId)
+    .maybeSingle()
+  if (oErr) throw oErr
+
+  return { order, seller_items: items }
+}
+
+/**
+ * Update the order_status of a seller's order.
+ * Note: order_status is shared with the customer's view of the order.
+ */
+export async function updateOrderStatus(orderId, nextStatus) {
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ order_status: nextStatus })
+    .eq('id', orderId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
