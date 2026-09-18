@@ -1145,3 +1145,153 @@ function emptyReport(from, to) {
     payments: { gross: 0, fees: 0, net: 0, feeRate: 15 },
   }
 }
+
+/**
+ * Compute a full payments summary for the seller.
+ * All financial movement is simulated — no real payouts, no real fees.
+ */
+export async function getSellerPayments(userId) {
+  // Seller products
+  const { data: products, error: pErr } = await supabase
+    .from('products')
+    .select('id, title')
+    .eq('seller_id', userId)
+  if (pErr) throw pErr
+
+  const productIds = (products || []).map((p) => p.id)
+  if (productIds.length === 0) {
+    return emptyPayments()
+  }
+
+  // Order items
+  const { data: items, error: iErr } = await supabase
+    .from('order_items')
+    .select('id, order_id, product_id, product_title, price, quantity')
+    .in('product_id', productIds)
+  if (iErr) throw iErr
+
+  const orderIds = [...new Set((items || []).map((i) => i.order_id))]
+  if (orderIds.length === 0) {
+    return emptyPayments()
+  }
+
+  // Parent orders
+  const { data: orders, error: oErr } = await supabase
+    .from('orders')
+    .select('id, created_at, order_status, total, payment_status, payment_method')
+    .in('id', orderIds)
+    .order('created_at', { ascending: false })
+  if (oErr) throw oErr
+
+  const ordersById = Object.fromEntries((orders || []).map((o) => [o.id, o]))
+  const itemsByOrder = {}
+  for (const it of items || []) {
+    if (!itemsByOrder[it.order_id]) itemsByOrder[it.order_id] = []
+    itemsByOrder[it.order_id].push(it)
+  }
+
+  const FEE_RATE = 0.15
+  const now = Date.now()
+
+  let gross = 0
+  let fees = 0
+  let refunds = 0
+  const transactions = []
+  let pendingPayout = 0
+
+  for (const o of orders || []) {
+    const oItems = itemsByOrder[o.id] || []
+    if (oItems.length === 0) continue
+
+    const sellerSubtotal = oItems.reduce(
+      (s, i) => s + Number(i.price) * i.quantity,
+      0
+    )
+    const lineItems = oItems.map((i) => i.product_title).join(', ')
+    const cancelled = ['cancelled', 'returned'].includes(
+      (o.order_status || '').toLowerCase()
+    )
+
+    if (cancelled) {
+      refunds += sellerSubtotal
+      transactions.push({
+        id: o.id + '-refund',
+        date: o.created_at,
+        order: o.id,
+        type: 'Refund',
+        description: lineItems,
+        amount: -sellerSubtotal,
+        fees: 0,
+        net: -sellerSubtotal,
+        tone: 'red',
+      })
+      continue
+    }
+
+    gross += sellerSubtotal
+
+    // Sale transaction
+    transactions.push({
+      id: o.id + '-sale',
+      date: o.created_at,
+      order: o.id,
+      type: 'Sale',
+      description: lineItems,
+      amount: sellerSubtotal,
+      fees: 0,
+      net: sellerSubtotal,
+      tone: 'default',
+    })
+
+    // Fee transaction
+    const fee = +(sellerSubtotal * FEE_RATE).toFixed(2)
+    fees += fee
+    transactions.push({
+      id: o.id + '-fee',
+      date: o.created_at,
+      order: o.id,
+      type: 'Fee',
+      description: 'Platform fee (15%)',
+      amount: 0,
+      fees: fee,
+      net: -fee,
+      tone: 'default',
+    })
+
+    // Pending payout if order is recent (< 14 days old) and paid
+    const ageDays = (now - new Date(o.created_at).getTime()) / 86400000
+    if (ageDays < 14 && o.payment_status === 'paid') {
+      pendingPayout += sellerSubtotal - fee
+    }
+  }
+
+  const netProceeds = +(gross - fees - refunds).toFixed(2)
+  const availableBalance = netProceeds > 0 ? +(netProceeds - pendingPayout).toFixed(2) : 0
+  const nextPayout = +pendingPayout.toFixed(2)
+
+  transactions.sort((a, b) => new Date(b.date) - new Date(a.date))
+
+  return {
+    availableBalance: Math.max(0, availableBalance),
+    nextPayout,
+    gross: +gross.toFixed(2),
+    fees: +fees.toFixed(2),
+    refunds: +refunds.toFixed(2),
+    netProceeds,
+    feeRate: FEE_RATE * 100,
+    transactions,
+  }
+}
+
+function emptyPayments() {
+  return {
+    availableBalance: 0,
+    nextPayout: 0,
+    gross: 0,
+    fees: 0,
+    refunds: 0,
+    netProceeds: 0,
+    feeRate: 15,
+    transactions: [],
+  }
+}
