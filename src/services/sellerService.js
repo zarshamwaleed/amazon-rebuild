@@ -1907,3 +1907,224 @@ export const ROLE_TEMPLATES = {
     settings: false,
   },
 }
+
+/**
+ * Explicit notifications stored in the DB (one-time events).
+ */
+export async function getExplicitNotifications(userId, limit = 40) {
+  const { data, error } = await supabase
+    .from('seller_notifications')
+    .select('*')
+    .eq('seller_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Insert a notification row.
+ */
+export async function pushNotification(userId, payload) {
+  const { data, error } = await supabase
+    .from('seller_notifications')
+    .insert({
+      seller_id: userId,
+      type: payload.type,
+      title: payload.title,
+      body: payload.body || null,
+      link: payload.link || null,
+      read: false,
+    })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Mark all notifications as read.
+ */
+export async function markAllNotificationsRead(userId) {
+  const { error } = await supabase
+    .from('seller_notifications')
+    .update({ read: true })
+    .eq('seller_id', userId)
+    .eq('read', false)
+  if (error) throw error
+}
+
+/**
+ * Mark a single notification as read.
+ */
+export async function markNotificationRead(userId, notificationId) {
+  const { error } = await supabase
+    .from('seller_notifications')
+    .update({ read: true })
+    .eq('id', notificationId)
+    .eq('seller_id', userId)
+  if (error) throw error
+}
+
+/**
+ * Delete a single notification.
+ */
+export async function deleteNotification(userId, notificationId) {
+  const { error } = await supabase
+    .from('seller_notifications')
+    .delete()
+    .eq('id', notificationId)
+    .eq('seller_id', userId)
+  if (error) throw error
+}
+
+/**
+ * Derive live "state" notifications by scanning the seller's current data.
+ * These are not stored — they reflect what's true right now.
+ */
+export async function getDerivedNotifications(userId) {
+  const out = []
+
+  // 1. Products — low stock, out of stock
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, title, stock, low_stock_threshold, is_active')
+    .eq('seller_id', userId)
+
+  const low = (products || []).filter(
+    (p) => p.is_active !== false && p.stock > 0 && p.stock <= (p.low_stock_threshold || 5)
+  )
+  if (low.length > 0) {
+    out.push({
+      id: 'derived-low-stock',
+      type: 'low_inventory',
+      title: `${low.length} product${low.length > 1 ? 's' : ''} low on stock`,
+      body: low
+        .slice(0, 3)
+        .map((p) => `${p.title} (${p.stock} left)`)
+        .join(' · '),
+      link: '/seller/inventory',
+      created_at: new Date().toISOString(),
+      read: false,
+      derived: true,
+    })
+  }
+
+  const oos = (products || []).filter(
+    (p) => p.is_active !== false && p.stock === 0
+  )
+  if (oos.length > 0) {
+    out.push({
+      id: 'derived-oos',
+      type: 'product_suppressed',
+      title: `${oos.length} active product${oos.length > 1 ? 's' : ''} out of stock`,
+      body: oos
+        .slice(0, 3)
+        .map((p) => p.title)
+        .join(' · '),
+      link: '/seller/inventory',
+      created_at: new Date().toISOString(),
+      read: false,
+      derived: true,
+    })
+  }
+
+  // 2. Unread customer messages
+  const { data: msgs } = await supabase
+    .from('seller_messages')
+    .select('id, subject, customer_name, created_at')
+    .eq('seller_id', userId)
+    .eq('direction', 'inbound')
+    .eq('status', 'unread')
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  if (msgs && msgs.length > 0) {
+    out.push({
+      id: 'derived-unread-messages',
+      type: 'customer_message',
+      title: `${msgs.length} unread customer message${msgs.length > 1 ? 's' : ''}`,
+      body: msgs
+        .slice(0, 3)
+        .map((m) => `${m.customer_name}: ${m.subject}`)
+        .join(' · '),
+      link: '/seller/messages',
+      created_at: msgs[0].created_at,
+      read: false,
+      derived: true,
+    })
+  }
+
+  // 3. Orders awaiting shipment
+  const { data: items } = await supabase
+    .from('order_items')
+    .select('id, order_id')
+    .in(
+      'product_id',
+      (products || []).map((p) => p.id)
+    )
+
+  if (items && items.length > 0) {
+    const orderIds = [...new Set(items.map((i) => i.order_id))]
+    const { data: pending } = await supabase
+      .from('orders')
+      .select('id, created_at')
+      .in('id', orderIds)
+      .in('order_status', ['order_placed', 'processing', 'packed'])
+      .order('created_at', { ascending: false })
+
+    if (pending && pending.length > 0) {
+      out.push({
+        id: 'derived-pending-orders',
+        type: 'new_order',
+        title: `${pending.length} order${pending.length > 1 ? 's' : ''} awaiting shipment`,
+        body: pending
+          .slice(0, 3)
+          .map((o) => '#' + o.id.slice(0, 8))
+          .join(' · '),
+        link: '/seller/fulfillment',
+        created_at: pending[0].created_at,
+        read: false,
+        derived: true,
+      })
+    }
+  }
+
+  // 4. Account health warnings
+  try {
+    const health = await getSellerHealth(userId)
+    if (health.overallStatus !== 'healthy') {
+      out.push({
+        id: 'derived-health',
+        type: 'policy',
+        title:
+          health.overallStatus === 'critical'
+            ? 'Account Health: Critical'
+            : 'Account Health: At risk',
+        body: `${health.alerts.length} alert${health.alerts.length !== 1 ? 's' : ''} need attention`,
+        link: '/seller/account-health',
+        created_at: new Date().toISOString(),
+        read: false,
+        derived: true,
+      })
+    }
+  } catch {
+    // skip — health check may fail if user has no data
+  }
+
+  return out
+}
+
+/**
+ * Merge explicit + derived notifications, sort by date desc.
+ */
+export async function getAllNotifications(userId) {
+  const [explicit, derived] = await Promise.all([
+    getExplicitNotifications(userId),
+    getDerivedNotifications(userId),
+  ])
+  const merged = [...explicit, ...derived]
+  merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  return merged
+}
+
