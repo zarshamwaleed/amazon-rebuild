@@ -79,6 +79,12 @@ export default function ProductCard({ product }) {
 
       {product.brand && <div className="mt-1 text-xs text-gray-500">{product.brand}</div>}
 
+      {product.seller_id && (
+        <div className="mt-1 text-xs text-gray-500">
+          Sold by <span className="text-[#007185] font-medium">Seller</span>
+        </div>
+      )}
+
       <div className="mt-2 text-xs text-gray-600">
         {product.stock > 0 ? 'In Stock' : <span className="text-red-600">Out of Stock</span>}
       </div>

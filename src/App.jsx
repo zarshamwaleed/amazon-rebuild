@@ -10,6 +10,7 @@ import SellerReports from './pages/seller/SellerReports'
 import SellerPayments from './pages/seller/SellerPayments'
 import SellerAccountHealth from './pages/seller/SellerAccountHealth'
 import SellerNotifications from './pages/seller/SellerNotifications'
+import PublicSeller from './pages/PublicSeller'
 import SellerReviews from './pages/seller/SellerReviews'
 import SellerUsers from './pages/seller/SellerUsers'
 import SellerMessages from './pages/seller/SellerMessages'
@@ -153,6 +154,7 @@ export default function App() {
                       <Route path="/search" element={<SearchResults />} />
                       <Route path="/cart" element={<Cart />} />
                       <Route path="/store/:slug" element={<PublicStore />} />
+                      <Route path="/seller/:id" element={<PublicSeller />} />
 
                       <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                       <Route path="/order-confirmation/:id" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />

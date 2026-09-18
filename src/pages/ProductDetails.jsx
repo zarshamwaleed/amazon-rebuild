@@ -31,7 +31,7 @@ export default function ProductDetails() {
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
- 
+  const [sellerInfo, setSellerInfo] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -57,6 +57,15 @@ export default function ProductDetails() {
           return
         }
         setProduct(data)
+
+        if (data.seller_id) {
+          const { data: sp } = await supabase
+            .from('seller_profiles')
+            .select('user_id, store_name, business_name')
+            .eq('user_id', data.seller_id)
+            .maybeSingle()
+          if (!cancelled) setSellerInfo(sp || { user_id: data.seller_id, store_name: null })
+        }
 
         if (data.category_id) {
           const { data: rel } = await supabase
@@ -99,7 +108,6 @@ export default function ProductDetails() {
   function handleAddToCart() {
     if (!product) return
     addItem(product, quantity)
-
   }
 
   function handleBuyNow() {
@@ -162,6 +170,17 @@ export default function ProductDetails() {
             <p className="text-sm">
               Brand:{' '}
               <span className="text-blue-600 hover:underline cursor-pointer">{product.brand}</span>
+            </p>
+          )}
+          {sellerInfo && (
+            <p className="text-sm text-gray-700">
+              Sold by{' '}
+              <Link
+                to={`/seller/${sellerInfo.user_id}`}
+                className="text-[#007185] hover:text-[#c7511f] hover:underline font-medium"
+              >
+                {sellerInfo.store_name || 'this seller'}
+              </Link>
             </p>
           )}
           <div className="flex items-center gap-3">
@@ -290,7 +309,17 @@ export default function ProductDetails() {
 
             <WishlistButton product={product} variant="text" className="w-full justify-center" />
 
-            
+            {sellerInfo && (
+              <div className="text-xs text-gray-600 border-t pt-2 mt-2">
+                Ships from Amazon Rebuild · Sold by{' '}
+                <Link
+                  to={`/seller/${sellerInfo.user_id}`}
+                  className="text-[#007185] hover:text-[#c7511f] hover:underline"
+                >
+                  {sellerInfo.store_name || 'Seller'}
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -303,6 +332,10 @@ export default function ProductDetails() {
           reviewCount={product.review_count}
         />
       </section>
+
+      {sellerInfo?.user_id && (
+        <SellerOtherProducts sellerId={sellerInfo.user_id} excludeId={product?.id} />
+      )}
 
       {related.length > 0 && (
         <section>
@@ -320,5 +353,42 @@ export default function ProductDetails() {
 
       <RecentlyViewedStrip excludeId={product.id} />
     </div>
+  )
+}
+
+function SellerOtherProducts({ sellerId, excludeId }) {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!sellerId) return
+    let cancelled = false
+    async function load() {
+      const { data } = await supabase
+        .from('products')
+        .select('*')
+        .eq('seller_id', sellerId)
+        .neq('id', excludeId || '00000000-0000-0000-0000-000000000000')
+        .limit(4)
+      if (!cancelled) {
+        setItems(data || [])
+        setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [sellerId, excludeId])
+
+  if (loading || items.length === 0) return null
+
+  return (
+    <section>
+      <h2 className="text-xl font-bold text-gray-900 mb-4">
+        Other products from this seller
+      </h2>
+      <ProductGrid products={items} cols={4} />
+    </section>
   )
 }
