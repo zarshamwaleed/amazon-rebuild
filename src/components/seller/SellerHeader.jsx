@@ -10,10 +10,13 @@ import {
   ChevronDown,
   LogOut,
   User,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
-export default function SellerHeader() {
+export default function SellerHeader({ onToggleSidebar, sidebarOpen }) {
   const { profile, user, signOut } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -22,7 +25,6 @@ export default function SellerHeader() {
   const firstName =
     profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Seller'
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function onClick(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false)
@@ -41,8 +43,22 @@ export default function SellerHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-[#232f3e] text-white">
-      <div className="flex items-center gap-4 px-4 py-2.5">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-[#232f3e] text-white h-[52px]">
+      <div className="flex items-center gap-3 px-3 py-2.5 h-full">
+        {/* Sidebar toggle */}
+        <button
+          onClick={onToggleSidebar}
+          className="p-2 rounded hover:bg-white/10"
+          aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+          title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+        >
+          {sidebarOpen ? (
+            <PanelLeftClose className="w-5 h-5" />
+          ) : (
+            <PanelLeftOpen className="w-5 h-5" />
+          )}
+        </button>
+
         {/* Logo */}
         <Link to="/seller" className="flex items-center gap-1 flex-shrink-0">
           <span className="text-white text-lg font-bold">amazon</span>
@@ -80,7 +96,6 @@ export default function SellerHeader() {
             <Grid3x3 className="w-5 h-5" />
           </button>
 
-          {/* Account dropdown */}
           <div className="relative ml-2 pl-3 border-l border-white/20" ref={menuRef}>
             <button
               onClick={() => setOpen((o) => !o)}

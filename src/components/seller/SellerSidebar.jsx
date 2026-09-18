@@ -91,7 +91,7 @@ export default function SellerSidebar() {
   }
 
   return (
-    <aside className="w-60 flex-shrink-0 bg-[#131921] text-white min-h-[calc(100vh-52px)] py-4">
+    <aside className="w-60 bg-[#131921] text-white min-h-full py-4">
       <nav className="space-y-0.5">
         {NAV.map((item) => {
           const Icon = item.icon

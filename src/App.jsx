@@ -7,6 +7,9 @@ import { CartProvider } from './context/CartContext'
 import { WishlistProvider } from './context/WishlistContext'
 import { CouponsProvider } from './context/CouponsContext'
 
+import SellerProducts from './pages/seller/SellerProducts'
+import SellerProductEditor from './pages/seller/SellerProductEditor'
+
 import SellerLayout from './components/seller/SellerLayout'
 import SellerDashboard from './pages/seller/SellerDashboard'
 import SellerPlaceholder from './pages/seller/SellerPlaceholder'
@@ -73,8 +76,9 @@ export default function App() {
                     {/* ============ Seller Central ============ */}
 <Route path="/seller" element={<SellerLayout />}>
   <Route index element={<SellerDashboard />} />
-  <Route path="products" element={<SellerPlaceholder title="Manage Products" />} />
-  <Route path="products/new" element={<SellerPlaceholder title="Add Product" />} />
+  <Route path="products" element={<SellerProducts />} />
+<Route path="products/new" element={<SellerProductEditor />} />
+<Route path="products/:id/edit" element={<SellerProductEditor />} />
   <Route path="inventory" element={<SellerPlaceholder title="Manage Inventory" />} />
   <Route path="inventory/fba" element={<SellerPlaceholder title="FBA Inventory" />} />
   <Route path="orders" element={<SellerPlaceholder title="Manage Orders" />} />
