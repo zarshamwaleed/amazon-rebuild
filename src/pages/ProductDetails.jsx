@@ -12,6 +12,8 @@ import WishlistButton from '../components/WishlistButton'
 import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { supabase } from '../services/supabase'
 import { getRecommendations } from '../services/recommendationService'
+import { getCouponsForProduct } from '../services/couponService'
+import { useCoupons } from '../context/CouponsContext'
 import { useCart } from '../context/CartContext'
 import { useRecentlyViewed } from '../hooks/useRecentlyViewed'
 
@@ -19,11 +21,13 @@ export default function ProductDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addItem } = useCart()
+  const { isClipped, clipCoupon, unclipCoupon } = useCoupons()
   useRecentlyViewed(id)
 
   const [product, setProduct] = useState(null)
   const [related, setRelated] = useState([])
   const [recommendations, setRecommendations] = useState([])
+  const [productCoupons, setProductCoupons] = useState([])
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -78,6 +82,19 @@ export default function ProductDetails() {
       cancelled = true
     }
   }, [id])
+
+  useEffect(() => {
+    if (!product) return
+    let cancelled = false
+    getCouponsForProduct(product.id)
+      .then((list) => {
+        if (!cancelled) setProductCoupons(list)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [product?.id])
 
   function handleAddToCart() {
     if (!product) return
@@ -177,6 +194,45 @@ export default function ProductDetails() {
 
           <hr />
 
+          {productCoupons.length > 0 && (
+            <div className="bg-[#f0f2f2] border border-[#d5d9d9] rounded p-3 space-y-2">
+              <p className="text-xs font-bold text-[#b12704] uppercase">Special offer</p>
+              {productCoupons.map((c) => {
+                const clipped = isClipped(c.id)
+                const label =
+                  c.discount_type === 'percentage'
+                    ? `${Number(c.discount_value)}% off`
+                    : `$${Number(c.discount_value)} off`
+                return (
+                  <div key={c.id} className="flex items-center justify-between gap-3">
+                    <div className="text-sm text-gray-900">
+                      <span className="font-semibold">{label}</span>
+                      {c.minimum_purchase > 0 && (
+                        <span className="text-xs text-gray-600">
+                          {' '}
+                          (min ${Number(c.minimum_purchase).toFixed(2)})
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => (clipped ? unclipCoupon(c.id) : clipCoupon(c.id))}
+                      className={
+                        'text-xs font-medium px-3 py-1 rounded border transition ' +
+                        (clipped
+                          ? 'bg-gray-100 border-gray-300 text-gray-700'
+                          : 'bg-white border-[#007185] text-[#007185] hover:bg-[#e7f4f5]')
+                      }
+                    >
+                      {clipped ? '✓ Clipped' : 'Clip Coupon'}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          <hr />
+
           <div>
             <h2 className="font-bold text-gray-900 mb-1">About this item</h2>
             <p className="text-sm text-gray-700 leading-relaxed">{product.description}</p>
@@ -266,4 +322,3 @@ export default function ProductDetails() {
     </div>
   )
 }
-

@@ -1,6 +1,7 @@
 ﻿import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from './AuthContext'
 import { useToast } from './ToastContext'
+import { getCouponsForProducts, computeDiscount } from '../services/couponService'
 import {
   getCartItems,
   upsertCartItem,
@@ -17,6 +18,8 @@ export function CartProvider({ children }) {
   const { pushToast } = useToast()
   const [items, setItems] = useState([])
   const [ready, setReady] = useState(false)
+  const [couponSavings, setCouponSavings] = useState(0)
+  const [appliedCoupons, setAppliedCoupons] = useState([])
   const syncedFromGuest = useRef(false)
 
   useEffect(() => {
@@ -60,6 +63,61 @@ export function CartProvider({ children }) {
       cancelled = true
     }
   }, [user, authLoading])
+
+  useEffect(() => {
+    let cancelled = false
+    async function calcCoupons() {
+      try {
+        if (!items.length) {
+          if (!cancelled) {
+            setCouponSavings(0)
+            setAppliedCoupons([])
+          }
+          return
+        }
+        const productIds = items.map((i) => i.product.id)
+        const couponMap = await getCouponsForProducts(productIds)
+
+        // Read clipped IDs: from DB rows if user is signed in, else localStorage
+        let clipped = []
+        if (user) {
+          const raw = await import('../services/supabase').then(({ supabase }) =>
+            supabase.from('user_coupons').select('coupon_id').eq('user_id', user.id)
+          )
+          clipped = (raw.data || []).map((r) => r.coupon_id)
+        } else {
+          try {
+            clipped = JSON.parse(
+              localStorage.getItem('amazon-rebuild-clipped-coupons-v1') || '[]'
+            )
+          } catch {}
+        }
+
+        let totalSavings = 0
+        const applied = []
+        for (const item of items) {
+          const coupons = couponMap[item.product.id] || []
+          for (const c of coupons) {
+            if (!clipped.includes(c.id)) continue
+            const perUnit = computeDiscount(c, item.product)
+            const lineSavings = perUnit * item.quantity
+            totalSavings += lineSavings
+            applied.push({ coupon: c, product: item.product, savings: lineSavings })
+          }
+        }
+        if (!cancelled) {
+          setCouponSavings(+totalSavings.toFixed(2))
+          setAppliedCoupons(applied)
+        }
+      } catch (err) {
+        console.warn('[cart] coupon calc failed:', err)
+      }
+    }
+    calcCoupons()
+    return () => {
+      cancelled = true
+    }
+  }, [items, user])
 
   useEffect(() => {
     if (authLoading || !ready) return
@@ -149,7 +207,10 @@ export function CartProvider({ children }) {
     return subtotal >= 50 ? 0 : 5.99
   }, [subtotal])
   const tax = useMemo(() => +(subtotal * 0.08).toFixed(2), [subtotal])
-  const total = useMemo(() => +(subtotal + shipping + tax).toFixed(2), [subtotal, shipping, tax])
+  const total = useMemo(
+    () => Math.max(0, +(subtotal + shipping + tax - couponSavings).toFixed(2)),
+    [subtotal, shipping, tax, couponSavings]
+  )
 
   const value = {
     items,
@@ -157,6 +218,8 @@ export function CartProvider({ children }) {
     subtotal: +subtotal.toFixed(2),
     shipping: +shipping.toFixed(2),
     tax,
+    couponSavings,
+    appliedCoupons,
     total,
     ready,
     addItem,

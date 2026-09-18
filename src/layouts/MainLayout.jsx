@@ -1,6 +1,5 @@
 ﻿import { Outlet } from 'react-router-dom'
-import Header from '../components/Header'
-import CategoryNav from '../components/CategoryNav'
+import Header from '../components/header/Header'
 import Footer from '../components/Footer'
 
 export default function MainLayout() {
@@ -13,7 +12,6 @@ export default function MainLayout() {
         Skip to main content
       </a>
       <Header />
-      <CategoryNav />
       <main
         id="main-content"
         className="flex-1 max-w-[1500px] w-full mx-auto px-3 sm:px-4 py-6"

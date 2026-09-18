@@ -1,9 +1,27 @@
-﻿import { Link } from 'react-router-dom'
+﻿import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Rating from './Rating'
 import WishlistButton from './WishlistButton'
+import { useCoupons } from '../context/CouponsContext'
+import { getCouponsForProduct, computeDiscount } from '../services/couponService'
 
 export default function ProductCard({ product }) {
   if (!product) return null
+
+  const [coupon, setCoupon] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getCouponsForProduct(product.id)
+      .then((list) => {
+        if (!cancelled) setCoupon(list[0] || null)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [product.id])
+
   const hasDiscount = product.old_price && Number(product.old_price) > Number(product.price)
   const discountPct = hasDiscount
     ? Math.round((1 - Number(product.price) / Number(product.old_price)) * 100)
@@ -18,7 +36,15 @@ export default function ProductCard({ product }) {
         <WishlistButton product={product} />
       </div>
 
-      <div className="aspect-square bg-gray-50 rounded mb-3 overflow-hidden flex items-center justify-center">
+      <div className="aspect-square bg-gray-50 rounded mb-3 overflow-hidden flex items-center justify-center relative">
+        {coupon && (
+          <div className="absolute top-4 left-4 z-10 bg-[#232f3e] text-white text-[10px] font-bold px-2 py-0.5 rounded">
+            {coupon.discount_type === 'percentage'
+              ? `${Number(coupon.discount_value)}% coupon`
+              : `$${Number(coupon.discount_value)} coupon`}
+          </div>
+        )}
+
         {product.image_url ? (
           <img
             src={product.image_url}
