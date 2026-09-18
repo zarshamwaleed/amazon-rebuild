@@ -8,6 +8,8 @@ import { WishlistProvider } from './context/WishlistContext'
 import { CouponsProvider } from './context/CouponsContext'
 import SellerInventory from './pages/seller/SellerInventory'
 import SellerFulfillment from './pages/seller/SellerFulfillment'
+import SellerPricing from './pages/seller/SellerPricing'
+import SellerAutomatePricing from './pages/seller/SellerAutomatePricing'
 
 import SellerOrders from './pages/seller/SellerOrders'
 import SellerOrderDetail from './pages/seller/SellerOrderDetail'
@@ -90,8 +92,8 @@ export default function App() {
   <Route path="orders/returns" element={<SellerPlaceholder title="Returns" />} />
   <Route path="orders/:id" element={<SellerOrderDetail />} />
   <Route path="fulfillment" element={<SellerFulfillment />} />
-  <Route path="pricing" element={<SellerPlaceholder title="Manage Pricing" />} />
-  <Route path="pricing/automate" element={<SellerPlaceholder title="Automate Pricing" />} />
+  <Route path="pricing" element={<SellerPricing />} />
+<Route path="pricing/automate" element={<SellerAutomatePricing />} />
   <Route path="advertising" element={<SellerPlaceholder title="Campaign Manager" />} />
   <Route path="store" element={<SellerPlaceholder title="Brand Store" />} />
   <Route path="growth" element={<SellerPlaceholder title="Growth" />} />

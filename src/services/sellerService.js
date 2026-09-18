@@ -475,3 +475,89 @@ export async function getSellerFulfillmentQueue(userId) {
 
   return buckets
 }
+
+/**
+ * Pricing view: seller products with min/max bounds + any active automation rule.
+ */
+export async function getSellerPricing(userId) {
+  const { data: products, error: pErr } = await supabase
+    .from('products')
+    .select('id, title, sku, price, min_price, max_price, featured_offer, stock, image_url')
+    .eq('seller_id', userId)
+    .order('title')
+  if (pErr) throw pErr
+
+  const { data: rules, error: rErr } = await supabase
+    .from('pricing_rules')
+    .select('*')
+    .eq('seller_id', userId)
+  if (rErr) throw rErr
+
+  const ruleByProduct = {}
+  for (const r of rules || []) ruleByProduct[r.product_id] = r
+
+  return (products || []).map((p) => ({
+    ...p,
+    rule: ruleByProduct[p.id] || null,
+  }))
+}
+
+/**
+ * Update pricing bounds + featured flag for a product.
+ */
+export async function updateProductPricing(userId, productId, updates) {
+  const clean = {}
+  if (updates.price !== undefined) clean.price = Number(updates.price) || 0
+  if (updates.min_price !== undefined)
+    clean.min_price = updates.min_price === '' ? null : Number(updates.min_price)
+  if (updates.max_price !== undefined)
+    clean.max_price = updates.max_price === '' ? null : Number(updates.max_price)
+  if (updates.featured_offer !== undefined) clean.featured_offer = updates.featured_offer
+
+  const { data, error } = await supabase
+    .from('products')
+    .update(clean)
+    .eq('id', productId)
+    .eq('seller_id', userId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Create or update an automation rule for a product.
+ */
+export async function upsertPricingRule(userId, rule) {
+  const { data, error } = await supabase
+    .from('pricing_rules')
+    .upsert(
+      {
+        seller_id: userId,
+        product_id: rule.product_id,
+        rule_type: rule.rule_type || 'undercut',
+        undercut_by: Number(rule.undercut_by) || 1,
+        min_price: rule.min_price === '' ? null : Number(rule.min_price),
+        max_price: rule.max_price === '' ? null : Number(rule.max_price),
+        status: rule.status || 'active',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'seller_id,product_id' }
+    )
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Deactivate a rule.
+ */
+export async function deactivatePricingRule(userId, ruleId) {
+  const { error } = await supabase
+    .from('pricing_rules')
+    .update({ status: 'inactive', updated_at: new Date().toISOString() })
+    .eq('id', ruleId)
+    .eq('seller_id', userId)
+  if (error) throw error
+}
