@@ -8,6 +8,7 @@ import { WishlistProvider } from './context/WishlistContext'
 import { CouponsProvider } from './context/CouponsContext'
 import SellerReports from './pages/seller/SellerReports'
 import SellerPayments from './pages/seller/SellerPayments'
+import SellerAccountHealth from './pages/seller/SellerAccountHealth'
 // Seller Central
 import SellerLayout from './components/seller/SellerLayout'
 import SellerDashboard from './pages/seller/SellerDashboard'
@@ -125,7 +126,7 @@ export default function App() {
                       <Route path="growth" element={<SellerPlaceholder title="Growth" />} />
                       <Route path="reports" element={<SellerReports />} />
                       <Route path="payments" element={<SellerPayments />} />
-                      <Route path="account-health" element={<SellerPlaceholder title="Account Health" />} />
+                      <Route path="account-health" element={<SellerAccountHealth />} />
                       <Route path="customers" element={<SellerPlaceholder title="Customers" />} />
                       <Route path="apps" element={<SellerPlaceholder title="Apps & Services" />} />
                       <Route path="settings" element={<SellerPlaceholder title="Settings" />} />
