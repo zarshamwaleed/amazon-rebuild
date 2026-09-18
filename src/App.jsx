@@ -8,6 +8,8 @@ import { WishlistProvider } from './context/WishlistContext'
 import { CouponsProvider } from './context/CouponsContext'
 import SellerReports from './pages/seller/SellerReports'
 import SellerPayments from './pages/seller/SellerPayments'
+import Appstore from './pages/seller/apps/Appstore'
+import AppDetail from './pages/seller/apps/AppDetail'
 import SellerAccountHealth from './pages/seller/SellerAccountHealth'
 import SellerNotifications from './pages/seller/SellerNotifications'
 import AppsLanding from './pages/seller/apps/AppsLanding'
@@ -103,6 +105,9 @@ export default function App() {
                       <Route path="help" element={<SellerSupport />} />
                       <Route path="notifications" element={<SellerNotifications />} />
                       <Route path="apps-services" element={<AppsLanding />} />
+
+                      <Route path="apps-services/appstore" element={<Appstore />} />
+<Route path="apps-services/app/:id" element={<AppDetail />} />
 
                       {/* Catalog / Products */}
                       <Route path="products" element={<SellerProducts />} />

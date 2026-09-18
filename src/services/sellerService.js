@@ -2128,3 +2128,57 @@ export async function getAllNotifications(userId) {
   return merged
 }
 
+/**
+ * Fetch all connected apps for this seller.
+ */
+export async function getConnectedApps(userId) {
+  const { data, error } = await supabase
+    .from('connected_apps')
+    .select('*')
+    .eq('seller_id', userId)
+    .eq('status', 'active')
+    .order('connected_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Connect an app (simulated OAuth grant).
+ */
+export async function connectApp(userId, app) {
+  const { data, error } = await supabase
+    .from('connected_apps')
+    .upsert(
+      {
+        seller_id: userId,
+        app_id: app.id,
+        app_name: app.name,
+        app_developer: app.developer,
+        app_category: app.category,
+        permissions: app.permissions || [],
+        status: 'active',
+        connected_at: new Date().toISOString(),
+        revoked_at: null,
+      },
+      { onConflict: 'seller_id,app_id' }
+    )
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Revoke access to an app.
+ */
+export async function revokeApp(userId, appId) {
+  const { error } = await supabase
+    .from('connected_apps')
+    .update({
+      status: 'revoked',
+      revoked_at: new Date().toISOString(),
+    })
+    .eq('seller_id', userId)
+    .eq('app_id', appId)
+  if (error) throw error
+}
