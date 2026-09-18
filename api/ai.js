@@ -1,37 +1,26 @@
-export const config = { runtime: 'edge' }
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
-export default async function handler(req) {
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  let body
-  try {
-    body = await req.json()
-  } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-
-  const { systemPrompt, userPrompt } = body || {}
+  const { systemPrompt, userPrompt } = req.body || {}
   if (!systemPrompt || !userPrompt) {
-    return new Response(JSON.stringify({ error: 'Missing systemPrompt or userPrompt' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return res.status(400).json({ error: 'Missing systemPrompt or userPrompt' })
   }
 
   const key = process.env.GROQ_API_KEY
   if (!key) {
-    return new Response(
-      JSON.stringify({ error: 'GROQ_API_KEY not configured on the server' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+    return res.status(500).json({
+      error: 'GROQ_API_KEY is not set. Add it to .env.local',
+    })
   }
 
   try {
@@ -55,21 +44,15 @@ export default async function handler(req) {
     const data = await r.json()
 
     if (!r.ok) {
-      return new Response(JSON.stringify({ error: data?.error?.message || 'Groq request failed' }), {
-        status: r.status,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      const msg =
+        data?.error?.message ||
+        (typeof data?.error === 'string' ? data.error : 'Groq request failed')
+      return res.status(r.status).json({ error: msg })
     }
 
     const content = data?.choices?.[0]?.message?.content || ''
-    return new Response(JSON.stringify({ content }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return res.status(200).json({ content })
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return res.status(500).json({ error: err.message || 'Unknown error' })
   }
 }
