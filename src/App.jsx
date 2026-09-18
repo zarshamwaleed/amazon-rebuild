@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { WishlistProvider } from './context/WishlistContext'
 import { CouponsProvider } from './context/CouponsContext'
+import SellerHome from './pages/sell/SellerHome'
 
 // Sell on Amazon — separate layout
 import SellLayout from './components/sell/SellLayout'
@@ -66,19 +67,9 @@ export default function App() {
                       <Route path="register" element={<SellRegister />} />
                     </Route>
 
-                    {/* ============ Prime Video — own layout, no Amazon header ============ */}
-                    <Route path="/prime-video" element={<PVLayout />}>
-                      <Route index element={<PVHome />} />
-                      <Route path="movies" element={<PVMovies />} />
-                      <Route path="tv" element={<PVTV />} />
-                      <Route path="my-stuff" element={<PVMyStuff />} />
-                      <Route path="search" element={<PVSearch />} />
-                      <Route path="watch/:id" element={<PVWatch />} />
-                      <Route path="sports" element={<PVSimple />} />
-                      <Route path="live" element={<PVSimple />} />
-                      <Route path="subscriptions" element={<PVSimple />} />
-                      <Route path="categories" element={<PVSimple />} />
-                    </Route>
+                    <Route path="/seller" element={<SellerHome />} />
+
+                   
 
                     {/* ============ Amazon storefront — main layout ============ */}
                     <Route element={<MainLayout />}>
@@ -118,6 +109,21 @@ export default function App() {
                       <Route path="/investor-relations" element={<InfoPage />} />
                       <Route path="/sustainability" element={<InfoPage />} />
                       <Route path="/accessibility" element={<InfoPage />} />
+
+
+                      {/* ============ Prime Video — own layout, no Amazon header ============ */}
+<Route path="/prime-video" element={<PVLayout />}>
+  <Route index element={<PVHome />} />
+  <Route path="movies" element={<PVMovies />} />
+  <Route path="tv" element={<PVTV />} />
+  <Route path="my-stuff" element={<PVMyStuff />} />
+  <Route path="search" element={<PVSearch />} />
+  <Route path="watch/:id" element={<PVWatch />} />
+  <Route path="sports" element={<PVSimple />} />
+  <Route path="live" element={<PVSimple />} />
+  <Route path="subscriptions" element={<PVSimple />} />
+  <Route path="categories" element={<PVSimple />} />
+</Route>
 
                       <Route path="*" element={<NotFound />} />
                     </Route>
