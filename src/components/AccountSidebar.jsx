@@ -1,5 +1,5 @@
 ﻿import { NavLink } from 'react-router-dom'
-import { User, Package, Heart, LogOut } from 'lucide-react'
+import { User, Package, Heart, LogOut, Mail } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
@@ -7,6 +7,7 @@ const links = [
   { to: '/account', label: 'Profile', icon: User, end: true },
   { to: '/orders', label: 'Your Orders', icon: Package },
   { to: '/wishlist', label: 'Your Wishlist', icon: Heart },
+  { to: '/messages', label: 'Your Messages', icon: Mail },
 ]
 
 export default function AccountSidebar() {

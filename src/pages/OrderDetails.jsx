@@ -5,6 +5,10 @@ import { getOrderById } from '../services/orderService'
 import EmptyState from '../components/EmptyState'
 import OrderStatusBadge from '../components/OrderStatusBadge'
 import OrderStatusTimeline from '../components/OrderStatusTimeline'
+import { MessageCircle } from 'lucide-react'
+import { useToast } from '../context/ToastContext'
+import { sendCustomerMessage } from '../services/messageService'
+import { supabase } from '../services/supabase'
 
 function formatDate(iso, withTime = false) {
   const d = new Date(iso)
@@ -18,8 +22,11 @@ function formatDate(iso, withTime = false) {
 
 export default function OrderDetails() {
   const { id } = useParams()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const { pushToast } = useToast()
   const [order, setOrder] = useState(null)
+  const [showContact, setShowContact] = useState(false)
+  const [contactSeller, setContactSeller] = useState(null) // { sellerId, productTitle }
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -120,6 +127,25 @@ export default function OrderDetails() {
                       {it.product_title}
                     </Link>
                     <div className="text-xs text-gray-500 mt-0.5">Qty: {it.quantity}</div>
+                    <button
+                      onClick={async () => {
+                        // Look up the seller for this product
+                        const { data: prod } = await supabase
+                          .from('products')
+                          .select('seller_id')
+                          .eq('id', it.product_id)
+                          .maybeSingle()
+                        if (!prod?.seller_id) {
+                          pushToast('This product has no seller to contact', { type: 'info' })
+                          return
+                        }
+                        setContactSeller({ sellerId: prod.seller_id, productTitle: it.product_title })
+                        setShowContact(true)
+                      }}
+                      className="text-xs text-[#007185] hover:underline flex items-center gap-1 mt-1"
+                    >
+                      <MessageCircle className="w-3 h-3" /> Contact seller
+                    </button>
                   </div>
                   <div className="text-sm font-medium text-gray-900">
                     ${(Number(it.price) * it.quantity).toFixed(2)}
@@ -198,6 +224,129 @@ export default function OrderDetails() {
             Continue shopping
           </Link>
         </div>
+      </div>
+
+      {showContact && contactSeller && (
+        <ContactSellerModal
+          sellerId={contactSeller.sellerId}
+          orderId={order.id}
+          productTitle={contactSeller.productTitle}
+          customerName={profile?.full_name || 'Customer'}
+          customerEmail={profile?.email || user?.email}
+          onClose={() => setShowContact(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+function ContactSellerModal({
+  sellerId,
+  orderId,
+  productTitle,
+  customerName,
+  customerEmail,
+  onClose,
+}) {
+  const { pushToast } = useToast()
+  const [subject, setSubject] = useState(
+    `Question about ${productTitle || 'your order'}`
+  )
+  const [body, setBody] = useState('')
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!body.trim()) return setError('Write a message before sending')
+    setSending(true)
+    setError(null)
+    try {
+      await sendCustomerMessage({
+        sellerId,
+        orderId,
+        customerName,
+        customerEmail,
+        subject: subject.trim(),
+        body: body.trim(),
+      })
+      pushToast('Message sent to seller', { type: 'success' })
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Could not send message')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg">
+        <div className="border-b px-5 py-3 flex items-center justify-between">
+          <h2 className="font-bold text-gray-900">Contact seller</h2>
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-gray-100 rounded"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="bg-gray-50 border border-gray-200 rounded p-3 text-xs text-gray-600">
+            Sending about: <strong>{productTitle}</strong>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-1">
+              Subject
+            </label>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-1">
+              Message
+            </label>
+            <textarea
+              rows={5}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Hi, I have a question about my order…"
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+
+          {error && (
+            <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-3 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={sending}
+              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded disabled:opacity-60 transition"
+            >
+              {sending ? 'Sending…' : 'Send message'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

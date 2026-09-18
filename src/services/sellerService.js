@@ -1622,3 +1622,108 @@ function shorten(s, n = 80) {
   if (!s) return ''
   return s.length <= n ? s : s.slice(0, n) + '…'
 }
+
+/**
+ * Fetch all messages for the seller, grouped into threads.
+ * Returns array of threads sorted by most-recent activity.
+ */
+export async function getSellerMessageThreads(userId) {
+  const { data, error } = await supabase
+    .from('seller_messages')
+    .select('*')
+    .eq('seller_id', userId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+
+  const byThread = {}
+  for (const m of data || []) {
+    if (!byThread[m.thread_id]) byThread[m.thread_id] = []
+    byThread[m.thread_id].push(m)
+  }
+
+  const threads = Object.entries(byThread).map(([threadId, messages]) => {
+    const last = messages[messages.length - 1]
+    const hasUnread = messages.some(
+      (m) => m.direction === 'inbound' && m.status === 'unread'
+    )
+    const replied = messages.some((m) => m.direction === 'outbound')
+    return {
+      thread_id: threadId,
+      messages,
+      subject: messages[0].subject || 'No subject',
+      customer_name: messages[0].customer_name || 'Customer',
+      customer_email: messages[0].customer_email,
+      order_id: messages.find((m) => m.order_id)?.order_id || null,
+      last_message_at: last.created_at,
+      last_preview: (last.body || '').slice(0, 80),
+      status: hasUnread ? 'unread' : replied ? 'replied' : 'read',
+      message_count: messages.length,
+    }
+  })
+
+  threads.sort(
+    (a, b) => new Date(b.last_message_at) - new Date(a.last_message_at)
+  )
+  return threads
+}
+
+/**
+ * Send a seller reply. Creates an outbound message in the same thread,
+ * and marks inbound messages in the thread as 'replied'.
+ */
+export async function sendSellerReply(userId, threadId, body) {
+  const { data: thread } = await supabase
+    .from('seller_messages')
+    .select('subject, customer_name, customer_email, order_id')
+    .eq('thread_id', threadId)
+    .eq('seller_id', userId)
+    .limit(1)
+    .maybeSingle()
+
+  const subject = thread?.subject
+    ? thread.subject.startsWith('Re:')
+      ? thread.subject
+      : 'Re: ' + thread.subject
+    : 'Re: Your inquiry'
+
+  const { data, error } = await supabase
+    .from('seller_messages')
+    .insert({
+      seller_id: userId,
+      thread_id: threadId,
+      order_id: thread?.order_id || null,
+      customer_name: thread?.customer_name || null,
+      customer_email: thread?.customer_email || null,
+      subject,
+      body,
+      direction: 'outbound',
+      status: 'replied',
+    })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+
+  // Mark inbound messages in this thread as replied
+  await supabase
+    .from('seller_messages')
+    .update({ status: 'replied' })
+    .eq('thread_id', threadId)
+    .eq('seller_id', userId)
+    .eq('direction', 'inbound')
+
+  return data
+}
+
+/**
+ * Mark all inbound messages in a thread as read.
+ */
+export async function markThreadRead(userId, threadId) {
+  const { error } = await supabase
+    .from('seller_messages')
+    .update({ status: 'read' })
+    .eq('thread_id', threadId)
+    .eq('seller_id', userId)
+    .eq('direction', 'inbound')
+    .eq('status', 'unread')
+  if (error) throw error
+}

@@ -71,12 +71,13 @@ const NAV = [
     icon: Activity,
     children: [{ label: 'Account Health', to: '/seller/account-health' }],
   },
-    {
+     {
     label: 'Customers',
     icon: Users,
     children: [
       { label: 'Customer Insights', to: '/seller/customers' },
       { label: 'Reviews', to: '/seller/reviews' },
+      { label: 'Messages', to: '/seller/messages' },
     ],
   },
   { label: 'Apps & Services', to: '/seller/apps', icon: Grid3x3 },

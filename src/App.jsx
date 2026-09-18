@@ -10,6 +10,8 @@ import SellerReports from './pages/seller/SellerReports'
 import SellerPayments from './pages/seller/SellerPayments'
 import SellerAccountHealth from './pages/seller/SellerAccountHealth'
 import SellerReviews from './pages/seller/SellerReviews'
+import SellerMessages from './pages/seller/SellerMessages'
+import CustomerMessages from './pages/CustomerMessages'
 // Seller Central
 import SellerLayout from './components/seller/SellerLayout'
 import SellerDashboard from './pages/seller/SellerDashboard'
@@ -91,6 +93,7 @@ export default function App() {
                     {/* ============ Seller Central ============ */}
                     <Route path="/seller" element={<SellerLayout />}>
                       <Route index element={<SellerDashboard />} />
+                      <Route path="messages" element={<SellerMessages />} />
 
                       {/* Catalog / Products */}
                       <Route path="products" element={<SellerProducts />} />
@@ -152,6 +155,10 @@ export default function App() {
 
                       <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
                       <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+                      <Route
+  path="/messages"
+  element={<ProtectedRoute><CustomerMessages /></ProtectedRoute>}
+/>
                       <Route path="/orders/:id" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
 
                       <Route path="/wishlist" element={<Wishlist />} />
