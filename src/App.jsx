@@ -12,6 +12,7 @@ import SellerAccountHealth from './pages/seller/SellerAccountHealth'
 import SellerReviews from './pages/seller/SellerReviews'
 import SellerMessages from './pages/seller/SellerMessages'
 import CustomerMessages from './pages/CustomerMessages'
+import SellerSupport from './pages/seller/SellerSupport'
 // Seller Central
 import SellerLayout from './components/seller/SellerLayout'
 import SellerDashboard from './pages/seller/SellerDashboard'
@@ -94,6 +95,7 @@ export default function App() {
                     <Route path="/seller" element={<SellerLayout />}>
                       <Route index element={<SellerDashboard />} />
                       <Route path="messages" element={<SellerMessages />} />
+                      <Route path="help" element={<SellerSupport />} />
 
                       {/* Catalog / Products */}
                       <Route path="products" element={<SellerProducts />} />

@@ -1727,3 +1727,67 @@ export async function markThreadRead(userId, threadId) {
     .eq('status', 'unread')
   if (error) throw error
 }
+
+/**
+ * Fetch all support cases for this seller.
+ */
+export async function getSupportCases(userId) {
+  const { data, error } = await supabase
+    .from('support_cases')
+    .select('*')
+    .eq('seller_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Create a new support case.
+ */
+export async function createSupportCase(userId, payload) {
+  const { data, error } = await supabase
+    .from('support_cases')
+    .insert({
+      seller_id: userId,
+      order_id: payload.order_id || null,
+      category: payload.category,
+      subject: payload.subject,
+      message: payload.message,
+      status: 'open',
+    })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+
+  // Simulated auto-response — schedule a canned reply
+  setTimeout(() => {
+    supabase
+      .from('support_cases')
+      .update({
+        status: 'pending',
+        response:
+          'Thank you for contacting Amazon Rebuild Seller Support. ' +
+          'A specialist will review your case and respond within 24 hours. ' +
+          'Your case reference is #' +
+          data.id.slice(0, 8) +
+          '.',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', data.id)
+      .then(() => {})
+  }, 6000)
+
+  return data
+}
+
+/**
+ * Close a support case.
+ */
+export async function closeSupportCase(userId, caseId) {
+  const { error } = await supabase
+    .from('support_cases')
+    .update({ status: 'closed', updated_at: new Date().toISOString() })
+    .eq('id', caseId)
+    .eq('seller_id', userId)
+  if (error) throw error
+}

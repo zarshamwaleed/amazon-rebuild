@@ -91,9 +91,14 @@ export default function SellerHeader({ onToggleSidebar, sidebarOpen }) {
 >
   <Mail className="w-5 h-5" />
 </Link>
-          <button className="p-2 rounded hover:bg-white/10" aria-label="Help" title="Help">
-            <HelpCircle className="w-5 h-5" />
-          </button>
+          <Link
+  to="/seller/help"
+  className="p-2 rounded hover:bg-white/10"
+  aria-label="Help"
+  title="Help"
+>
+  <HelpCircle className="w-5 h-5" />
+</Link>
           <button className="p-2 rounded hover:bg-white/10" aria-label="Settings" title="Settings">
             <SettingsIcon className="w-5 h-5" />
           </button>
