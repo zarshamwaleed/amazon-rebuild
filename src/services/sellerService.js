@@ -1865,3 +1865,45 @@ export async function removeSellerUser(userId, memberId) {
     .eq('seller_id', userId)
   if (error) throw error
 }
+
+/**
+ * Role permission templates.
+ */
+export const ROLE_TEMPLATES = {
+  Administrator: {
+    products: true,
+    inventory: true,
+    orders: true,
+    advertising: true,
+    reports: true,
+    payments: true,
+    settings: true,
+  },
+  Manager: {
+    products: true,
+    inventory: true,
+    orders: true,
+    advertising: true,
+    reports: true,
+    payments: false,
+    settings: false,
+  },
+  Employee: {
+    products: true,
+    inventory: true,
+    orders: true,
+    advertising: false,
+    reports: false,
+    payments: false,
+    settings: false,
+  },
+  Analyst: {
+    products: false,
+    inventory: false,
+    orders: false,
+    advertising: false,
+    reports: true,
+    payments: false,
+    settings: false,
+  },
+}
