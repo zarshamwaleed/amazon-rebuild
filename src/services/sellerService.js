@@ -561,3 +561,91 @@ export async function deactivatePricingRule(userId, ruleId) {
     .eq('seller_id', userId)
   if (error) throw error
 }
+
+/**
+ * Fetch all coupons created by this seller, grouped by lifecycle state.
+ * Returns { active: [...], scheduled: [...], expired: [...] }
+ */
+export async function getSellerCoupons(userId) {
+  const { data, error } = await supabase
+    .from('coupons')
+    .select(
+      '*, coupon_products(product_id, products(id, title, price, image_url, sku))'
+    )
+    .eq('seller_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+
+  const now = new Date()
+  const buckets = { active: [], scheduled: [], expired: [] }
+
+  for (const c of data || []) {
+    const start = c.start_date ? new Date(c.start_date) : null
+    const end = c.end_date ? new Date(c.end_date) : null
+    const enriched = {
+      ...c,
+      products: (c.coupon_products || []).map((cp) => cp.products).filter(Boolean),
+    }
+    if (end && end < now) buckets.expired.push(enriched)
+    else if (start && start > now) buckets.scheduled.push(enriched)
+    else buckets.active.push(enriched)
+  }
+
+  return buckets
+}
+
+/**
+ * Create a seller coupon linked to one product.
+ */
+export async function createSellerCoupon(userId, payload) {
+  const { title, description, discount_type, discount_value, budget, start_date, end_date, product_id } = payload
+
+  const { data: coupon, error: cErr } = await supabase
+    .from('coupons')
+    .insert({
+      seller_id: userId,
+      title,
+      description: description || '',
+      discount_type,
+      discount_value: Number(discount_value),
+      minimum_purchase: 0,
+      budget: budget ? Number(budget) : null,
+      start_date: start_date || new Date().toISOString(),
+      end_date,
+      status: 'active',
+    })
+    .select()
+    .maybeSingle()
+  if (cErr) throw cErr
+
+  const { error: cpErr } = await supabase
+    .from('coupon_products')
+    .insert({ coupon_id: coupon.id, product_id })
+  if (cpErr) throw cpErr
+
+  return coupon
+}
+
+/**
+ * Delete a seller coupon (cascade removes coupon_products + user_coupons).
+ */
+export async function deleteSellerCoupon(userId, couponId) {
+  const { error } = await supabase
+    .from('coupons')
+    .delete()
+    .eq('id', couponId)
+    .eq('seller_id', userId)
+  if (error) throw error
+}
+
+/**
+ * Toggle a coupon's status between active and inactive.
+ */
+export async function toggleCouponStatus(userId, couponId, status) {
+  const { error } = await supabase
+    .from('coupons')
+    .update({ status })
+    .eq('id', couponId)
+    .eq('seller_id', userId)
+  if (error) throw error
+}

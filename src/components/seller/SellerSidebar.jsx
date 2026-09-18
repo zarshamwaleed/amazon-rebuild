@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronRight,
   Truck,
+  Tag,
 } from 'lucide-react'
 
 const NAV = [
@@ -65,7 +66,10 @@ const NAV = [
   {
     label: 'Advertising',
     icon: Megaphone,
-    children: [{ label: 'Campaign Manager', to: '/seller/advertising' }],
+    children: [
+      { label: 'Campaign Manager', to: '/seller/advertising' },
+      { label: 'Coupons', to: '/seller/coupons' },
+    ],
   },
   {
     label: 'Stores',
