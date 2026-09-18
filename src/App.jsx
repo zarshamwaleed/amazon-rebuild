@@ -5,9 +5,11 @@ import { ToastProvider } from './context/ToastContext'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import SellerGrowthOpportunity from './pages/seller/SellerGrowthOpportunity'
+import MyReturns from './pages/MyReturns'
 import { WishlistProvider } from './context/WishlistContext'
 import SellerReturnDetail from './pages/seller/SellerReturnDetail'
 import SellerReturns from './pages/seller/SellerReturns'
+import SellerCustomers from './pages/seller/SellerCustomers'
 import { CouponsProvider } from './context/CouponsContext'
 import SellerReports from './pages/seller/SellerReports'
 import SellerPayments from './pages/seller/SellerPayments'
@@ -163,7 +165,7 @@ export default function App() {
                       <Route path="reports" element={<SellerReports />} />
                       <Route path="payments" element={<SellerPayments />} />
                       <Route path="account-health" element={<SellerAccountHealth />} />
-                      <Route path="customers" element={<SellerPlaceholder title="Customers" />} />
+                      <Route path="customers" element={<SellerCustomers />} />
                       <Route path="apps" element={<SellerPlaceholder title="Apps & Services" />} />
                       <Route path="settings/users" element={<SellerUsers />} />
                       <Route path="settings" element={<SellerSettings />} />
@@ -187,6 +189,10 @@ export default function App() {
                       <Route path="/register" element={<Register />} />
 
                       <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+                      <Route
+  path="/returns"
+  element={<ProtectedRoute><MyReturns /></ProtectedRoute>}
+/>
                       <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
                       <Route
   path="/messages"

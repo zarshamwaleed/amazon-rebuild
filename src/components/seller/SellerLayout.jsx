@@ -37,7 +37,7 @@ export default function SellerLayout() {
           paddingLeft: sidebarOpen ? SIDEBAR_WIDTH : 0,
         }}
       >
-        <div className="px-8 pb-6 -mt-6">
+        <div className="px-8 pb-6 mt-6">
 
           <Outlet />
         </div>

@@ -61,7 +61,7 @@ export default function SellerHeader({ onToggleSidebar, sidebarOpen }) {
   const recent = notifications.slice(0, 6)
 
   return (
-    <header className="sticky top-0 z-40 bg-[#232f3e] text-white h-[52px]">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-[#232f3e] text-white h-[52px]">
       <div className="flex items-center gap-3 px-3 py-2.5 h-full">
         {/* Sidebar toggle */}
         <button

@@ -2907,3 +2907,170 @@ export async function getReturnsAnalytics(userId) {
     months,
   }
 }
+
+/**
+ * Aggregate customer insights for the seller.
+ * Groups by customer (identified by shipping name + email if available,
+ * otherwise by order id).
+ */
+export async function getSellerCustomerInsights(userId) {
+  // 1. Seller's products
+  const { data: products, error: pErr } = await supabase
+    .from('products')
+    .select('id')
+    .eq('seller_id', userId)
+  if (pErr) throw pErr
+
+  const productIds = (products || []).map((p) => p.id)
+  if (productIds.length === 0) {
+    return emptyCustomerInsights()
+  }
+
+  // 2. Order items for these products
+  const { data: items, error: iErr } = await supabase
+    .from('order_items')
+    .select('order_id, product_id, price, quantity')
+    .in('product_id', productIds)
+  if (iErr) throw iErr
+
+  const orderIds = [...new Set((items || []).map((i) => i.order_id))]
+  if (orderIds.length === 0) {
+    return emptyCustomerInsights()
+  }
+
+  // 3. Parent orders + addresses
+  const { data: orders, error: oErr } = await supabase
+    .from('orders')
+    .select('id, created_at, order_status, total, user_id, addresses(*)')
+    .in('id', orderIds)
+    .order('created_at', { ascending: false })
+  if (oErr) throw oErr
+
+  const ordersById = Object.fromEntries((orders || []).map((o) => [o.id, o]))
+  const itemsByOrder = {}
+  for (const it of items || []) {
+    if (!itemsByOrder[it.order_id]) itemsByOrder[it.order_id] = []
+    itemsByOrder[it.order_id].push(it)
+  }
+
+  // 4. Group into customers
+  // Key = address full_name + city + postal_code (fallback to order_id if no address)
+  const customers = new Map()
+
+  for (const order of orders || []) {
+    if (['cancelled', 'returned'].includes((order.order_status || '').toLowerCase()))
+      continue
+
+    const addr = order.addresses || {}
+    const key = addr.full_name
+      ? `${addr.full_name}|${addr.city || ''}|${addr.postal_code || ''}`
+      : `order-${order.id}`
+
+    const sellerSubtotal = (itemsByOrder[order.id] || []).reduce(
+      (s, i) => s + Number(i.price) * i.quantity,
+      0
+    )
+    const sellerUnits = (itemsByOrder[order.id] || []).reduce(
+      (s, i) => s + i.quantity,
+      0
+    )
+
+    if (!customers.has(key)) {
+      customers.set(key, {
+        key,
+        name: addr.full_name || 'Unknown customer',
+        email: addr.phone || null,
+        city: addr.city || null,
+        country: addr.country || null,
+        user_id: order.user_id || null,
+        orders: 0,
+        units: 0,
+        revenue: 0,
+        firstOrderAt: order.created_at,
+        lastOrderAt: order.created_at,
+        orderIds: [],
+      })
+    }
+
+    const c = customers.get(key)
+    c.orders += 1
+    c.units += sellerUnits
+    c.revenue += sellerSubtotal
+    c.orderIds.push(order.id)
+    if (new Date(order.created_at) < new Date(c.firstOrderAt))
+      c.firstOrderAt = order.created_at
+    if (new Date(order.created_at) > new Date(c.lastOrderAt))
+      c.lastOrderAt = order.created_at
+  }
+
+  const customerList = [...customers.values()]
+  const totalCustomers = customerList.length
+  const totalRevenue = customerList.reduce((s, c) => s + c.revenue, 0)
+  const totalOrders = customerList.reduce((s, c) => s + c.orders, 0)
+  const repeatBuyers = customerList.filter((c) => c.orders > 1).length
+  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+  const avgCustomerValue = totalCustomers > 0 ? totalRevenue / totalCustomers : 0
+
+  // Top customers by revenue
+  const topCustomers = [...customerList]
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 8)
+
+  // Distribution by order count
+  const distribution = {
+    one: customerList.filter((c) => c.orders === 1).length,
+    twoToFive: customerList.filter((c) => c.orders >= 2 && c.orders <= 5).length,
+    sixToTen: customerList.filter((c) => c.orders >= 6 && c.orders <= 10).length,
+    elevenPlus: customerList.filter((c) => c.orders >= 11).length,
+  }
+
+  // Distribution by city (top 8)
+  const cityCounts = {}
+  for (const c of customerList) {
+    if (!c.city) continue
+    cityCounts[c.city] = (cityCounts[c.city] || 0) + 1
+  }
+  const topCities = Object.entries(cityCounts)
+    .map(([city, count]) => ({ city, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8)
+
+  // Recent first-time customers (last 10)
+  const recentCustomers = [...customerList]
+    .sort((a, b) => new Date(b.firstOrderAt) - new Date(a.firstOrderAt))
+    .slice(0, 10)
+
+  return {
+    metrics: {
+      totalCustomers,
+      repeatBuyers,
+      repeatRate: totalCustomers > 0 ? (repeatBuyers / totalCustomers) * 100 : 0,
+      avgOrderValue: +avgOrderValue.toFixed(2),
+      avgCustomerValue: +avgCustomerValue.toFixed(2),
+      totalRevenue: +totalRevenue.toFixed(2),
+      totalOrders,
+    },
+    topCustomers,
+    distribution,
+    topCities,
+    recentCustomers,
+  }
+}
+
+function emptyCustomerInsights() {
+  return {
+    metrics: {
+      totalCustomers: 0,
+      repeatBuyers: 0,
+      repeatRate: 0,
+      avgOrderValue: 0,
+      avgCustomerValue: 0,
+      totalRevenue: 0,
+      totalOrders: 0,
+    },
+    topCustomers: [],
+    distribution: { one: 0, twoToFive: 0, sixToTen: 0, elevenPlus: 0 },
+    topCities: [],
+    recentCustomers: [],
+  }
+}
