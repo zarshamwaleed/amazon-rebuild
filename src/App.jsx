@@ -9,6 +9,7 @@ import { CouponsProvider } from './context/CouponsContext'
 import SellerReports from './pages/seller/SellerReports'
 import SellerPayments from './pages/seller/SellerPayments'
 import SellerAccountHealth from './pages/seller/SellerAccountHealth'
+import SellerReviews from './pages/seller/SellerReviews'
 // Seller Central
 import SellerLayout from './components/seller/SellerLayout'
 import SellerDashboard from './pages/seller/SellerDashboard'
@@ -116,6 +117,7 @@ export default function App() {
                       <Route path="advertising" element={<SellerAdvertising />} />
                       <Route path="coupons" element={<SellerCoupons />} />
                       <Route path="deals" element={<SellerDeals />} />
+                      <Route path="reviews" element={<SellerReviews />} />
                       
 
                       {/* Brand Store */}

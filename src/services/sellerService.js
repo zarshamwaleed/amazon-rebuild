@@ -1528,3 +1528,97 @@ function buildHealthSeries(orders, days) {
   }
   return out
 }
+
+/**
+ * Fetch all reviews across the seller's products.
+ */
+export async function getSellerReviews(userId) {
+  const { data: products, error: pErr } = await supabase
+    .from('products')
+    .select('id, title, image_url, rating, review_count')
+    .eq('seller_id', userId)
+  if (pErr) throw pErr
+
+  const productIds = (products || []).map((p) => p.id)
+  if (productIds.length === 0) return []
+
+  const { data: reviews, error: rErr } = await supabase
+    .from('reviews')
+    .select('*, products(id, title, image_url)')
+    .in('product_id', productIds)
+    .order('created_at', { ascending: false })
+  if (rErr) throw rErr
+
+  return (reviews || []).map((r) => ({
+    ...r,
+    product: r.products,
+  }))
+}
+
+/**
+ * Deterministic fallback review analysis when AI is unavailable.
+ * Uses simple keyword detection to bucket feedback.
+ */
+export function localReviewAnalysis(reviews) {
+  const positives = []
+  const negatives = []
+  const complaints = []
+  const requests = []
+
+  const positiveWords = ['great', 'good', 'excellent', 'love', 'amazing', 'perfect', 'quality', 'recommend', 'happy', 'works', 'fast', 'comfortable']
+  const negativeWords = ['bad', 'poor', 'terrible', 'broken', 'damaged', 'slow', 'disappoint', 'cheap', 'defect', 'returned', 'refund', 'waste']
+  const complaintWords = ['packaging', 'shipping', 'arrived', 'battery', 'sound', 'size', 'fit', 'color', 'late']
+  const requestWords = ['wish', 'should', 'would be', 'could be', 'hope', 'need', 'want']
+
+  for (const r of reviews) {
+    const text = ((r.title || '') + ' ' + (r.body || '')).toLowerCase()
+    const star = Number(r.rating)
+
+    if (star >= 4) {
+      for (const w of positiveWords) {
+        if (text.includes(w)) {
+          positives.push(`${capitalize(w)} — "${shorten(r.body)}"`)
+          break
+        }
+      }
+    }
+    if (star <= 2) {
+      for (const w of negativeWords) {
+        if (text.includes(w)) {
+          negatives.push(`${capitalize(w)} — "${shorten(r.body)}"`)
+          break
+        }
+      }
+    }
+    for (const w of complaintWords) {
+      if (text.includes(w)) {
+        complaints.push(`${capitalize(w)}: "${shorten(r.body)}"`)
+        break
+      }
+    }
+    for (const w of requestWords) {
+      const idx = text.indexOf(w)
+      if (idx !== -1) {
+        requests.push(`"${shorten(r.body)}"`)
+        break
+      }
+    }
+  }
+
+  // Deduplicate + cap at 4 each
+  return {
+    positiveThemes: [...new Set(positives)].slice(0, 4),
+    negativeThemes: [...new Set(negatives)].slice(0, 4),
+    commonComplaints: [...new Set(complaints)].slice(0, 4),
+    customerRequests: [...new Set(requests)].slice(0, 4),
+    aiUsed: false,
+  }
+}
+
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+function shorten(s, n = 80) {
+  if (!s) return ''
+  return s.length <= n ? s : s.slice(0, n) + '…'
+}

@@ -4,7 +4,7 @@ import {
   Home, Package, Box, ShoppingCart, DollarSign, Megaphone, Store,
   TrendingUp, FileText, CreditCard, Activity, Users, Grid3x3,
   Settings as SettingsIcon, ChevronDown, ChevronRight, Truck, Tag,
-  TrendingDown,
+  TrendingDown, Star,
 } from 'lucide-react'
 
 const NAV = [
@@ -71,7 +71,14 @@ const NAV = [
     icon: Activity,
     children: [{ label: 'Account Health', to: '/seller/account-health' }],
   },
-  { label: 'Customers', to: '/seller/customers', icon: Users },
+    {
+    label: 'Customers',
+    icon: Users,
+    children: [
+      { label: 'Customer Insights', to: '/seller/customers' },
+      { label: 'Reviews', to: '/seller/reviews' },
+    ],
+  },
   { label: 'Apps & Services', to: '/seller/apps', icon: Grid3x3 },
   { label: 'Settings', to: '/seller/settings', icon: SettingsIcon },
 ]
