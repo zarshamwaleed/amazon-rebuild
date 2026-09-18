@@ -95,7 +95,7 @@ const NAV = [
       { label: 'Messages', to: '/seller/messages' },
     ],
   },
-  {
+ {
   label: 'Apps & Services',
   icon: Grid3x3,
   children: [

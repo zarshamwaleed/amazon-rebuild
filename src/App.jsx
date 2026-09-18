@@ -9,6 +9,7 @@ import { CouponsProvider } from './context/CouponsContext'
 import SellerReports from './pages/seller/SellerReports'
 import SellerPayments from './pages/seller/SellerPayments'
 import Providers from './pages/seller/apps/Providers'
+import AmazonTools from './pages/seller/apps/AmazonTools'
 import ManageApps from './pages/seller/apps/ManageApps'
 import Appstore from './pages/seller/apps/Appstore'
 import AppDetail from './pages/seller/apps/AppDetail'
@@ -113,6 +114,7 @@ export default function App() {
 
 <Route path="apps-services/providers" element={<Providers />} />
 <Route path="apps-services/manage" element={<ManageApps />} />
+<Route path="apps-services/tools" element={<AmazonTools />} />
 
                       {/* Catalog / Products */}
                       <Route path="products" element={<SellerProducts />} />
