@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import SellerGrowthOpportunity from './pages/seller/SellerGrowthOpportunity'
 import MyReturns from './pages/MyReturns'
+import RegistryDetail from './pages/RegistryDetail'
 import RegistryLanding from './pages/RegistryLanding'
 import CreateRegistry from './pages/CreateRegistry'
 import ManageRegistries from './pages/ManageRegistries'
@@ -214,15 +215,10 @@ export default function App() {
 
                       <Route path="/customer-service" element={<CustomerService />} />
                       <Route path="/gift-cards" element={<GiftCards />} />
-                      <Route path="/registry" element={<RegistryLanding />} />
-<Route
-  path="/registry/create"
-  element={<ProtectedRoute><CreateRegistry /></ProtectedRoute>}
-/>
-<Route
-  path="/registry/manage"
-  element={<ProtectedRoute><ManageRegistries /></ProtectedRoute>}
-/>
+      <Route path="/registry" element={<RegistryLanding />} />
+<Route path="/registry/create" element={<ProtectedRoute><CreateRegistry /></ProtectedRoute>} />
+<Route path="/registry/manage" element={<ProtectedRoute><ManageRegistries /></ProtectedRoute>} />
+<Route path="/registry/:id" element={<RegistryDetail />} />
 
                       <Route path="/about" element={<InfoPage />} />
                       <Route path="/careers" element={<InfoPage />} />

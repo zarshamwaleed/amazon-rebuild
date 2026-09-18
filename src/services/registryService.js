@@ -154,3 +154,133 @@ export const REGISTRY_TYPES = [
 export function getRegistryTypeMeta(typeId) {
   return REGISTRY_TYPES.find((t) => t.id === typeId) || REGISTRY_TYPES[3]
 }
+
+/**
+ * Fetch all items in a registry, joined with product data.
+ */
+export async function getRegistryItems(registryId) {
+  const { data, error } = await supabase
+    .from('registry_items')
+    .select('*, products(*)')
+    .eq('registry_id', registryId)
+    .neq('status', 'removed')
+    .order('added_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map((row) => ({ ...row, product: row.products }))
+}
+
+/**
+ * Add a product to a registry. If it already exists, increment the requested qty.
+ */
+export async function addRegistryItem({
+  registryId,
+  productId,
+  quantity = 1,
+  priority = 'normal',
+  publicNote = null,
+  privateNote = null,
+}) {
+  // Check if item already exists
+  const { data: existing, error: eErr } = await supabase
+    .from('registry_items')
+    .select('id, quantity_requested, status')
+    .eq('registry_id', registryId)
+    .eq('product_id', productId)
+    .maybeSingle()
+  if (eErr) throw eErr
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from('registry_items')
+      .update({
+        quantity_requested: existing.quantity_requested + Number(quantity),
+        status: 'available',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', existing.id)
+      .select()
+      .maybeSingle()
+    if (error) throw error
+    return data
+  }
+
+  const { data, error } = await supabase
+    .from('registry_items')
+    .insert({
+      registry_id: registryId,
+      product_id: productId,
+      quantity_requested: Number(quantity) || 1,
+      quantity_purchased: 0,
+      priority,
+      public_note: publicNote,
+      private_note: privateNote,
+      status: 'available',
+    })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Update a registry item.
+ */
+export async function updateRegistryItem(itemId, updates) {
+  const clean = { ...updates, updated_at: new Date().toISOString() }
+  const { data, error } = await supabase
+    .from('registry_items')
+    .update(clean)
+    .eq('id', itemId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Remove a registry item.
+ */
+export async function removeRegistryItem(itemId) {
+  const { error } = await supabase
+    .from('registry_items')
+    .delete()
+    .eq('id', itemId)
+  if (error) throw error
+}
+
+/**
+ * Compute progress summary for a registry.
+ * Uses purchased_quantity / requested_quantity for progress.
+ */
+export function computeRegistryProgress(items) {
+  let requested = 0
+  let purchased = 0
+  for (const it of items || []) {
+    requested += it.quantity_requested || 0
+    purchased += it.quantity_purchased || 0
+  }
+  const remaining = Math.max(0, requested - purchased)
+  const percent = requested > 0 ? (purchased / requested) * 100 : 0
+  return {
+    totalItems: items?.length || 0,
+    requested,
+    purchased,
+    remaining,
+    percent: +percent.toFixed(1),
+  }
+}
+
+/**
+ * Check if a product is already in one of the user's registries.
+ */
+export async function findProductInUserRegistries(userId, productId) {
+  if (!userId || !productId) return []
+  const { data, error } = await supabase
+    .from('registry_items')
+    .select('id, registry_id, quantity_requested, registries(id, name, type, privacy)')
+    .eq('product_id', productId)
+    .neq('status', 'removed')
+  if (error) return []
+  // Filter to registries owned by user
+  return (data || []).filter((row) => row.registries)
+}
