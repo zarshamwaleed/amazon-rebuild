@@ -10,6 +10,8 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { getUserAddresses, createAddress } from '../services/addressService'
 import { createOrder } from '../services/orderService'
+import { issueGiftCardsForOrder } from '../services/giftCardService'
+import { supabase } from '../services/supabase'
 
 const DELIVERY_OPTIONS = [
   { id: 'standard', label: 'Standard Delivery', description: '3-5 business days', fee: 0 },
@@ -104,6 +106,15 @@ export default function Checkout() {
         paymentMethod: payment,
         registryId,
       })
+
+      // Issue gift cards (if any) — fetch the created order_items so we can link them
+      if (items.some((i) => i.giftCard)) {
+        const { data: orderItems } = await supabase
+          .from('order_items')
+          .select('*')
+          .eq('order_id', order.id)
+        await issueGiftCardsForOrder(user.id, order.id, orderItems || [], items)
+      }
 
       // Mark as placed BEFORE clearing so the guard effect does not fire
       setOrderPlaced(true)

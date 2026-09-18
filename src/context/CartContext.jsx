@@ -233,21 +233,50 @@ async function addItem(product, quantity = 1, options = {}) {
     [subtotal, shipping, tax, couponSavings]
   )
 
-  const value = {
-    items,
-    count,
-    subtotal: +subtotal.toFixed(2),
-    shipping: +shipping.toFixed(2),
-    tax,
-    couponSavings,
-    appliedCoupons,
-    total,
-    ready,
-    addItem,
-    updateQuantity,
-    removeItem,
-    clearCart,
+async function addGiftCard(giftCardMeta) {
+  // giftCardMeta = { designId, name, amount, gradient, deliveryMethod, recipientName, recipientEmail, senderName, message, scheduledDate }
+  const id = 'gc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+  const pseudoProduct = {
+    id,
+    title: `Gift Card — ${giftCardMeta.name} ($${giftCardMeta.amount})`,
+    price: Number(giftCardMeta.amount),
+    image_url: null,
+    stock: 999,
   }
+  const cartItem = {
+    product: pseudoProduct,
+    quantity: 1,
+    giftCard: giftCardMeta,
+  }
+
+  if (user) {
+    // Signed-in: persist to localStorage and DB is skipped for gift cards
+    // (gift cards live only in the local cart, they're issued as gift_cards rows on order)
+    setItems((prev) => [...prev, cartItem])
+  } else {
+    setItems((prev) => [...prev, cartItem])
+  }
+
+  pushToast(`Gift card added — $${giftCardMeta.amount}`, { type: 'success' })
+  return cartItem
+}
+
+const value = {
+  items,
+  count,
+  subtotal: +subtotal.toFixed(2),
+  shipping: +shipping.toFixed(2),
+  tax,
+  couponSavings,
+  appliedCoupons,
+  total,
+  ready,
+  addItem,
+  addGiftCard,
+  updateQuantity,
+  removeItem,
+  clearCart,
+}
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

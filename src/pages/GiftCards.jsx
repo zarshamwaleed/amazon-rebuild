@@ -18,6 +18,8 @@ import {
   DollarSign,
 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
+import { useCart } from '../context/CartContext'
+import AddGiftCardModal from '../components/AddGiftCardModal'
 
 const POPULAR = [
   {
@@ -185,13 +187,13 @@ const RECOMMENDED = [
 
 export default function GiftCards() {
   const { pushToast } = useToast()
+  const { addGiftCard } = useCart()
   const [claimCode, setClaimCode] = useState('')
   const [checking, setChecking] = useState(false)
+  const [selectedCard, setSelectedCard] = useState(null)
 
   function handleAddToCart(card) {
-    pushToast(`${card.name} ($${card.price}) — Gift card checkout coming soon`, {
-      type: 'info',
-    })
+    setSelectedCard(card)
   }
 
   function handleRedeem(e) {
@@ -464,6 +466,17 @@ export default function GiftCards() {
           )
         })}
       </section>
+
+      {selectedCard && (
+        <AddGiftCardModal
+          card={selectedCard}
+          onClose={() => setSelectedCard(null)}
+          onAdd={(meta) => {
+            addGiftCard(meta)
+            setSelectedCard(null)
+          }}
+        />
+      )}
     </div>
   )
 }
