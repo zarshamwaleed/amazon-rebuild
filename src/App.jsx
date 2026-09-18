@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import SellerGrowthOpportunity from './pages/seller/SellerGrowthOpportunity'
 import { WishlistProvider } from './context/WishlistContext'
+import SellerReturnDetail from './pages/seller/SellerReturnDetail'
 import SellerReturns from './pages/seller/SellerReturns'
 import { CouponsProvider } from './context/CouponsContext'
 import SellerReports from './pages/seller/SellerReports'
@@ -132,6 +133,7 @@ export default function App() {
                       {/* Orders */}
                       <Route path="orders" element={<SellerOrders />} />
                       <Route path="orders/returns" element={<SellerReturns />} />
+                      <Route path="orders/returns/:returnId" element={<SellerReturnDetail />} />
                       <Route path="orders/:id" element={<SellerOrderDetail />} />
 
                       {/* Fulfillment */}

@@ -2601,3 +2601,168 @@ export function computeReturnsSummary(returns) {
       .reduce((s, r) => s + Number(r.refund_amount || 0), 0),
   }
 }
+
+/**
+ * Authorize a return — status moves to 'authorized', carrier/tracking set.
+ */
+export async function authorizeReturn(userId, returnId, payload) {
+  const { data, error } = await supabase
+    .from('returns')
+    .update({
+      status: 'authorized',
+      authorization_status: 'authorized',
+      return_method: payload.return_method || 'prepaid_label',
+      carrier: payload.carrier || 'UPS',
+      tracking_number: payload.tracking_number || generateTracking(),
+      authorized_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', returnId)
+    .eq('seller_id', userId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Decline a return.
+ */
+export async function declineReturn(userId, returnId, reason, notes) {
+  const { data, error } = await supabase
+    .from('returns')
+    .update({
+      status: 'declined',
+      authorization_status: 'declined',
+      seller_notes: (reason ? '[Declined: ' + reason + '] ' : '') + (notes || ''),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', returnId)
+    .eq('seller_id', userId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Mark the return as in transit (after authorization).
+ */
+export async function markReturnShipped(userId, returnId) {
+  const { data, error } = await supabase
+    .from('returns')
+    .update({
+      status: 'return_in_transit',
+      shipped_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', returnId)
+    .eq('seller_id', userId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Mark the return as received, with a condition assessment.
+ */
+export async function receiveReturn(userId, returnId, payload) {
+  const { data, error } = await supabase
+    .from('returns')
+    .update({
+      status: 'refund_pending',
+      condition: payload.condition || 'used',
+      seller_notes: payload.seller_notes || null,
+      received_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', returnId)
+    .eq('seller_id', userId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Issue a refund (full or partial), optionally with a restocking fee.
+ */
+export async function issueRefund(userId, returnId, payload) {
+  const { amount, type, restocking_fee } = payload
+  const { data, error } = await supabase
+    .from('returns')
+    .update({
+      status: 'refunded',
+      refund_status: type === 'full' ? 'full' : type === 'partial' ? 'partial' : 'none',
+      refund_amount: Number(amount) || 0,
+      restocking_fee: Number(restocking_fee) || 0,
+      refunded_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', returnId)
+    .eq('seller_id', userId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Fetch all messages for a return.
+ */
+export async function getReturnMessages(userId, returnId) {
+  const { data, error } = await supabase
+    .from('return_messages')
+    .select('*')
+    .eq('return_id', returnId)
+    .eq('seller_id', userId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Send a seller message on a return.
+ */
+export async function sendReturnMessage(userId, returnId, body) {
+  const { data, error } = await supabase
+    .from('return_messages')
+    .insert({
+      return_id: returnId,
+      seller_id: userId,
+      direction: 'outbound',
+      author: 'You',
+      body,
+    })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Returns the current step index for the timeline (0-based).
+ */
+export function returnTimelineIndex(status) {
+  const steps = [
+    'requested',
+    'pending_authorization',
+    'authorized',
+    'return_in_transit',
+    'return_received',
+    'refund_pending',
+    'refunded',
+    'completed',
+  ]
+  const idx = steps.indexOf(status)
+  if (status === 'declined') return -1
+  return idx === -1 ? 0 : idx
+}
+
+function generateTracking() {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  let s = '1Z'
+  for (let i = 0; i < 14; i++) s += chars[Math.floor(Math.random() * chars.length)]
+  return s
+}
