@@ -2182,3 +2182,297 @@ export async function revokeApp(userId, appId) {
     .eq('app_id', appId)
   if (error) throw error
 }
+
+/**
+ * Aggregate growth data for the seller.
+ * Derives opportunities + metrics from real products and orders.
+ */
+export async function getSellerGrowth(userId) {
+  // 1. Seller's products
+  const { data: products, error: pErr } = await supabase
+    .from('products')
+    .select('id, title, price, stock, image_url, rating, review_count, description, category_id, seller_id')
+    .eq('seller_id', userId)
+  if (pErr) throw pErr
+
+  if (!products || products.length === 0) {
+    return emptyGrowth()
+  }
+
+  const productIds = products.map((p) => p.id)
+
+  // 2. Order items for these products
+  const { data: items } = await supabase
+    .from('order_items')
+    .select('id, order_id, product_id, price, quantity, created_at')
+    .in('product_id', productIds)
+
+  // 3. Parent orders (for date-based metrics)
+  const orderIds = [...new Set((items || []).map((i) => i.order_id))]
+  let orders = []
+  if (orderIds.length) {
+    const { data: o } = await supabase
+      .from('orders')
+      .select('id, created_at, order_status, total')
+      .in('id', orderIds)
+    orders = o || []
+  }
+  const ordersById = Object.fromEntries(orders.map((o) => [o.id, o]))
+
+  // 4. Per-product metrics
+  const perProduct = {}
+  for (const p of products) {
+    perProduct[p.id] = {
+      product: p,
+      sales: 0,
+      units: 0,
+      orderCount: 0,
+      // Simulated sessions based on review count + stock as a stable seed
+      sessions: Math.max(50, (p.review_count || 0) * 12 + (p.stock || 0) * 3),
+    }
+  }
+
+  for (const it of items || []) {
+    const bucket = perProduct[it.product_id]
+    if (!bucket) continue
+    const o = ordersById[it.order_id]
+    if (!o) continue
+    if (['cancelled', 'returned'].includes((o.order_status || '').toLowerCase())) continue
+    const lineTotal = Number(it.price) * Number(it.quantity)
+    bucket.sales += lineTotal
+    bucket.units += Number(it.quantity)
+    bucket.orderCount += 1
+  }
+
+  // 5. Compute conversion per product
+  for (const p of products) {
+    const b = perProduct[p.id]
+    b.conversion = b.sessions > 0 ? (b.units / b.sessions) * 100 : 0
+    b.averageOrderValue = b.orderCount > 0 ? b.sales / b.orderCount : 0
+  }
+
+  // 6. Generate opportunities based on real data
+  const opportunities = generateOpportunities(products, perProduct)
+
+  // 7. Growth metrics for the last 30 days
+  const now = Date.now()
+  const thirtyDaysAgo = now - 30 * 86400000
+  let sales30d = 0
+  let units30d = 0
+  const orders30d = new Set()
+  for (const it of items || []) {
+    const o = ordersById[it.order_id]
+    if (!o) continue
+    if (new Date(o.created_at).getTime() < thirtyDaysAgo) continue
+    if (['cancelled', 'returned'].includes((o.order_status || '').toLowerCase())) continue
+    sales30d += Number(it.price) * Number(it.quantity)
+    units30d += Number(it.quantity)
+    orders30d.add(it.order_id)
+  }
+  const sessions30d = products.reduce((s, p) => s + perProduct[p.id].sessions, 0)
+  const conversion30d = sessions30d > 0 ? (units30d / sessions30d) * 100 : 0
+
+  // 8. Summary tiles
+  const highPriority = opportunities.filter((o) => o.impact === 'High').length
+  const potentialImpact = opportunities.reduce((s, o) => s + (o.estimatedValue || 0), 0)
+
+  // 9. Sort products by sales for the product performance table
+  const topProducts = products
+    .map((p) => perProduct[p.id])
+    .sort((a, b) => b.sales - a.sales)
+    .slice(0, 8)
+
+  return {
+    metrics: {
+      sales: +sales30d.toFixed(2),
+      orders: orders30d.size,
+      units: units30d,
+      sessions: sessions30d,
+      conversion: +conversion30d.toFixed(2),
+    },
+    summary: {
+      total: opportunities.length,
+      potentialImpact: Math.round(potentialImpact),
+      productsNeedingAction: new Set(opportunities.map((o) => o.productId)).size,
+      highPriority,
+    },
+    opportunities,
+    topProducts,
+    products: products.map((p) => perProduct[p.id]),
+  }
+}
+
+/**
+ * Generate opportunities from real product data using simple heuristics.
+ * Categories match Amazon's Growth Opportunities framework.
+ */
+function generateOpportunities(products, perProduct) {
+  const out = []
+
+  for (const p of products) {
+    const b = perProduct[p.id]
+    const p_ = b.product
+
+    // Category: Improve Sales
+    // Missing images or short description
+    if (!p_.image_url && p_.stock > 0) {
+      out.push({
+        id: `improve-images-${p_.id}`,
+        productId: p_.id,
+        productTitle: p_.title,
+        productImage: p_.image_url,
+        category: 'Improve Sales',
+        title: 'Add product images',
+        description:
+          'Listings with high-quality images convert 2–3x better. Add at least one main image.',
+        impact: 'High',
+        estimatedValue: Math.max(100, b.sales * 0.2),
+        recommendedAction: 'Improve Listing',
+        actionLink: `/seller/products/${p_.id}/edit`,
+      })
+    }
+
+    if (!p_.description || p_.description.length < 80) {
+      out.push({
+        id: `improve-description-${p_.id}`,
+        productId: p_.id,
+        productTitle: p_.title,
+        productImage: p_.image_url,
+        category: 'Improve Sales',
+        title: 'Improve product description',
+        description:
+          'A detailed description improves SEO and conversion. Aim for 3–4 paragraphs.',
+        impact: b.sales > 200 ? 'High' : 'Medium',
+        estimatedValue: Math.max(50, b.sales * 0.1),
+        recommendedAction: 'Improve Listing',
+        actionLink: `/seller/products/${p_.id}/edit`,
+      })
+    }
+
+    // Low conversion but has sales
+    if (b.conversion > 0 && b.conversion < 3 && b.sales > 100) {
+      out.push({
+        id: `improve-conversion-${p_.id}`,
+        productId: p_.id,
+        productTitle: p_.title,
+        productImage: p_.image_url,
+        category: 'Improve Sales',
+        title: 'Improve product detail page',
+        description: `This product converts at ${b.conversion.toFixed(1)}% — below the healthy threshold of 3%. Improve title, bullets, and A+ content.`,
+        impact: 'High',
+        estimatedValue: Math.max(200, b.sales * 0.3),
+        recommendedAction: 'Improve Listing',
+        actionLink: `/seller/products/${p_.id}/edit`,
+      })
+    }
+
+    // Low rating
+    if (p_.rating && p_.rating < 4 && p_.review_count > 0) {
+      out.push({
+        id: `improve-rating-${p_.id}`,
+        productId: p_.id,
+        productTitle: p_.title,
+        productImage: p_.image_url,
+        category: 'Improve Sales',
+        title: 'Address customer complaints',
+        description: `Current rating is ${p_.rating.toFixed(1)}★. Analyze reviews to identify and fix common complaints.`,
+        impact: 'Medium',
+        estimatedValue: Math.max(100, b.sales * 0.15),
+        recommendedAction: 'Analyze Reviews',
+        actionLink: '/seller/reviews',
+      })
+    }
+
+    // Category: Drive Traffic
+    // Product has reviews but low sessions
+    if (p_.review_count > 0 && b.sessions < 500) {
+      out.push({
+        id: `drive-traffic-${p_.id}`,
+        productId: p_.id,
+        productTitle: p_.title,
+        productImage: p_.image_url,
+        category: 'Drive Traffic',
+        title: 'Launch Sponsored Products campaign',
+        description: `Only ${b.sessions} sessions this period. Run ads to increase visibility for this listing.`,
+        impact: b.sales > 100 ? 'High' : 'Medium',
+        estimatedValue: Math.max(150, b.sales * 0.4),
+        recommendedAction: 'Create Campaign',
+        actionLink: '/seller/advertising',
+      })
+    }
+
+    // Category: Reduce Cost
+    // Oversized inventory that isn't selling
+    if (p_.stock > 50 && b.sales < 100) {
+      out.push({
+        id: `reduce-storage-${p_.id}`,
+        productId: p_.id,
+        productTitle: p_.title,
+        productImage: p_.image_url,
+        category: 'Reduce Cost',
+        title: 'Reduce excess inventory',
+        description: `${p_.stock} units in stock with low sell-through. Consider promotions or removing excess inventory.`,
+        impact: 'Medium',
+        estimatedValue: 300,
+        recommendedAction: 'Create Deal',
+        actionLink: '/seller/deals',
+      })
+    }
+
+    // Out of stock
+    if ((p_.stock || 0) === 0 && b.sales > 0) {
+      out.push({
+        id: `restock-${p_.id}`,
+        productId: p_.id,
+        productTitle: p_.title,
+        productImage: p_.image_url,
+        category: 'Sell New Products',
+        title: 'Restock this best-seller',
+        description:
+          'This product is out of stock but previously sold well. Restock to avoid losing sales.',
+        impact: 'High',
+        estimatedValue: Math.max(200, b.sales * 0.5),
+        recommendedAction: 'Restock',
+        actionLink: '/seller/inventory',
+      })
+    }
+  }
+
+  // Category: Sell New Products — generic opportunity if few products
+  if (products.length < 5) {
+    out.push({
+      id: 'expand-catalog',
+      productId: null,
+      productTitle: 'Your catalog',
+      productImage: null,
+      category: 'Sell New Products',
+      title: 'Expand your catalog',
+      description:
+        'You have only a few products. Adding more SKUs (especially in high-demand categories) can significantly increase revenue.',
+      impact: 'High',
+      estimatedValue: 500,
+      recommendedAction: 'Add Product',
+      actionLink: '/seller/products/new',
+    })
+  }
+
+  // Sort by impact (High > Medium > Low), then by estimated value
+  const order = { High: 0, Medium: 1, Low: 2 }
+  out.sort((a, b) => {
+    const i = order[a.impact] - order[b.impact]
+    if (i !== 0) return i
+    return b.estimatedValue - a.estimatedValue
+  })
+
+  return out
+}
+
+function emptyGrowth() {
+  return {
+    metrics: { sales: 0, orders: 0, units: 0, sessions: 0, conversion: 0 },
+    summary: { total: 0, potentialImpact: 0, productsNeedingAction: 0, highPriority: 0 },
+    opportunities: [],
+    topProducts: [],
+    products: [],
+  }
+}

@@ -41,7 +41,7 @@ import SellerAdvertising from './pages/seller/SellerAdvertising'
 import SellerStore from './pages/seller/SellerStore'
 import SellerStoreBuilder from './pages/seller/SellerStoreBuilder'
 import PublicStore from './pages/PublicStore'
-
+import SellerGrowth from './pages/seller/SellerGrowth'
 // Sell on Amazon — separate layout
 import SellLayout from './components/sell/SellLayout'
 import SellLanding from './pages/sell/SellLanding'
@@ -108,6 +108,7 @@ export default function App() {
                       <Route path="help" element={<SellerSupport />} />
                       <Route path="notifications" element={<SellerNotifications />} />
                       <Route path="apps-services" element={<AppsLanding />} />
+                      
 
                       <Route path="apps-services/appstore" element={<Appstore />} />
 <Route path="apps-services/app/:id" element={<AppDetail />} />
@@ -149,7 +150,7 @@ export default function App() {
                       <Route path="store/builder" element={<SellerStoreBuilder />} />
 
                       {/* Placeholder pages for later modules */}
-                      <Route path="growth" element={<SellerPlaceholder title="Growth" />} />
+                      <Route path="growth" element={<SellerGrowth />} />
                       <Route path="reports" element={<SellerReports />} />
                       <Route path="payments" element={<SellerPayments />} />
                       <Route path="account-health" element={<SellerAccountHealth />} />
