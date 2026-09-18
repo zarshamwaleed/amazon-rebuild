@@ -26,10 +26,16 @@ import {
   Target,
   Gauge,
   BookOpen,
+  CheckCircle2,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import { getSellerGrowth } from '../../services/sellerService'
+import {
+  getSellerGrowth,
+  syncGrowthOpportunities,
+  getGrowthStatuses,
+  updateOpportunityStatus,
+} from '../../services/sellerService'
 
 const OPPORTUNITY_TABS = [
   { id: 'All', label: 'All' },
@@ -60,6 +66,8 @@ export default function SellerGrowth() {
 
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [statuses, setStatuses] = useState({})
+  const [drawer, setDrawer] = useState(null)
   const [tab, setTab] = useState('All')
   const [query, setQuery] = useState('')
   const [range, setRange] = useState('30d')
@@ -70,6 +78,10 @@ export default function SellerGrowth() {
       setLoading(true)
       const d = await getSellerGrowth(user.id)
       setData(d)
+      // Sync opportunities to DB, then load persisted statuses
+      await syncGrowthOpportunities(user.id, d.opportunities)
+      const st = await getGrowthStatuses(user.id)
+      setStatuses(st)
     } catch (err) {
       pushToast('Could not load growth data', { type: 'error' })
     } finally {
@@ -83,7 +95,10 @@ export default function SellerGrowth() {
 
   const filteredOpportunities = useMemo(() => {
     if (!data) return []
-    let list = data.opportunities
+    let list = data.opportunities.filter((o) => {
+      const st = statuses[o.id]
+      return !st || st.status !== 'dismissed'
+    })
     if (tab !== 'All') list = list.filter((o) => o.category === tab)
     if (query.trim()) {
       const q = query.toLowerCase()
@@ -95,7 +110,7 @@ export default function SellerGrowth() {
       )
     }
     return list
-  }, [data, tab, query])
+  }, [data, tab, query, statuses])
 
   function handleDownload() {
     if (!data) return
@@ -296,7 +311,11 @@ export default function SellerGrowth() {
                 </thead>
                 <tbody>
                   {filteredOpportunities.map((o) => (
-                    <tr key={o.id} className="border-t hover:bg-gray-50">
+                    <tr
+                      key={o.id}
+                      onClick={() => setDrawer(o)}
+                      className="border-t hover:bg-gray-50 cursor-pointer"
+                    >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           {o.productImage ? (
@@ -314,7 +333,23 @@ export default function SellerGrowth() {
                             <div className="font-medium text-gray-900 truncate max-w-[240px]">
                               {o.productTitle}
                             </div>
-                            <div className="text-xs text-gray-500">{o.category}</div>
+                            <div className="text-xs text-gray-500 flex items-center gap-2">
+                              {o.category}
+                              {(() => {
+                                const st = statuses[o.id]?.status
+                                if (!st || st === 'new') return null
+                                const meta = {
+                                  in_progress: { label: 'In progress', cls: 'bg-amber-100 text-amber-800' },
+                                  completed: { label: 'Completed', cls: 'bg-green-100 text-green-800' },
+                                }[st]
+                                if (!meta) return null
+                                return (
+                                  <span className={'text-[10px] font-medium px-1.5 py-0.5 rounded-full ' + meta.cls}>
+                                    {meta.label}
+                                  </span>
+                                )
+                              })()}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -339,7 +374,10 @@ export default function SellerGrowth() {
                       </td>
                       <td className="px-5 py-3 text-right">
                         <button
-                          onClick={() => handleAction(o)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleAction(o)
+                          }}
                           className="text-sm text-[#007185] hover:text-[#c7511f] hover:underline font-medium whitespace-nowrap"
                         >
                           {o.recommendedAction} →
@@ -519,6 +557,27 @@ export default function SellerGrowth() {
           ))}
         </div>
       </section>
+
+      {drawer && (
+        <OpportunityDrawer
+          opp={drawer}
+          status={statuses[drawer.id]?.status || 'new'}
+          onClose={() => setDrawer(null)}
+          onAction={async () => {
+            // Mark in-progress on take action
+            if ((statuses[drawer.id]?.status || 'new') === 'new') {
+              await updateOpportunityStatus(user.id, drawer.id, 'in_progress')
+            }
+            handleAction(drawer)
+          }}
+          onStatusChange={async (next) => {
+            await updateOpportunityStatus(user.id, drawer.id, next)
+            pushToast('Status updated', { type: 'success' })
+            setDrawer(null)
+            load()
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -564,6 +623,100 @@ function MetricCard({ label, value, icon: Icon, trendUp }) {
           <TrendingUp className="w-3 h-3" /> Tracked last 30 days
         </div>
       )}
+    </div>
+  )
+}
+
+function OpportunityDrawer({ opp, status, onClose, onAction, onStatusChange }) {
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="flex-1 bg-black/40" onClick={onClose} aria-hidden="true" />
+      <aside className="w-full max-w-md bg-white shadow-2xl flex flex-col overflow-hidden">
+        <div className="bg-gradient-to-r from-[#232f3e] to-[#37475a] text-white px-5 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="w-5 h-5 text-[#febd69]" />
+            <span className="font-bold">Opportunity</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-white/10"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5 overflow-y-auto flex-1">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
+              {opp.category}
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">{opp.title}</h2>
+            {opp.productTitle && (
+              <div className="text-sm text-gray-600 flex items-center gap-2">
+                {opp.productImage && (
+                  <img
+                    src={opp.productImage}
+                    alt=""
+                    className="w-5 h-5 rounded object-cover border"
+                  />
+                )}
+                {opp.productTitle}
+              </div>
+            )}
+          </div>
+
+          <p className="text-sm text-gray-700 leading-relaxed">{opp.description}</p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="border rounded-lg p-3">
+              <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
+                Impact
+              </div>
+              <div className="font-bold text-gray-900">{opp.impact}</div>
+            </div>
+            <div className="border rounded-lg p-3">
+              <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
+                Est. lift
+              </div>
+              <div className="font-bold text-gray-900">
+                ${Math.round(Number(opp.estimatedValue || 0)).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t p-4 flex flex-col gap-2">
+          {status === 'completed' ? (
+            <div className="bg-green-50 border border-green-200 text-green-800 rounded p-3 text-sm flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" /> Marked complete
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={onAction}
+                className="w-full bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium py-2.5 rounded transition"
+              >
+                Take Action — {opp.recommendedAction}
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onStatusChange('dismissed')}
+                  className="flex-1 border border-gray-300 hover:bg-gray-50 py-2 rounded text-sm"
+                >
+                  Dismiss
+                </button>
+                <button
+                  onClick={() => onStatusChange('completed')}
+                  className="flex-1 border border-green-300 text-green-700 hover:bg-green-50 py-2 rounded text-sm"
+                >
+                  Mark Complete
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </aside>
     </div>
   )
 }

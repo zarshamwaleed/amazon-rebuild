@@ -4,6 +4,7 @@ import MainLayout from './layouts/MainLayout'
 import { ToastProvider } from './context/ToastContext'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
+import SellerGrowthOpportunity from './pages/seller/SellerGrowthOpportunity'
 import { WishlistProvider } from './context/WishlistContext'
 import { CouponsProvider } from './context/CouponsContext'
 import SellerReports from './pages/seller/SellerReports'
@@ -108,6 +109,7 @@ export default function App() {
                       <Route path="help" element={<SellerSupport />} />
                       <Route path="notifications" element={<SellerNotifications />} />
                       <Route path="apps-services" element={<AppsLanding />} />
+                      <Route path="growth/opportunity/:id" element={<SellerGrowthOpportunity />} />
                       
 
                       <Route path="apps-services/appstore" element={<Appstore />} />

@@ -2476,3 +2476,80 @@ function emptyGrowth() {
     products: [],
   }
 }
+
+/**
+ * Persist the current opportunity set for a seller.
+ * Called from SellerGrowth after computing opportunities. Upserts without
+ * touching status — preserves user changes like Completed/Dismissed.
+ */
+export async function syncGrowthOpportunities(userId, opportunities) {
+  if (!opportunities || opportunities.length === 0) return
+  const rows = opportunities.map((o) => ({
+    id: o.id,
+    seller_id: userId,
+    product_id: o.productId || null,
+    product_title: o.productTitle,
+    product_image: o.productImage || null,
+    category: o.category,
+    title: o.title,
+    description: o.description,
+    impact: o.impact,
+    estimated_value: o.estimatedValue || 0,
+    recommended_action: o.recommendedAction,
+    action_link: o.actionLink || null,
+    updated_at: new Date().toISOString(),
+  }))
+  // Ignore duplicates and don't touch status column
+  const { error } = await supabase
+    .from('growth_opportunities')
+    .upsert(rows, { onConflict: 'seller_id,id', ignoreDuplicates: true })
+  if (error) throw error
+}
+
+/**
+ * Fetch persisted statuses for the seller's opportunities.
+ * Returns a map: id -> { status, updated_at }
+ */
+export async function getGrowthStatuses(userId) {
+  const { data, error } = await supabase
+    .from('growth_opportunities')
+    .select('id, status, updated_at')
+    .eq('seller_id', userId)
+  if (error) throw error
+  const map = {}
+  for (const row of data || []) map[row.id] = row
+  return map
+}
+
+/**
+ * Fetch a single persisted opportunity (with status).
+ */
+export async function getGrowthOpportunity(userId, oppId) {
+  const { data, error } = await supabase
+    .from('growth_opportunities')
+    .select('*')
+    .eq('seller_id', userId)
+    .eq('id', oppId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Update an opportunity's status.
+ */
+export async function updateOpportunityStatus(userId, oppId, status) {
+  const { error } = await supabase
+    .from('growth_opportunities')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('seller_id', userId)
+    .eq('id', oppId)
+  if (error) throw error
+}
+
+/**
+ * Mark an opportunity in-progress by ID (used after user takes action).
+ */
+export async function markOpportunityInProgress(userId, oppId) {
+  return updateOpportunityStatus(userId, oppId, 'in_progress')
+}
