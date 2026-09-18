@@ -284,3 +284,31 @@ export async function findProductInUserRegistries(userId, productId) {
   // Filter to registries owned by user
   return (data || []).filter((row) => row.registries)
 }
+
+/**
+ * Fetch a single registry by its share token (public access).
+ * Falls back to ID lookup if the token isn't found.
+ */
+export async function getRegistryByShareToken(token) {
+  if (!token) return null
+  const { data, error } = await supabase
+    .from('registries')
+    .select('*')
+    .eq('share_token', token)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Returns true if the caller can view this registry.
+ * Rules:
+ *  - Owner: always
+ *  - public / shared: always
+ *  - private: only owner
+ */
+export function canViewRegistry(registry, userId) {
+  if (!registry) return false
+  if (userId && registry.user_id === userId) return true
+  return registry.privacy === 'public' || registry.privacy === 'shared'
+}
