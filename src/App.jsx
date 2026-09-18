@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { WishlistProvider } from './context/WishlistContext'
 import { CouponsProvider } from './context/CouponsContext'
+import SellerInventory from './pages/seller/SellerInventory'
 
 import SellerProducts from './pages/seller/SellerProducts'
 import SellerProductEditor from './pages/seller/SellerProductEditor'
@@ -79,7 +80,7 @@ export default function App() {
   <Route path="products" element={<SellerProducts />} />
 <Route path="products/new" element={<SellerProductEditor />} />
 <Route path="products/:id/edit" element={<SellerProductEditor />} />
-  <Route path="inventory" element={<SellerPlaceholder title="Manage Inventory" />} />
+  <Route path="inventory" element={<SellerInventory />} />
   <Route path="inventory/fba" element={<SellerPlaceholder title="FBA Inventory" />} />
   <Route path="orders" element={<SellerPlaceholder title="Manage Orders" />} />
   <Route path="orders/returns" element={<SellerPlaceholder title="Returns" />} />

@@ -269,3 +269,60 @@ export async function duplicateSellerProduct(userId, product) {
     category_id: product.category_id,
   })
 }
+
+/**
+ * Seller inventory — products owned by the seller, enriched with computed
+ * reserved / inbound metrics.
+ */
+export async function getSellerInventory(userId) {
+  // Products
+  const { data: products, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('seller_id', userId)
+    .order('title')
+  if (error) throw error
+
+  const productIds = (products || []).map((p) => p.id)
+  const reservedMap = {}
+
+  // Reserved = quantities in orders whose status is not delivered/cancelled
+  if (productIds.length) {
+    const { data: items } = await supabase
+      .from('order_items')
+      .select('product_id, quantity, order_id, orders(order_status)')
+      .in('product_id', productIds)
+
+    for (const it of items || []) {
+      const status = it.orders?.order_status || ''
+      if (['delivered', 'cancelled'].includes(status)) continue
+      reservedMap[it.product_id] = (reservedMap[it.product_id] || 0) + (it.quantity || 0)
+    }
+  }
+
+  return (products || []).map((p) => ({
+    ...p,
+    reserved: reservedMap[p.id] || 0,
+    inbound: 0, // simulated — no shipment tracking yet
+    available: Math.max(0, (p.stock || 0)),
+  }))
+}
+
+/**
+ * Update quantity (stock) and/or price for a seller's product.
+ */
+export async function updateInventory(userId, productId, updates) {
+  const clean = {}
+  if (updates.stock !== undefined) clean.stock = Number(updates.stock) || 0
+  if (updates.price !== undefined) clean.price = Number(updates.price) || 0
+
+  const { data, error } = await supabase
+    .from('products')
+    .update(clean)
+    .eq('id', productId)
+    .eq('seller_id', userId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}

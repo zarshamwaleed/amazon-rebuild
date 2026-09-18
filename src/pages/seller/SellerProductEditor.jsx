@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import AIListingAssistant from '../../components/seller/AIListingAssistant'
 import {
   ArrowLeft,
   Plus,
@@ -211,6 +212,32 @@ export default function SellerProductEditor() {
     } finally {
       setSaving(false)
     }
+  }
+
+  function handleAIApply(field, value) {
+    if (field === '__all__') {
+      setForm((f) => ({
+        ...f,
+        title: value.title || f.title,
+        bullet_points:
+          value.bullet_points && value.bullet_points.length
+            ? [...value.bullet_points, '', '', '', '', ''].slice(0, 5)
+            : f.bullet_points,
+        description: value.description || f.description,
+        keywords: value.keywords || f.keywords,
+      }))
+      return
+    }
+
+    if (field === 'bullet_points') {
+      setForm((f) => ({
+        ...f,
+        bullet_points: [...value, '', '', '', '', ''].slice(0, 5),
+      }))
+      return
+    }
+
+    setForm((f) => ({ ...f, [field]: value }))
   }
 
   if (loading) {
@@ -611,6 +638,13 @@ export default function SellerProductEditor() {
           {saving ? 'Publishing…' : isEdit && status === 'published' ? 'Save changes' : 'Publish product'}
         </button>
       </div>
+
+      {/* AI Listing Assistant — floating panel */}
+      <AIListingAssistant
+        form={form}
+        categoryName={categories.find((c) => c.id === form.category_id)?.name || ''}
+        onApply={handleAIApply}
+      />
     </div>
   )
 }
