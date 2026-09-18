@@ -13,6 +13,7 @@ import SellerReviews from './pages/seller/SellerReviews'
 import SellerMessages from './pages/seller/SellerMessages'
 import CustomerMessages from './pages/CustomerMessages'
 import SellerSupport from './pages/seller/SellerSupport'
+import SellerSettings from './pages/seller/SellerSettings'
 // Seller Central
 import SellerLayout from './components/seller/SellerLayout'
 import SellerDashboard from './pages/seller/SellerDashboard'
@@ -136,7 +137,7 @@ export default function App() {
                       <Route path="account-health" element={<SellerAccountHealth />} />
                       <Route path="customers" element={<SellerPlaceholder title="Customers" />} />
                       <Route path="apps" element={<SellerPlaceholder title="Apps & Services" />} />
-                      <Route path="settings" element={<SellerPlaceholder title="Settings" />} />
+                      <Route path="settings" element={<SellerSettings />} />
                     </Route>
 
                     {/* ============ Amazon storefront — main layout ============ */}

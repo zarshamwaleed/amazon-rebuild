@@ -1791,3 +1791,77 @@ export async function closeSupportCase(userId, caseId) {
     .eq('seller_id', userId)
   if (error) throw error
 }
+
+/**
+ * Update settings fields on the seller profile.
+ */
+export async function updateSellerSettings(userId, updates) {
+  const { data, error } = await supabase
+    .from('seller_profiles')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Fetch team members.
+ */
+export async function getSellerUsers(userId) {
+  const { data, error } = await supabase
+    .from('seller_users')
+    .select('*')
+    .eq('seller_id', userId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Invite a new team member.
+ */
+export async function inviteSellerUser(userId, payload) {
+  const { data, error } = await supabase
+    .from('seller_users')
+    .insert({
+      seller_id: userId,
+      email: payload.email,
+      full_name: payload.full_name || null,
+      role: payload.role || 'Employee',
+      permissions: payload.permissions || undefined,
+      status: 'invited',
+    })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Update a team member's role or permissions.
+ */
+export async function updateSellerUser(userId, memberId, updates) {
+  const { data, error } = await supabase
+    .from('seller_users')
+    .update(updates)
+    .eq('id', memberId)
+    .eq('seller_id', userId)
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Remove a team member.
+ */
+export async function removeSellerUser(userId, memberId) {
+  const { error } = await supabase
+    .from('seller_users')
+    .delete()
+    .eq('id', memberId)
+    .eq('seller_id', userId)
+  if (error) throw error
+}

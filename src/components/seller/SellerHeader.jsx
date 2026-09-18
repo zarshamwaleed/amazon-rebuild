@@ -99,9 +99,14 @@ export default function SellerHeader({ onToggleSidebar, sidebarOpen }) {
 >
   <HelpCircle className="w-5 h-5" />
 </Link>
-          <button className="p-2 rounded hover:bg-white/10" aria-label="Settings" title="Settings">
-            <SettingsIcon className="w-5 h-5" />
-          </button>
+         <Link
+  to="/seller/settings"
+  className="p-2 rounded hover:bg-white/10"
+  aria-label="Settings"
+  title="Settings"
+>
+  <SettingsIcon className="w-5 h-5" />
+</Link>
           <button className="p-2 rounded hover:bg-white/10 hidden sm:block" aria-label="Apps" title="Apps & Services">
             <Grid3x3 className="w-5 h-5" />
           </button>
