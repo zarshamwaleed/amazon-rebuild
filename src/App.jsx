@@ -7,6 +7,7 @@ import { CartProvider } from './context/CartContext'
 import { WishlistProvider } from './context/WishlistContext'
 import { CouponsProvider } from './context/CouponsContext'
 import SellerInventory from './pages/seller/SellerInventory'
+import SellerFulfillment from './pages/seller/SellerFulfillment'
 
 import SellerOrders from './pages/seller/SellerOrders'
 import SellerOrderDetail from './pages/seller/SellerOrderDetail'
@@ -81,13 +82,14 @@ export default function App() {
 <Route path="/seller" element={<SellerLayout />}>
   <Route index element={<SellerDashboard />} />
   <Route path="products" element={<SellerProducts />} />
-<Route path="products/new" element={<SellerProductEditor />} />
-<Route path="products/:id/edit" element={<SellerProductEditor />} />
+  <Route path="products/new" element={<SellerProductEditor />} />
+  <Route path="products/:id/edit" element={<SellerProductEditor />} />
   <Route path="inventory" element={<SellerInventory />} />
   <Route path="inventory/fba" element={<SellerPlaceholder title="FBA Inventory" />} />
   <Route path="orders" element={<SellerOrders />} />
-<Route path="orders/returns" element={<SellerPlaceholder title="Returns" />} />
-<Route path="orders/:id" element={<SellerOrderDetail />} />
+  <Route path="orders/returns" element={<SellerPlaceholder title="Returns" />} />
+  <Route path="orders/:id" element={<SellerOrderDetail />} />
+  <Route path="fulfillment" element={<SellerFulfillment />} />
   <Route path="pricing" element={<SellerPlaceholder title="Manage Pricing" />} />
   <Route path="pricing/automate" element={<SellerPlaceholder title="Automate Pricing" />} />
   <Route path="advertising" element={<SellerPlaceholder title="Campaign Manager" />} />

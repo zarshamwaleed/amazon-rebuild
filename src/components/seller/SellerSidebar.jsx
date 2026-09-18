@@ -17,6 +17,7 @@ import {
   Settings as SettingsIcon,
   ChevronDown,
   ChevronRight,
+  Truck,
 } from 'lucide-react'
 
 const NAV = [
@@ -43,6 +44,14 @@ const NAV = [
     children: [
       { label: 'Manage Orders', to: '/seller/orders' },
       { label: 'Returns', to: '/seller/orders/returns' },
+    ],
+  },
+  {
+    label: 'Fulfillment',
+    icon: Truck,
+    children: [
+      { label: 'FBA', to: '/seller/fulfillment?tab=FBA' },
+      { label: 'FBM', to: '/seller/fulfillment?tab=FBM' },
     ],
   },
   {

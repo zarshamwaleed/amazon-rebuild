@@ -417,3 +417,61 @@ export async function updateOrderStatus(orderId, nextStatus) {
   if (error) throw error
   return data
 }
+
+/**
+ * Fetch orders grouped by fulfillment method (FBA / FBM) for this seller.
+ * Returns { FBA: [...], FBM: [...] } where each entry is { order, seller_items }.
+ */
+export async function getSellerFulfillmentQueue(userId) {
+  // Products owned by seller with their fulfillment method
+  const { data: products, error: pErr } = await supabase
+    .from('products')
+    .select('id, fulfillment_method')
+    .eq('seller_id', userId)
+  if (pErr) throw pErr
+
+  const methodByProduct = {}
+  for (const p of products || []) {
+    methodByProduct[p.id] = p.fulfillment_method || 'FBM'
+  }
+
+  const productIds = Object.keys(methodByProduct)
+  if (productIds.length === 0) return { FBA: [], FBM: [] }
+
+  // Order items for these products
+  const { data: items, error: iErr } = await supabase
+    .from('order_items')
+    .select('id, order_id, product_id, product_title, product_image, price, quantity')
+    .in('product_id', productIds)
+  if (iErr) throw iErr
+
+  const orderIds = [...new Set((items || []).map((i) => i.order_id))]
+  if (orderIds.length === 0) return { FBA: [], FBM: [] }
+
+  // Parent orders
+  const { data: orders, error: oErr } = await supabase
+    .from('orders')
+    .select('*, addresses(*)')
+    .in('id', orderIds)
+    .order('created_at', { ascending: false })
+  if (oErr) throw oErr
+
+  // Group items by order
+  const itemsByOrder = {}
+  for (const it of items || []) {
+    if (!itemsByOrder[it.order_id]) itemsByOrder[it.order_id] = []
+    itemsByOrder[it.order_id].push(it)
+  }
+
+  const buckets = { FBA: [], FBM: [] }
+  for (const order of orders || []) {
+    const sellerItems = itemsByOrder[order.id] || []
+    if (sellerItems.length === 0) continue
+    // Determine fulfillment by the first item; if mixed, treat as FBM
+    const methods = new Set(sellerItems.map((i) => methodByProduct[i.product_id] || 'FBM'))
+    const method = methods.size === 1 ? [...methods][0] : 'FBM'
+    buckets[method].push({ order, seller_items: sellerItems })
+  }
+
+  return buckets
+}
