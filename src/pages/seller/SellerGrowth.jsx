@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import AIGrowthAssistant from '../../components/seller/AIGrowthAssistant'
 import {
   Rocket,
   Download,
@@ -578,6 +579,8 @@ export default function SellerGrowth() {
           }}
         />
       )}
+<AIGrowthAssistant growthData={data} />
+
     </div>
   )
 }

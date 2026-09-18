@@ -209,3 +209,87 @@ function templateKeywords({ title, description, category }) {
   const unique = [...new Set(words)].slice(0, 10)
   return unique.join(', ')
 }
+
+/**
+ * AI Growth Assistant — analyzes the seller's business snapshot and returns
+ * prioritized recommendations.
+ *
+ * Returns { summary, recommendations: [{ productTitle, action, why, priority, actionLink }] }
+ */
+export async function askGrowthAssistant({ question, snapshot, history = [] }) {
+  const system =
+    'You are an expert Amazon seller coach. You analyze a seller\'s business ' +
+    'data and tell them exactly what to focus on. You are direct, specific, and ' +
+    'prioritize by potential impact. You always respond in STRICT JSON with no ' +
+    'markdown and no commentary.'
+
+  const user =
+    'Here is the seller\'s current business snapshot:\n' +
+    JSON.stringify(snapshot, null, 2) +
+    '\n\nSeller question: ' +
+    (question || 'What should I focus on this week?') +
+    '\n\nRespond with ONLY a JSON object with these keys:\n' +
+    '  "summary": a 1-2 sentence headline answer\n' +
+    '  "recommendations": an array of 3-5 objects, each with:\n' +
+    '    "productTitle": the exact product title from the snapshot (or "Your catalog" if generic)\n' +
+    '    "action": a short imperative phrase (under 60 chars)\n' +
+    '    "why": one short sentence explaining the reasoning (under 140 chars)\n' +
+    '    "priority": "High", "Medium", or "Low"\n' +
+    '    "actionLink": the exact actionLink from the matching opportunity in the snapshot, or "/seller/growth" if none\n\n' +
+    'Rules:\n' +
+    '- Only reference products and actionLinks that appear in the snapshot.\n' +
+    '- Prefer High-priority items first.\n' +
+    '- Be specific: name the actual product.\n' +
+    '- Do not invent numbers.'
+
+  try {
+    const raw = await callAI(system, user)
+    const parsed = extractJson(raw)
+    if (!parsed) throw new Error('Could not parse AI response')
+    return {
+      summary: String(parsed.summary || '').trim(),
+      recommendations: (parsed.recommendations || [])
+        .slice(0, 5)
+        .map((r) => ({
+          productTitle: String(r.productTitle || '').slice(0, 100),
+          action: String(r.action || '').slice(0, 100),
+          why: String(r.why || '').slice(0, 200),
+          priority: ['High', 'Medium', 'Low'].includes(r.priority)
+            ? r.priority
+            : 'Medium',
+          actionLink: String(r.actionLink || '/seller/growth'),
+        })),
+      aiUsed: true,
+    }
+  } catch (err) {
+    console.warn('[growth AI] falling back:', err.message)
+    return localGrowthFallback(snapshot, question)
+  }
+}
+
+/**
+ * Deterministic fallback — reuses the top opportunities from the snapshot.
+ */
+function localGrowthFallback(snapshot, question) {
+  const opps = snapshot.topOpportunities || []
+  const recs = opps.slice(0, 4).map((o) => ({
+    productTitle: o.productTitle || 'Your catalog',
+    action: o.title || 'Review this opportunity',
+    why: o.description
+      ? o.description.slice(0, 140)
+      : 'Flagged based on your current data.',
+    priority: o.impact || 'Medium',
+    actionLink: o.actionLink || '/seller/growth',
+  }))
+
+  return {
+    summary:
+      recs.length > 0
+        ? `You have ${opps.length} opportunities. Start with the highest-impact items below.`
+        : 'Add a few products so I can analyze your business.',
+    recommendations: recs,
+    aiUsed: false,
+  }
+}
+
+/* Reuse the private extractJson + callAI helpers already defined above in this file. */
