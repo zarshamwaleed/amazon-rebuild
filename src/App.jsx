@@ -6,7 +6,10 @@ import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { WishlistProvider } from './context/WishlistContext'
 import { CouponsProvider } from './context/CouponsContext'
-import SellerHome from './pages/sell/SellerHome'
+
+import SellerLayout from './components/seller/SellerLayout'
+import SellerDashboard from './pages/seller/SellerDashboard'
+import SellerPlaceholder from './pages/seller/SellerPlaceholder'
 
 // Sell on Amazon — separate layout
 import SellLayout from './components/sell/SellLayout'
@@ -67,7 +70,27 @@ export default function App() {
                       <Route path="register" element={<SellRegister />} />
                     </Route>
 
-                    <Route path="/seller" element={<SellerHome />} />
+                    {/* ============ Seller Central ============ */}
+<Route path="/seller" element={<SellerLayout />}>
+  <Route index element={<SellerDashboard />} />
+  <Route path="products" element={<SellerPlaceholder title="Manage Products" />} />
+  <Route path="products/new" element={<SellerPlaceholder title="Add Product" />} />
+  <Route path="inventory" element={<SellerPlaceholder title="Manage Inventory" />} />
+  <Route path="inventory/fba" element={<SellerPlaceholder title="FBA Inventory" />} />
+  <Route path="orders" element={<SellerPlaceholder title="Manage Orders" />} />
+  <Route path="orders/returns" element={<SellerPlaceholder title="Returns" />} />
+  <Route path="pricing" element={<SellerPlaceholder title="Manage Pricing" />} />
+  <Route path="pricing/automate" element={<SellerPlaceholder title="Automate Pricing" />} />
+  <Route path="advertising" element={<SellerPlaceholder title="Campaign Manager" />} />
+  <Route path="store" element={<SellerPlaceholder title="Brand Store" />} />
+  <Route path="growth" element={<SellerPlaceholder title="Growth" />} />
+  <Route path="reports" element={<SellerPlaceholder title="Reports" />} />
+  <Route path="payments" element={<SellerPlaceholder title="Payments" />} />
+  <Route path="account-health" element={<SellerPlaceholder title="Account Health" />} />
+  <Route path="customers" element={<SellerPlaceholder title="Customers" />} />
+  <Route path="apps" element={<SellerPlaceholder title="Apps & Services" />} />
+  <Route path="settings" element={<SellerPlaceholder title="Settings" />} />
+</Route>
 
                    
 
