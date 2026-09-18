@@ -837,3 +837,99 @@ function simulateCampaignMetrics(campaign) {
 
   return { impressions, clicks, spend, sales, roas, orders }
 }
+
+/**
+ * Fetch this seller's brand store (or null if none exists).
+ */
+export async function getSellerStore(userId) {
+  const { data, error } = await supabase
+    .from('brand_stores')
+    .select('*')
+    .eq('seller_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Create or update the seller's store. Slug is derived from store_name on
+ * first save and never changes afterwards (unless explicitly passed).
+ */
+export async function upsertSellerStore(userId, payload) {
+  const slug = payload.slug || slugifyStoreName(payload.store_name)
+
+  const { data, error } = await supabase
+    .from('brand_stores')
+    .upsert(
+      {
+        seller_id: userId,
+        slug,
+        store_name: payload.store_name,
+        tagline: payload.tagline || null,
+        brand_description: payload.brand_description || null,
+        brand_story: payload.brand_story || null,
+        logo_url: payload.logo_url || null,
+        hero_image_url: payload.hero_image_url || null,
+        featured_product_ids: payload.featured_product_ids || [],
+        grid_product_ids: payload.grid_product_ids || [],
+        status: payload.status || 'draft',
+        updated_at: new Date().toISOString(),
+        published_at:
+          payload.status === 'published'
+            ? payload.published_at || new Date().toISOString()
+            : payload.published_at || null,
+      },
+      { onConflict: 'seller_id' }
+    )
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Fetch a public store by slug. Returns store + resolved products.
+ */
+export async function getPublicStore(slug) {
+  const { data: store, error } = await supabase
+    .from('brand_stores')
+    .select('*')
+    .eq('slug', slug)
+    .eq('status', 'published')
+    .maybeSingle()
+  if (error) throw error
+  if (!store) return null
+
+  // Fetch all seller products
+  const { data: products } = await supabase
+    .from('products')
+    .select('*')
+    .eq('seller_id', store.seller_id)
+
+  const byId = {}
+  for (const p of products || []) byId[p.id] = p
+
+  const featured = (store.featured_product_ids || [])
+    .map((id) => byId[id])
+    .filter(Boolean)
+  const grid = (store.grid_product_ids || []).map((id) => byId[id]).filter(Boolean)
+  // Fallback grid = all products
+  const gridFinal = grid.length > 0 ? grid : products || []
+
+  return { store, featured, grid: gridFinal }
+}
+
+/**
+ * Slugify store name — lowercase, kebab-case.
+ */
+export function slugifyStoreName(name) {
+  return (
+    (name || 'store')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') +
+    '-' +
+    Math.random().toString(36).slice(2, 6)
+  )
+}
