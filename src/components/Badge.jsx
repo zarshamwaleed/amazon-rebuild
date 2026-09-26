@@ -1,13 +1,27 @@
-﻿export default function Badge({ children, color = 'gray', className = '' }) {
-  const colors = {
-    gray: 'bg-gray-100 text-gray-800',
-    green: 'bg-green-100 text-green-800',
-    red: 'bg-red-100 text-red-800',
-    yellow: 'bg-yellow-100 text-yellow-800',
-    blue: 'bg-blue-100 text-blue-800',
+const COLOR_MAP = {
+  gray: { bg: 'bg-stone-100', text: 'text-stone-700', dot: 'bg-stone-400' },
+  green: { bg: 'bg-success-50', text: 'text-success-700', dot: 'bg-success-500' },
+  red: { bg: 'bg-error-50', text: 'text-error-700', dot: 'bg-error-500' },
+  yellow: { bg: 'bg-warning-50', text: 'text-warning-700', dot: 'bg-warning-500' },
+  blue: { bg: 'bg-info-50', text: 'text-info-700', dot: 'bg-info-500' },
+}
+
+export default function Badge({ children, color = 'gray', variant = 'pill', className = '' }) {
+  const c = COLOR_MAP[color] || COLOR_MAP.gray
+
+  if (variant === 'dot') {
+    return (
+      <span className={'inline-flex items-center gap-1.5 text-xs font-medium text-charcoal-700 ' + className}>
+        <span className={'w-1.5 h-1.5 rounded-full ' + c.dot} />
+        {children}
+      </span>
+    )
   }
+
+  const shape = variant === 'chip' ? 'rounded-md px-2.5 py-1' : 'rounded-full px-2.5 py-0.5'
+
   return (
-    <span className={'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ' + (colors[color] || colors.gray) + ' ' + className}>
+    <span className={'inline-flex items-center gap-1 text-xs font-medium ' + shape + ' ' + c.bg + ' ' + c.text + ' ' + className}>
       {children}
     </span>
   )

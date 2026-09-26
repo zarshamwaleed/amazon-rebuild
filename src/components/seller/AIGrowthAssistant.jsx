@@ -2,7 +2,6 @@ import { useState } from 'react'
 import {
   Sparkles,
   X,
-  Loader2,
   TrendingUp,
   Send,
   ExternalLink,
@@ -10,6 +9,7 @@ import {
 import { askGrowthAssistant } from '../../services/aiService'
 import { useToast } from '../../context/ToastContext'
 import { useNavigate } from 'react-router-dom'
+import Badge from '../Badge'
 
 const SUGGESTIONS = [
   'What should I focus on this week?',
@@ -18,10 +18,10 @@ const SUGGESTIONS = [
   'Where am I losing money?',
 ]
 
-const PRIORITY_STYLES = {
-  High: 'bg-red-100 text-red-800',
-  Medium: 'bg-amber-100 text-amber-800',
-  Low: 'bg-gray-100 text-gray-700',
+const PRIORITY_COLOR = {
+  High: 'red',
+  Medium: 'yellow',
+  Low: 'gray',
 }
 
 export default function AIGrowthAssistant({ growthData }) {
@@ -82,6 +82,7 @@ export default function AIGrowthAssistant({ growthData }) {
         { type: 'success' }
       )
     } catch (err) {
+      console.error('[askGrowthAssistant]', err)
       pushToast('Could not reach AI — showing top opportunities', { type: 'info' })
       const snapshot = buildSnapshot()
       setResult({
@@ -112,9 +113,11 @@ export default function AIGrowthAssistant({ growthData }) {
       {/* Floating trigger */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-gradient-to-br from-[#febd69] to-[#f3a847] text-gray-900 font-semibold px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition flex items-center gap-2"
+        className="fixed bottom-6 right-6 z-40 bg-charcoal-900 text-bone-50 font-medium pl-3 pr-5 py-2.5 rounded-full shadow-lifted hover:bg-charcoal-800 transition-avenzo flex items-center gap-2.5"
       >
-        <Sparkles className="w-5 h-5" />
+        <span className="w-6 h-6 rounded-full bg-brass-50 text-brass-600 flex items-center justify-center flex-shrink-0">
+          <Sparkles className="w-3.5 h-3.5" />
+        </span>
         AI Growth Assistant
       </button>
 
@@ -122,27 +125,31 @@ export default function AIGrowthAssistant({ growthData }) {
       {open && (
         <div className="fixed inset-0 z-50 flex">
           <div
-            className="flex-1 bg-black/40"
+            className="flex-1 bg-charcoal-900/40 backdrop-blur-[1px]"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          <aside className="w-full max-w-md bg-white shadow-2xl flex flex-col overflow-hidden">
+          <aside className="w-full max-w-md bg-bone-50 shadow-lifted flex flex-col overflow-hidden animate-scale-in origin-right">
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#232f3e] to-[#37475a] text-white px-5 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#febd69]" />
-                <span className="font-bold">AI Growth Assistant</span>
+            <div className="bg-charcoal-900 text-bone-50 px-5 py-4 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-full bg-brass-50 text-brass-600 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </span>
+                <span className="font-semibold">AI Growth Assistant</span>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="p-1 rounded hover:bg-white/10"
+                className="p-1 rounded-lg hover:bg-white/10 transition-avenzo"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+            {/* AI-powered accent strip */}
+            <div className="h-[3px] bg-gradient-to-r from-brass-500 via-brass-300 to-transparent flex-shrink-0" />
 
-            <div className="px-5 py-3 text-xs text-gray-600 border-b bg-gray-50">
+            <div className="px-5 py-3 text-xs text-charcoal-500 border-b border-stone-200 bg-stone-50 flex-shrink-0">
               Powered by Groq (Llama 3.3). Analyzes your products, orders, and
               opportunities — never your customers' personal data.
             </div>
@@ -152,27 +159,25 @@ export default function AIGrowthAssistant({ growthData }) {
               {!result && !busy && (
                 <>
                   <div className="text-center py-6">
-                    <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-3">
-                      <Sparkles className="w-6 h-6 text-[#c7511f]" />
+                    <div className="w-14 h-14 rounded-full bg-brass-50 flex items-center justify-center mx-auto mb-3">
+                      <Sparkles className="w-6 h-6 text-brass-600" />
                     </div>
-                    <h3 className="font-bold text-gray-900 mb-1">
+                    <h3 className="heading-sub mb-1">
                       Ask me anything about your business
                     </h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-body-sm">
                       I'll analyze your real data and prioritize what matters most.
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">
-                      Try asking
-                    </p>
+                    <p className="text-label mb-2">Try asking</p>
                     <div className="space-y-1.5">
                       {SUGGESTIONS.map((s) => (
                         <button
                           key={s}
                           onClick={() => ask(s)}
-                          className="w-full text-left text-sm px-3 py-2 rounded border border-gray-200 hover:bg-gray-50 hover:border-gray-400 transition"
+                          className="w-full text-left text-sm px-3 py-2 rounded-lg border border-stone-200 hover:bg-stone-50 hover:border-stone-300 transition-avenzo text-charcoal-800"
                         >
                           {s}
                         </button>
@@ -183,64 +188,52 @@ export default function AIGrowthAssistant({ growthData }) {
               )}
 
               {busy && (
-                <div className="flex items-center gap-3 text-sm text-gray-600 py-6">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                <div className="flex items-center gap-3 text-body-sm py-6">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brass-400 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-brass-400 animate-pulse [animation-delay:150ms]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-brass-400 animate-pulse [animation-delay:300ms]" />
+                  </span>
                   Analyzing your business…
                 </div>
               )}
 
               {result && (
                 <>
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <div className="text-xs uppercase tracking-wider text-[#c7511f] font-bold mb-1">
-                      Your question
-                    </div>
-                    <div className="text-sm text-gray-900">
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%] bg-charcoal-900 text-bone-50 rounded-xl rounded-br-sm px-4 py-2.5 text-sm">
                       {result.question}
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
-                      Answer
-                    </div>
-                    <p className="text-sm text-gray-800 leading-relaxed">
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%] bg-stone-100 text-charcoal-800 rounded-xl rounded-bl-sm px-4 py-2.5 text-sm leading-relaxed">
                       {result.summary}
-                    </p>
+                    </div>
                   </div>
 
                   {result.recommendations?.length > 0 && (
                     <div>
-                      <div className="text-xs uppercase tracking-wider text-gray-500 mb-2">
-                        Recommended actions
-                      </div>
+                      <div className="text-label mb-2">Recommended actions</div>
                       <ul className="space-y-3">
                         {result.recommendations.map((r, i) => (
-                          <li
-                            key={i}
-                            className="border border-gray-200 rounded-lg p-4 space-y-2"
-                          >
+                          <li key={i} className="border border-stone-200 rounded-lg p-4 space-y-2">
                             <div className="flex items-start justify-between gap-2">
-                              <div className="text-sm font-bold text-gray-900 leading-snug">
+                              <div className="text-sm font-semibold text-charcoal-900 leading-snug">
                                 {r.action}
                               </div>
-                              <span
-                                className={
-                                  'text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full flex-shrink-0 ' +
-                                  PRIORITY_STYLES[r.priority]
-                                }
-                              >
+                              <Badge color={PRIORITY_COLOR[r.priority] || 'gray'} className="flex-shrink-0">
                                 {r.priority}
-                              </span>
+                              </Badge>
                             </div>
-                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                            <div className="text-xs text-charcoal-500 flex items-center gap-1">
                               <TrendingUp className="w-3 h-3" />
                               {r.productTitle}
                             </div>
-                            <p className="text-sm text-gray-700">{r.why}</p>
+                            <p className="text-sm text-charcoal-700">{r.why}</p>
                             <button
                               onClick={() => handleTakeAction(r.actionLink)}
-                              className="text-sm font-medium text-[#007185] hover:text-[#c7511f] hover:underline flex items-center gap-1"
+                              className="text-sm font-medium text-brass-600 hover:text-brass-700 transition-avenzo flex items-center gap-1"
                             >
                               Take action <ExternalLink className="w-3 h-3" />
                             </button>
@@ -252,13 +245,13 @@ export default function AIGrowthAssistant({ growthData }) {
 
                   <button
                     onClick={() => setResult(null)}
-                    className="w-full text-sm text-[#007185] hover:underline pt-2"
+                    className="w-full text-sm text-charcoal-600 hover:text-charcoal-900 transition-avenzo pt-2"
                   >
                     Ask another question
                   </button>
 
                   {!result.aiUsed && (
-                    <div className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded p-2 text-center">
+                    <div className="text-xs text-charcoal-500 bg-stone-50 border border-stone-200 rounded-lg p-2 text-center">
                       AI unavailable — showing top opportunities from your data.
                     </div>
                   )}
@@ -267,25 +260,25 @@ export default function AIGrowthAssistant({ growthData }) {
             </div>
 
             {/* Composer */}
-            <div className="border-t p-3">
+            <div className="border-t border-stone-200 p-3 flex-shrink-0">
               <form
                 onSubmit={(e) => {
                   e.preventDefault()
                   ask()
                 }}
-                className="flex items-center gap-2 border border-gray-300 rounded-md px-3 py-2 focus-within:ring-2 focus-within:ring-[#febd69]"
+                className="flex items-center gap-2 border border-stone-300 rounded-lg px-3 py-2 transition-avenzo focus-within:border-brass-400 focus-within:shadow-focus-ring"
               >
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Ask anything about your business…"
-                  className="flex-1 text-sm focus:outline-none"
+                  className="flex-1 text-sm bg-transparent focus:outline-none text-charcoal-900 placeholder:text-charcoal-400"
                   disabled={busy}
                 />
                 <button
                   type="submit"
                   disabled={!q.trim() || busy}
-                  className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 rounded px-3 py-1.5 flex items-center gap-1 text-sm font-medium disabled:opacity-50"
+                  className="bg-charcoal-900 hover:bg-charcoal-800 text-bone-50 rounded-lg px-3 py-1.5 flex items-center gap-1 text-sm font-medium disabled:opacity-50 transition-avenzo"
                   aria-label="Send"
                 >
                   <Send className="w-3.5 h-3.5" />

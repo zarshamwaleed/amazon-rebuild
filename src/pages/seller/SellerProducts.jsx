@@ -18,6 +18,10 @@ import {
   duplicateSellerProduct,
   updateSellerProduct,
 } from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Button from '../../components/Button'
+import Badge from '../../components/Badge'
+import EmptyState from '../../components/EmptyState'
 
 export default function SellerProducts() {
   const { user } = useAuth()
@@ -76,7 +80,6 @@ export default function SellerProducts() {
   function openMenu(e, product) {
     e.stopPropagation()
     const rect = e.currentTarget.getBoundingClientRect()
-    const menuWidth = 180
     setMenu({
       id: product.id,
       top: rect.bottom + 4,
@@ -119,107 +122,118 @@ export default function SellerProducts() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Manage Products</h1>
-          <p className="text-sm text-gray-600">
-            {products.length} product{products.length !== 1 ? 's' : ''} in your catalog
-          </p>
-        </div>
-        <Link
-          to="/seller/products/new"
-          className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-4 py-2 rounded flex items-center gap-2 transition"
-        >
-          <Plus className="w-4 h-4" /> Add Product
-        </Link>
-      </div>
+      <SellerPageHeader
+        title="Manage Products"
+        description={`${products.length} product${products.length !== 1 ? 's' : ''} in your catalog`}
+        actions={
+          <Button onClick={() => navigate('/seller/products/new')}>
+            <Plus className="w-4 h-4" /> Add Product
+          </Button>
+        }
+      />
 
-      <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
-        <Search className="w-4 h-4 text-gray-400" />
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle p-4 flex flex-wrap items-center gap-3">
+        <Search className="w-4 h-4 text-charcoal-400" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search your products by title or brand..."
-          className="flex-1 text-sm focus:outline-none"
+          placeholder="Search your products by title or brand…"
+          className="flex-1 text-sm bg-transparent text-charcoal-800 placeholder:text-charcoal-400 focus:outline-none"
         />
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg" ref={tableWrapRef}>
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle overflow-hidden" ref={tableWrapRef}>
         {loading ? (
-          <div className="p-10 text-center text-sm text-gray-600">Loading products…</div>
+          <div className="p-5 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="skeleton-shimmer h-14 rounded-lg" />
+            ))}
+          </div>
         ) : filtered.length === 0 ? (
-          <EmptyState onAdd={() => navigate('/seller/products/new')} hasQuery={query.length > 0} />
+          <div className="p-2">
+            <EmptyState
+              icon={PackageX}
+              title={query ? 'No products match your search' : 'No products yet'}
+              message={
+                query
+                  ? 'Try a different keyword.'
+                  : 'Add your first product to start selling on Avenzo.'
+              }
+              action={
+                !query && (
+                  <Button onClick={() => navigate('/seller/products/new')}>
+                    <Plus className="w-4 h-4" /> Add your first product
+                  </Button>
+                )
+              }
+            />
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="text-left px-5 py-3">Product</th>
-                  <th className="text-left px-4 py-3">SKU</th>
-                  <th className="text-right px-4 py-3">Price</th>
-                  <th className="text-right px-4 py-3">Inventory</th>
-                  <th className="text-center px-4 py-3">Status</th>
-                  <th className="text-right px-4 py-3">Sales</th>
-                  <th className="text-right px-5 py-3">Actions</th>
+                  <th className="text-label text-left px-5 py-3">Product</th>
+                  <th className="text-label text-left px-4 py-3">SKU</th>
+                  <th className="text-label text-right px-4 py-3">Price</th>
+                  <th className="text-label text-right px-4 py-3">Inventory</th>
+                  <th className="text-label text-center px-4 py-3">Status</th>
+                  <th className="text-label text-right px-4 py-3">Sales</th>
+                  <th className="text-label text-right px-5 py-3">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-stone-100">
                 {filtered.map((p) => {
                   const inStock = (p.stock || 0) > 0
                   const active = p.is_active !== false && inStock
                   return (
-                    <tr key={p.id} className="border-t hover:bg-gray-50">
-                      <td className="px-5 py-3">
+                    <tr key={p.id} className="hover:bg-stone-50/60 transition-avenzo">
+                      <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
                           {p.image_url ? (
                             <img
                               src={p.image_url}
                               alt=""
-                              className="w-10 h-10 rounded object-cover border"
+                              className="w-10 h-10 rounded-lg object-cover border border-stone-200"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
-                              <PackageX className="w-4 h-4 text-gray-400" />
+                            <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center">
+                              <PackageX className="w-4 h-4 text-charcoal-400" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <div className="font-medium text-gray-900 truncate max-w-xs">
+                            <div className="font-medium text-charcoal-900 truncate max-w-xs">
                               {p.title}
                             </div>
-                            {p.brand && <div className="text-xs text-gray-500">{p.brand}</div>}
+                            {p.brand && <div className="text-xs text-charcoal-500">{p.brand}</div>}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 font-mono text-xs">
+                      <td className="px-4 py-3.5 text-charcoal-500 font-mono text-xs">
                         {p.sku || '—'}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-900">
+                      <td className="px-4 py-3.5 text-right text-charcoal-900">
                         ${Number(p.price || 0).toFixed(2)}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className={inStock ? 'text-gray-900' : 'text-red-600'}>
+                      <td className="px-4 py-3.5 text-right">
+                        <span className={inStock ? 'text-charcoal-900' : 'text-error-700'}>
                           {p.stock || 0}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={
-                            'inline-block text-xs font-medium px-2 py-0.5 rounded-full ' +
-                            (active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600')
-                          }
-                        >
+                      <td className="px-4 py-3.5 text-center">
+                        <Badge color={active ? 'green' : 'gray'}>
                           {active ? 'Active' : 'Inactive'}
-                        </span>
+                        </Badge>
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-600">0</td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-4 py-3.5 text-right text-charcoal-500">0</td>
+                      <td className="px-5 py-3.5 text-right">
                         <button
                           onClick={(e) => openMenu(e, p)}
-                          className="p-1.5 hover:bg-gray-100 rounded"
+                          className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
                           aria-label="Actions"
                         >
-                          <MoreVertical className="w-4 h-4 text-gray-600" />
+                          <MoreVertical className="w-4 h-4 text-charcoal-600" />
                         </button>
                       </td>
                     </tr>
@@ -234,42 +248,42 @@ export default function SellerProducts() {
       {/* Fixed-position dropdown — never clipped by table overflow */}
       {menu && (
         <div
-          className="fixed bg-white shadow-lg border border-gray-200 rounded z-50 py-1 w-44"
+          className="fixed bg-bone-50 shadow-popover border border-stone-200 rounded-xl z-50 py-1 w-44 overflow-hidden animate-scale-in origin-top-right"
           style={{ top: menu.top, right: menu.right }}
           onClick={(e) => e.stopPropagation()}
         >
           <Link
             to={`/seller/products/${menu.product.id}/edit`}
-            className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
+            className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-stone-100 transition-avenzo"
             onClick={() => setMenu(null)}
           >
-            <Edit className="w-4 h-4 text-gray-500" /> Edit
+            <Edit className="w-4 h-4 text-charcoal-400" /> Edit
           </Link>
           <Link
             to={`/products/${menu.product.id}`}
             target="_blank"
-            className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
+            className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-stone-100 transition-avenzo"
             onClick={() => setMenu(null)}
           >
-            <Eye className="w-4 h-4 text-gray-500" /> View on Amazon
+            <Eye className="w-4 h-4 text-charcoal-400" /> View on Avenzo
           </Link>
           <button
             onClick={() => {
               setMenu(null)
               handleDuplicate(menu.product)
             }}
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-stone-100 transition-avenzo"
           >
-            <Copy className="w-4 h-4 text-gray-500" /> Duplicate
+            <Copy className="w-4 h-4 text-charcoal-400" /> Duplicate
           </button>
           <button
             onClick={() => {
               setMenu(null)
               handleToggleStatus(menu.product)
             }}
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-stone-100 transition-avenzo"
           >
-            <PackageX className="w-4 h-4 text-gray-500" />{' '}
+            <PackageX className="w-4 h-4 text-charcoal-400" />{' '}
             {menu.product.is_active !== false ? 'Deactivate' : 'Activate'}
           </button>
           <button
@@ -277,38 +291,11 @@ export default function SellerProducts() {
               setMenu(null)
               handleDelete(menu.product)
             }}
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-700 hover:bg-red-50 border-t mt-1 pt-2"
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-error-700 hover:bg-error-50 border-t border-stone-200 mt-1 pt-2 transition-avenzo"
           >
             <Trash2 className="w-4 h-4" /> Delete
           </button>
         </div>
-      )}
-    </div>
-  )
-}
-
-function EmptyState({ onAdd, hasQuery }) {
-  return (
-    <div className="p-12 text-center">
-      <PackageX className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-      {hasQuery ? (
-        <>
-          <h3 className="font-semibold text-gray-900 mb-1">No products match your search</h3>
-          <p className="text-sm text-gray-600">Try a different keyword.</p>
-        </>
-      ) : (
-        <>
-          <h3 className="font-semibold text-gray-900 mb-1">No products yet</h3>
-          <p className="text-sm text-gray-600 mb-5">
-            Add your first product to start selling on Amazon Rebuild.
-          </p>
-          <button
-            onClick={onAdd}
-            className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded inline-flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Add your first product
-          </button>
-        </>
       )}
     </div>
   )

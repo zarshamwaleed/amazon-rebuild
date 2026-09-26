@@ -8,6 +8,7 @@ import {
   generateKeywords,
 } from '../../services/aiService'
 import { useToast } from '../../context/ToastContext'
+import Button from '../Button'
 
 export default function AIListingAssistant({ form, categoryName, onApply }) {
   const { pushToast } = useToast()
@@ -46,7 +47,7 @@ export default function AIListingAssistant({ form, categoryName, onApply }) {
         r = { keywords: await generateKeywords(ctx) }
       }
       setResult(r)
-            pushToast('Generated', { type: 'success' })
+      pushToast('Generated', { type: 'success' })
     } catch (err) {
       pushToast('AI generation failed: ' + err.message, { type: 'error' })
     } finally {
@@ -74,7 +75,7 @@ export default function AIListingAssistant({ form, categoryName, onApply }) {
       {/* Floating trigger button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-6 z-40 bg-gradient-to-br from-[#febd69] to-[#f3a847] text-gray-900 font-semibold px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition flex items-center gap-2"
+        className="fixed bottom-24 right-6 z-40 bg-charcoal-900 text-brass-300 font-semibold px-5 py-3 rounded-full shadow-lifted hover:bg-charcoal-800 transition-avenzo flex items-center gap-2"
       >
         <Sparkles className="w-5 h-5" />
         AI Listing Assistant
@@ -84,27 +85,27 @@ export default function AIListingAssistant({ form, categoryName, onApply }) {
       {open && (
         <div className="fixed inset-0 z-50 flex">
           <div
-            className="flex-1 bg-black/40"
+            className="flex-1 bg-charcoal-900/40 backdrop-blur-[1px] animate-fade-in"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          <aside className="w-full max-w-md bg-white shadow-2xl flex flex-col overflow-hidden">
+          <aside className="w-full max-w-md bg-bone-50 shadow-lifted flex flex-col overflow-hidden animate-[slideInLeft_320ms_cubic-bezier(0.16,1,0.3,1)_both]">
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#232f3e] to-[#37475a] text-white px-5 py-4 flex items-center justify-between">
+            <div className="bg-charcoal-900 text-bone-50 px-5 py-4 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#febd69]" />
-                <span className="font-bold">AI Listing Assistant</span>
+                <Sparkles className="w-5 h-5 text-brass-300" />
+                <span className="font-semibold">AI Listing Assistant</span>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="p-1 rounded hover:bg-white/10"
+                className="p-1 rounded-lg hover:bg-white/10 transition-avenzo"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-                        <div className="px-5 py-3 text-xs text-gray-600 border-b bg-gray-50">
+            <div className="px-5 py-3 text-xs text-charcoal-500 border-b border-stone-200 bg-stone-50 flex-shrink-0">
               Powered by Groq (Llama 3.3). Results are suggestions — review before applying.
             </div>
 
@@ -151,23 +152,16 @@ export default function AIListingAssistant({ form, categoryName, onApply }) {
 
               {/* Results */}
               {result && (
-                <div className="border-t pt-4 space-y-3">
+                <div className="border-t border-stone-200 pt-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-gray-900">Suggestions</h3>
-                    <button
-                      onClick={applyAll}
-                      className="text-xs bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-3 py-1.5 rounded"
-                    >
+                    <h3 className="heading-sub">Suggestions</h3>
+                    <Button size="sm" variant="secondary" onClick={applyAll}>
                       Apply all
-                    </button>
+                    </Button>
                   </div>
 
                   {result.title && (
-                    <ResultBlock
-                      label="Title"
-                      value={result.title}
-                      onApply={() => applyField('title')}
-                    />
+                    <ResultBlock label="Title" value={result.title} onApply={() => applyField('title')} />
                   )}
                   {result.bullet_points && result.bullet_points.length > 0 && (
                     <ResultList
@@ -185,11 +179,7 @@ export default function AIListingAssistant({ form, categoryName, onApply }) {
                     />
                   )}
                   {result.keywords && (
-                    <ResultBlock
-                      label="Keywords"
-                      value={result.keywords}
-                      onApply={() => applyField('keywords')}
-                    />
+                    <ResultBlock label="Keywords" value={result.keywords} onApply={() => applyField('keywords')} />
                   )}
                 </div>
               )}
@@ -207,20 +197,19 @@ function ActionButton({ icon, label, desc, loading, onClick, primary }) {
       onClick={onClick}
       disabled={loading}
       className={
-        'w-full text-left px-4 py-3 rounded-lg border transition flex items-start gap-3 ' +
+        'w-full text-left px-4 py-3 rounded-xl border transition-avenzo flex items-start gap-3 disabled:opacity-60 ' +
         (primary
-          ? 'bg-gradient-to-r from-[#febd69] to-[#f3a847] border-[#f3a847] hover:shadow-md'
-          : 'bg-white border-gray-200 hover:border-gray-400 hover:bg-gray-50') +
-        ' disabled:opacity-60'
+          ? 'bg-brass-50 border-brass-300 hover:bg-brass-100'
+          : 'bg-bone-50 border-stone-200 hover:border-stone-400 hover:bg-stone-50')
       }
     >
-      <span className="text-lg">{icon}</span>
+      <span className="text-lg leading-none mt-0.5">{icon}</span>
       <div className="flex-1">
-        <div className="font-medium text-gray-900 flex items-center gap-2">
+        <div className="font-medium text-charcoal-900 flex items-center gap-2">
           {label}
-          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+          {loading && <Loader2 className="w-4 h-4 animate-spin text-charcoal-400" />}
         </div>
-        <div className="text-xs text-gray-600 mt-0.5">{desc}</div>
+        <div className="text-xs text-charcoal-500 mt-0.5">{desc}</div>
       </div>
     </button>
   )
@@ -228,37 +217,37 @@ function ActionButton({ icon, label, desc, loading, onClick, primary }) {
 
 function ResultBlock({ label, value, onApply, multiline }) {
   return (
-    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+    <div className="border border-stone-200 rounded-xl p-3 bg-stone-50">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-bold uppercase text-gray-500">{label}</span>
+        <span className="text-label">{label}</span>
         <button
           onClick={onApply}
-          className="text-xs bg-[#232f3e] hover:bg-[#131921] text-white px-2 py-1 rounded"
+          className="text-xs bg-charcoal-900 hover:bg-charcoal-800 text-bone-50 px-2 py-1 rounded-md transition-avenzo"
         >
           Apply
         </button>
       </div>
-      <p className={'text-sm text-gray-800 ' + (multiline ? '' : 'line-clamp-3')}>{value}</p>
+      <p className={'text-body-sm ' + (multiline ? '' : 'line-clamp-3')}>{value}</p>
     </div>
   )
 }
 
 function ResultList({ label, items, onApply }) {
   return (
-    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+    <div className="border border-stone-200 rounded-xl p-3 bg-stone-50">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold uppercase text-gray-500">{label}</span>
+        <span className="text-label">{label}</span>
         <button
           onClick={onApply}
-          className="text-xs bg-[#232f3e] hover:bg-[#131921] text-white px-2 py-1 rounded"
+          className="text-xs bg-charcoal-900 hover:bg-charcoal-800 text-bone-50 px-2 py-1 rounded-md transition-avenzo"
         >
           Apply
         </button>
       </div>
       <ul className="space-y-1">
         {items.map((it, i) => (
-          <li key={i} className="text-sm text-gray-800 flex gap-2">
-            <span className="text-gray-400 flex-shrink-0">•</span>
+          <li key={i} className="text-body-sm flex gap-2">
+            <span className="text-charcoal-300 flex-shrink-0">•</span>
             <span>{it}</span>
           </li>
         ))}

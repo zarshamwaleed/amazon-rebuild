@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import {
   Gift,
   Calendar,
@@ -8,7 +8,6 @@ import {
   Edit,
   Plus,
   Trash2,
-  Star,
   ArrowLeft,
   Package,
   Lock,
@@ -20,6 +19,13 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useCart } from '../context/CartContext'
+import Button from '../components/Button'
+import Card from '../components/Card'
+import Badge from '../components/Badge'
+import Input from '../components/Input'
+import EmptyState from '../components/EmptyState'
+import LoadingSkeleton from '../components/LoadingSkeleton'
+import Rating from '../components/Rating'
 import {
   getRegistryById,
   getRegistryItems,
@@ -27,27 +33,32 @@ import {
   removeRegistryItem,
   updateRegistryItem,
   getRegistryTypeMeta,
+  REGISTRY_TYPE_ICONS,
 } from '../services/registryService'
 
 const PRIORITY_META = {
-  must_have: { label: 'Must Have', cls: 'bg-red-100 text-red-800' },
-  high: { label: 'High', cls: 'bg-orange-100 text-orange-800' },
-  normal: { label: 'Normal', cls: 'bg-gray-100 text-gray-700' },
-  low: { label: 'Low', cls: 'bg-blue-100 text-blue-800' },
+  must_have: { label: 'Must Have', color: 'red' },
+  high: { label: 'High', color: 'yellow' },
+  normal: { label: 'Normal', color: 'gray' },
+  low: { label: 'Low', color: 'blue' },
 }
+
+const textareaClass =
+  'w-full rounded-lg border border-stone-300 bg-bone-50 px-3.5 py-2.5 text-sm text-charcoal-900 ' +
+  'placeholder:text-charcoal-400 transition-avenzo focus:outline-none focus:border-brass-400 resize-none'
 
 export default function RegistryDetail() {
   const { id } = useParams()
   const { user } = useAuth()
   const { pushToast } = useToast()
   const { addItem } = useCart()
-  const navigate = useNavigate()
 
   const [registry, setRegistry] = useState(null)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [showShare, setShowShare] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
+  const [confirmRemove, setConfirmRemove] = useState(null)
 
   const isOwner = user && registry && user.id === registry.user_id
 
@@ -61,7 +72,7 @@ export default function RegistryDetail() {
       ])
       setRegistry(reg)
       setItems(it)
-    } catch (err) {
+    } catch {
       pushToast('Could not load registry', { type: 'error' })
     } finally {
       setLoading(false)
@@ -70,13 +81,14 @@ export default function RegistryDetail() {
 
   useEffect(() => {
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   async function handleRemoveItem(item) {
-    if (!confirm(`Remove "${item.product?.title}" from this registry?`)) return
     try {
       await removeRegistryItem(item.id)
       pushToast('Item removed', { type: 'info' })
+      setConfirmRemove(null)
       load()
     } catch {
       pushToast('Could not remove item', { type: 'error' })
@@ -116,27 +128,29 @@ export default function RegistryDetail() {
   }
 
   if (loading) {
-    return <div className="py-20 text-center text-sm text-gray-600">Loading registry…</div>
+    return (
+      <div className="space-y-8 animate-fade-in">
+        <div className="skeleton-shimmer h-5 w-24 rounded" />
+        <div className="skeleton-shimmer h-56 md:h-64 rounded-2xl" />
+        <div className="skeleton-shimmer h-32 rounded-xl" />
+        <LoadingSkeleton count={6} />
+      </div>
+    )
   }
 
   if (!registry) {
     return (
-      <div className="max-w-2xl mx-auto py-10">
-        <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-          <Gift className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">
-            Registry not found
-          </h3>
-          <p className="text-sm text-gray-600 mb-5">
-            This registry doesn't exist or is private.
-          </p>
-          <Link
-            to="/registry"
-            className="inline-flex items-center gap-2 bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2.5 rounded"
-          >
-            Browse Registries
-          </Link>
-        </div>
+      <div className="max-w-xl mx-auto py-10">
+        <EmptyState
+          icon={Gift}
+          title="Registry not found"
+          message="This registry doesn't exist or is private."
+          action={
+            <Link to="/registry">
+              <Button>Browse Registries</Button>
+            </Link>
+          }
+        />
       </div>
     )
   }
@@ -146,176 +160,171 @@ export default function RegistryDetail() {
   const date = registry.expected_date || registry.event_date
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto py-4">
+    <div className="space-y-8">
       <Link
         to={isOwner ? '/registry/manage' : '/registry'}
-        className="text-sm text-[#007185] hover:underline flex items-center gap-1"
+        className="text-body-sm text-charcoal-600 hover:text-charcoal-900 inline-flex items-center gap-1.5 transition-avenzo"
       >
         <ArrowLeft className="w-4 h-4" /> Back
       </Link>
 
       {/* Hero */}
-      <div className={'rounded-lg overflow-hidden bg-gradient-to-br ' + meta.color + ' text-white'}>
-        <div className="p-8 md:p-10">
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <div className="text-4xl mb-2">{meta.emoji}</div>
-              <div className="text-xs uppercase tracking-wider text-white/80 mb-1">
-                {meta.name}
-              </div>
-              <h1 className="text-2xl md:text-4xl font-bold">{registry.name}</h1>
-              <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-white/90">
-                {date && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {registry.expected_date ? 'Expected' : 'Event'}:{' '}
-                    {new Date(date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </span>
-                )}
-                {registry.show_location && registry.city && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" /> {registry.city}
-                    {registry.state ? ', ' + registry.state : ''}
-                  </span>
-                )}
-                {!isOwner && (
-                  <span className="flex items-center gap-1">
-                    {registry.privacy === 'private' ? (
-                      <>
-                        <Lock className="w-4 h-4" /> Private
-                      </>
-                    ) : (
-                      <>
-                        <Shield className="w-4 h-4" /> {registry.privacy}
-                      </>
-                    )}
-                  </span>
-                )}
-              </div>
-            </div>
+      <div
+        className={
+          'relative rounded-2xl overflow-hidden shadow-card bg-gradient-to-br ' + meta.color
+        }
+      >
+        <div className="absolute inset-0 bg-charcoal-900/25" />
+        <div className="relative p-8 md:p-12">
+          {(() => {
+            const TypeIcon = REGISTRY_TYPE_ICONS[registry.type] || Gift
+            return (
+              <span className="inline-flex w-12 h-12 rounded-xl bg-white/15 items-center justify-center mb-3">
+                <TypeIcon className="w-6 h-6 text-white" />
+              </span>
+            )
+          })()}
+          <div className="text-xs uppercase tracking-[0.15em] font-medium text-white/80 mb-2">
+            {meta.name}
+          </div>
+          <h1 className="font-display text-3xl md:text-5xl font-medium text-white leading-tight">
+            {registry.name}
+          </h1>
 
-            {/* Owner actions */}
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setShowShare(true)}
-                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium px-4 py-2 rounded flex items-center gap-2 text-sm"
-              >
-                <Share2 className="w-4 h-4" /> Share
-              </button>
-              {isOwner && (
-                <>
-                  <Link
-                    to={`/registry/${registry.id}/edit`}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium px-4 py-2 rounded flex items-center gap-2 text-sm"
-                  >
-                    <Edit className="w-4 h-4" /> Edit
-                  </Link>
-                  <Link
-                    to="/products"
-                    className="bg-white text-gray-900 font-semibold px-4 py-2 rounded flex items-center gap-2 text-sm hover:bg-gray-100"
-                  >
-                    <Plus className="w-4 h-4" /> Add Items
-                  </Link>
-                </>
-              )}
-            </div>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-5 text-sm text-white/90">
+            {date && (
+              <span className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4" />
+                {registry.expected_date ? 'Expected' : 'Event'}:{' '}
+                {new Date(date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </span>
+            )}
+            {registry.show_location && registry.city && (
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-4 h-4" /> {registry.city}
+                {registry.state ? ', ' + registry.state : ''}
+              </span>
+            )}
+            {!isOwner && (
+              <span className="flex items-center gap-1.5">
+                {registry.privacy === 'private' ? (
+                  <>
+                    <Lock className="w-4 h-4" /> Private
+                  </>
+                ) : (
+                  <>
+                    <Shield className="w-4 h-4" /> {registry.privacy}
+                  </>
+                )}
+              </span>
+            )}
           </div>
 
           {registry.description && (
-            <p className="text-white/90 mt-4 max-w-2xl">{registry.description}</p>
+            <p className="text-white/90 mt-4 max-w-2xl leading-relaxed">
+              {registry.description}
+            </p>
           )}
         </div>
       </div>
 
+      {/* Actions */}
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <Button variant="outline" onClick={() => setShowShare(true)}>
+          <Share2 className="w-4 h-4" /> Share
+        </Button>
+        {isOwner && (
+          <>
+            <Link to={`/registry/${registry.id}/edit`}>
+              <Button variant="outline">
+                <Edit className="w-4 h-4" /> Edit
+              </Button>
+            </Link>
+            <Link to="/products">
+              <Button variant="secondary">
+                <Plus className="w-4 h-4" /> Add Items
+              </Button>
+            </Link>
+          </>
+        )}
+      </div>
+
       {/* Progress */}
       {items.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="font-bold text-gray-900 mb-4">Registry Progress</h2>
-          <div className="grid grid-cols-3 gap-4 mb-4">
+        <Card title="Registry Progress">
+          <div className="grid grid-cols-3 gap-4 mb-5">
             <div>
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-display font-medium text-charcoal-900">
                 {progress.requested}
               </div>
-              <div className="text-xs uppercase tracking-wider text-gray-500 mt-1">
-                Items
-              </div>
+              <div className="text-label mt-1">Items</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-green-700">
+              <div className="text-3xl font-display font-medium text-success-700">
                 {progress.purchased}
               </div>
-              <div className="text-xs uppercase tracking-wider text-gray-500 mt-1">
-                Purchased
-              </div>
+              <div className="text-label mt-1">Purchased</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-amber-700">
+              <div className="text-3xl font-display font-medium text-brass-700">
                 {progress.remaining}
               </div>
-              <div className="text-xs uppercase tracking-wider text-gray-500 mt-1">
-                Remaining
-              </div>
+              <div className="text-label mt-1">Remaining</div>
             </div>
           </div>
 
           <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-gray-600">
-                {progress.purchased} of {progress.requested} purchased
-              </span>
-              <span className="font-medium text-gray-900">
+            <div className="flex justify-between text-body-sm mb-1.5">
+              <span>{progress.purchased} of {progress.requested} purchased</span>
+              <span className="font-medium text-charcoal-900">
                 {progress.percent.toFixed(0)}%
               </span>
             </div>
-            <div className="h-3 bg-gray-100 rounded overflow-hidden">
+            <div className="h-2.5 bg-stone-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[#febd69] to-[#f3a847] transition-all"
+                className="h-full bg-gradient-to-r from-brass-300 to-brass-500 rounded-full transition-avenzo duration-slow"
                 style={{ width: progress.percent + '%' }}
               />
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Items */}
       <div>
         <div className="flex items-baseline justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">
+          <h2 className="heading-section">
             Registry Items ({items.length})
           </h2>
         </div>
 
         {items.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-            <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-1">
-              Your registry is empty
-            </h3>
-            <p className="text-sm text-gray-600 mb-5 max-w-md mx-auto">
-              Start adding products that you'd like friends and family to
-              purchase.
-            </p>
-            {isOwner && (
-              <Link
-                to="/products"
-                className="inline-flex items-center gap-2 bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2.5 rounded"
-              >
-                <Plus className="w-4 h-4" /> Browse Products
-              </Link>
-            )}
-          </div>
+          <EmptyState
+            icon={Package}
+            title={isOwner ? 'Your registry is empty' : 'No items yet'}
+            message="Start adding products that you'd like friends and family to purchase."
+            action={
+              isOwner && (
+                <Link to="/products">
+                  <Button>
+                    <Plus className="w-4 h-4" /> Browse Products
+                  </Button>
+                </Link>
+              )
+            }
+          />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {items.map((item) => (
               <RegistryItemCard
                 key={item.id}
                 item={item}
                 isOwner={isOwner}
-                onRemove={() => handleRemoveItem(item)}
+                onRemove={() => setConfirmRemove(item)}
                 onEdit={() => setEditingItem(item)}
                 onBuyForRegistry={() => handleBuyForRegistry(item)}
               />
@@ -341,6 +350,31 @@ export default function RegistryDetail() {
           onSave={(updates) => handleUpdateItem(editingItem.id, updates)}
         />
       )}
+
+      {/* Confirm remove-item modal */}
+      {confirmRemove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-charcoal-900/50 animate-fade-in"
+            onClick={() => setConfirmRemove(null)}
+          />
+          <div className="relative bg-bone-50 rounded-2xl shadow-lifted w-full max-w-md p-6 animate-scale-in">
+            <h2 className="heading-sub mb-2">Remove item?</h2>
+            <p className="text-body-sm mb-5">
+              <strong className="text-charcoal-900">{confirmRemove.product?.title}</strong> will
+              be removed from this registry.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => setConfirmRemove(null)}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={() => handleRemoveItem(confirmRemove)}>
+                Remove
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -358,112 +392,77 @@ function RegistryItemCard({ item, isOwner, onRemove, onEdit, onBuyForRegistry })
   const priority = PRIORITY_META[item.priority] || PRIORITY_META.normal
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
-      <Link to={`/products/${product.id}`} className="block aspect-square bg-gray-50 overflow-hidden">
+    <div className="group bg-bone-50 border border-stone-200 rounded-xl shadow-subtle hover:shadow-soft transition-avenzo overflow-hidden flex flex-col">
+      <Link to={`/products/${product.id}`} className="block aspect-square bg-stone-50 overflow-hidden">
         {product.image_url && (
           <img
             src={product.image_url}
             alt={product.title}
-            className="w-full h-full object-cover hover:scale-105 transition"
+            className="w-full h-full object-cover group-hover:scale-105 transition-avenzo duration-slow"
             loading="lazy"
           />
         )}
       </Link>
       <div className="p-4 flex flex-col flex-1">
-        <div className="flex items-center gap-2 mb-2">
-          <span
-            className={'text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ' + priority.cls}
-          >
-            {priority.label}
-          </span>
-          {purchased && (
-            <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-800">
-              Purchased
-            </span>
-          )}
-          {partial && (
-            <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-              Partial
-            </span>
-          )}
+        <div className="flex items-center flex-wrap gap-1.5 mb-2">
+          <Badge color={priority.color}>{priority.label}</Badge>
+          {purchased && <Badge color="green">Purchased</Badge>}
+          {partial && <Badge color="yellow">Partial</Badge>}
         </div>
 
         <Link
           to={`/products/${product.id}`}
-          className="text-sm font-medium text-gray-900 hover:text-[#c7511f] line-clamp-2 mb-1"
+          className="text-body-sm font-medium text-charcoal-900 hover:text-brass-700 line-clamp-2 mb-1.5 transition-avenzo"
         >
           {product.title}
         </Link>
 
-        <div className="flex items-center gap-1.5 mb-2 text-xs text-gray-600">
-          {product.rating > 0 && (
-            <>
-              <Star className="w-3 h-3 fill-[#ffa41c] text-[#ffa41c]" />
-              <span className="font-medium text-gray-900">
-                {Number(product.rating).toFixed(1)}
-              </span>
-            </>
-          )}
-          {product.review_count > 0 && (
-            <span className="text-gray-500">
-              ({product.review_count.toLocaleString()})
-            </span>
-          )}
-        </div>
+        {product.rating > 0 && (
+          <Rating value={product.rating} count={product.review_count} size="sm" className="mb-2" />
+        )}
 
-        <div className="text-lg font-bold text-gray-900 mb-2">
-          ${Number(product.price).toFixed(2)}
-        </div>
+        <div className="text-price mb-3">${Number(product.price).toFixed(2)}</div>
 
-        <dl className="text-xs space-y-1 mb-3">
+        <dl className="text-caption space-y-1 mb-3">
           <div className="flex justify-between">
-            <dt className="text-gray-500">Requested</dt>
-            <dd className="text-gray-900">{item.quantity_requested}</dd>
+            <dt>Requested</dt>
+            <dd className="text-charcoal-900">{item.quantity_requested}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-gray-500">Purchased</dt>
-            <dd className={item.quantity_purchased > 0 ? 'text-green-700 font-medium' : 'text-gray-900'}>
+            <dt>Purchased</dt>
+            <dd className={item.quantity_purchased > 0 ? 'text-success-700 font-medium' : 'text-charcoal-900'}>
               {item.quantity_purchased}
             </dd>
           </div>
           {remaining > 0 && (
             <div className="flex justify-between">
-              <dt className="text-gray-500">Remaining</dt>
-              <dd className="text-amber-700 font-medium">{remaining}</dd>
+              <dt>Remaining</dt>
+              <dd className="text-brass-700 font-medium">{remaining}</dd>
             </div>
           )}
         </dl>
 
         {item.public_note && (
-          <p className="text-xs text-gray-600 italic bg-gray-50 border border-gray-200 rounded p-2 mb-3">
+          <p className="text-caption italic bg-stone-50 border border-stone-200 rounded-lg p-2.5 mb-3">
             "{item.public_note}"
           </p>
         )}
 
-        <div className="mt-auto space-y-2">
+        <div className="mt-auto space-y-2 pt-1">
           {!purchased && (
-            <button
-              onClick={onBuyForRegistry}
-              className="w-full text-center text-sm font-medium bg-[#febd69] hover:bg-[#f3a847] text-gray-900 py-2 rounded flex items-center justify-center gap-1.5 transition"
-            >
+            <Button variant="secondary" className="w-full" onClick={onBuyForRegistry}>
               <ShoppingCart className="w-3.5 h-3.5" />
               Buy for Registry
-            </button>
+            </Button>
           )}
           {isOwner && (
             <div className="flex gap-2">
-              <button
-                onClick={onEdit}
-                className="flex-1 text-xs border border-gray-300 hover:bg-gray-50 py-1.5 rounded"
-              >
+              <Button variant="outline" size="sm" className="flex-1" onClick={onEdit}>
                 Edit
-              </button>
-              <button
-                onClick={onRemove}
-                className="text-xs border border-red-200 text-red-700 hover:bg-red-50 px-3 py-1.5 rounded flex items-center gap-1"
-              >
+              </Button>
+              <Button variant="danger" size="sm" onClick={onRemove}>
                 <Trash2 className="w-3 h-3" /> Remove
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -475,41 +474,36 @@ function RegistryItemCard({ item, isOwner, onRemove, onEdit, onBuyForRegistry })
 function ShareModal({ registry, onClose, onCopy }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="border-b px-5 py-3 flex items-center justify-between">
-          <h2 className="font-bold text-gray-900">Share your registry</h2>
+      <div className="absolute inset-0 bg-charcoal-900/50 animate-fade-in" onClick={onClose} />
+      <div className="relative bg-bone-50 rounded-2xl shadow-lifted w-full max-w-md animate-scale-in">
+        <div className="border-b border-stone-200 px-5 py-4 flex items-center justify-between">
+          <h2 className="heading-sub">Share your registry</h2>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 rounded"
+            className="p-1.5 hover:bg-stone-100 rounded-full transition-avenzo"
             aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-charcoal-600" />
           </button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
-              Registry link
-            </label>
+            <label className="text-label block mb-1.5">Registry link</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 readOnly
                 value={`${window.location.origin}/registry/${registry.id}`}
-                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50"
+                className="flex-1 border border-stone-300 rounded-lg px-3.5 py-2.5 text-sm bg-stone-50 text-charcoal-700"
               />
-              <button
-                onClick={onCopy}
-                className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-4 py-2 rounded text-sm flex items-center gap-1.5"
-              >
+              <Button variant="secondary" onClick={onCopy}>
                 <Copy className="w-3.5 h-3.5" /> Copy
-              </button>
+              </Button>
             </div>
           </div>
 
-          <div className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded p-3">
-            Registry visibility: <strong className="capitalize">{registry.privacy}</strong>.
+          <div className="text-caption bg-stone-50 border border-stone-200 rounded-lg p-3">
+            Registry visibility: <strong className="capitalize text-charcoal-700">{registry.privacy}</strong>.
             {registry.privacy === 'public'
               ? ' Anyone can find and view this registry.'
               : registry.privacy === 'shared'
@@ -546,38 +540,31 @@ function EditItemModal({ item, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-5 py-3 flex items-center justify-between">
-          <h2 className="font-bold text-gray-900">
+      <div className="absolute inset-0 bg-charcoal-900/50 animate-fade-in" onClick={onClose} />
+      <div className="relative bg-bone-50 rounded-2xl shadow-lifted w-full max-w-md max-h-[90vh] overflow-y-auto animate-scale-in">
+        <div className="sticky top-0 bg-bone-50 border-b border-stone-200 px-5 py-4 flex items-center justify-between">
+          <h2 className="heading-sub truncate pr-3">
             Edit {item.product?.title}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 rounded"
+            className="p-1.5 hover:bg-stone-100 rounded-full transition-avenzo flex-shrink-0"
             aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-charcoal-600" />
           </button>
         </div>
         <form onSubmit={submit} className="p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
-              Quantity requested
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={qty}
-              onChange={(e) => setQty(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            />
-          </div>
+          <Input
+            label="Quantity requested"
+            type="number"
+            min="1"
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+          />
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              Priority
-            </label>
+            <label className="text-label block mb-2">Priority</label>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(PRIORITY_META).map(([key, meta]) => (
                 <button
@@ -585,10 +572,10 @@ function EditItemModal({ item, onClose, onSave }) {
                   type="button"
                   onClick={() => setPriority(key)}
                   className={
-                    'py-2 rounded border text-sm ' +
+                    'py-2 rounded-lg border text-sm transition-avenzo ' +
                     (priority === key
-                      ? 'border-[#c7511f] bg-orange-50 font-medium'
-                      : 'border-gray-300 hover:border-gray-400')
+                      ? 'border-brass-500 bg-brass-50 font-medium text-charcoal-900'
+                      : 'border-stone-300 text-charcoal-700 hover:border-stone-400')
                   }
                 >
                   {meta.label}
@@ -598,7 +585,7 @@ function EditItemModal({ item, onClose, onSave }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
+            <label className="text-label block mb-1.5">
               Public note (visible to guests)
             </label>
             <textarea
@@ -606,12 +593,12 @@ function EditItemModal({ item, onClose, onSave }) {
               value={publicNote}
               onChange={(e) => setPublicNote(e.target.value)}
               placeholder="e.g. We prefer the gray version."
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none"
+              className={textareaClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
+            <label className="text-label block mb-1.5">
               Private note (only you)
             </label>
             <textarea
@@ -619,25 +606,17 @@ function EditItemModal({ item, onClose, onSave }) {
               value={privateNote}
               onChange={(e) => setPrivateNote(e.target.value)}
               placeholder="e.g. Sarah's mom already offered to buy this."
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none"
+              className={textareaClass}
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
-            >
+          <div className="flex justify-end gap-3 pt-3 border-t border-stone-200">
+            <Button type="button" variant="ghost" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded text-sm disabled:opacity-60"
-            >
+            </Button>
+            <Button type="submit" variant="secondary" loading={saving}>
               {saving ? 'Saving…' : 'Save changes'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

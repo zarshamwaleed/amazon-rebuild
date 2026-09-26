@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Gift, X, Mail, Printer, Package, Calendar } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { useToast } from '../context/ToastContext'
-import { getGiftCardDesign } from '../services/giftCardService'
+import Button from './Button'
+import Input from './Input'
 
 const AMOUNTS = [25, 50, 100, 150, 200]
 
@@ -13,8 +13,7 @@ const DELIVERY_OPTIONS = [
 ]
 
 export default function AddGiftCardModal({ card, onClose, onAdd }) {
-  const { user, profile } = useAuth()
-  const { pushToast } = useToast()
+  const { profile } = useAuth()
 
   const [amount, setAmount] = useState(card.price || 50)
   const [customAmount, setCustomAmount] = useState('')
@@ -59,20 +58,20 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="absolute inset-0 bg-charcoal-900/50 animate-fade-in" onClick={onClose} />
+      <div className="relative bg-bone-50 rounded-2xl shadow-lifted w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-scale-in">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-5 py-3 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-bone-50 border-b border-stone-200 px-5 py-3 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
-            <Gift className="w-5 h-5 text-[#c7511f]" />
-            <h2 className="font-bold text-gray-900">Add Gift Card</h2>
+            <Gift className="w-5 h-5 text-brass-600" />
+            <h2 className="heading-sub">Add Gift Card</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 rounded"
+            className="p-1.5 hover:bg-stone-100 rounded-full transition-avenzo"
             aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-charcoal-600" />
           </button>
         </div>
 
@@ -81,28 +80,24 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
           <div className="flex flex-col sm:flex-row gap-4">
             <div
               className={
-                'flex-1 rounded-lg bg-gradient-to-br ' +
-                (card.gradient || 'from-[#232f3e] to-[#131921]') +
-                ' aspect-[16/10] p-5 flex flex-col justify-between text-white shadow-md'
+                'flex-1 rounded-xl bg-gradient-to-br ' +
+                (card.gradient || 'from-charcoal-800 to-charcoal-900') +
+                ' aspect-[16/10] p-5 flex flex-col justify-between text-bone-50 shadow-soft ring-1 ring-inset ring-bone-50/10'
               }
             >
-              <div className="text-[10px] uppercase tracking-wider font-bold opacity-90">
-                Amazon Rebuild
+              <div className="font-display italic text-sm tracking-wide opacity-90">
+                Avenzo
               </div>
               <div>
-                <div className="text-4xl font-bold">${finalAmount || 0}</div>
-                <div className="text-xs uppercase tracking-wider opacity-90 mt-1">
-                  {card.name}
-                </div>
+                <div className="font-display text-4xl font-medium">${finalAmount || 0}</div>
+                <div className="text-[10px] uppercase tracking-wider opacity-80 mt-1">{card.name}</div>
               </div>
             </div>
           </div>
 
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              Amount
-            </label>
+            <label className="block text-label mb-2">Amount</label>
             <div className="flex flex-wrap gap-2">
               {AMOUNTS.map((a) => (
                 <button
@@ -113,10 +108,10 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
                     setUseCustom(false)
                   }}
                   className={
-                    'px-4 py-2 rounded border text-sm font-medium transition ' +
+                    'px-4 py-2 rounded-lg border text-sm font-medium transition-avenzo ' +
                     (!useCustom && amount === a
-                      ? 'border-[#c7511f] bg-orange-50 text-[#c7511f]'
-                      : 'border-gray-300 hover:border-gray-400')
+                      ? 'border-brass-400 bg-brass-50 text-brass-700'
+                      : 'border-stone-300 hover:border-stone-400')
                   }
                 >
                   ${a}
@@ -126,10 +121,10 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
                 type="button"
                 onClick={() => setUseCustom(true)}
                 className={
-                  'px-4 py-2 rounded border text-sm font-medium transition ' +
+                  'px-4 py-2 rounded-lg border text-sm font-medium transition-avenzo ' +
                   (useCustom
-                    ? 'border-[#c7511f] bg-orange-50 text-[#c7511f]'
-                    : 'border-gray-300 hover:border-gray-400')
+                    ? 'border-brass-400 bg-brass-50 text-brass-700'
+                    : 'border-stone-300 hover:border-stone-400')
                 }
               >
                 Custom
@@ -137,7 +132,7 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
             </div>
             {useCustom && (
               <div className="mt-3 flex items-center gap-2 max-w-xs">
-                <span className="text-gray-500">$</span>
+                <span className="text-charcoal-500">$</span>
                 <input
                   type="number"
                   min="5"
@@ -145,7 +140,7 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
                   placeholder="Enter $5 – $500"
-                  className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="flex-1 rounded-lg border border-stone-300 bg-bone-50 px-3 py-2 text-sm text-charcoal-900 transition-avenzo focus:outline-none focus:border-brass-400"
                 />
               </div>
             )}
@@ -153,9 +148,7 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
 
           {/* Delivery method */}
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              Delivery method
-            </label>
+            <label className="block text-label mb-2">Delivery method</label>
             <div className="grid sm:grid-cols-3 gap-2">
               {DELIVERY_OPTIONS.map((d) => {
                 const Icon = d.icon
@@ -166,21 +159,17 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
                     type="button"
                     onClick={() => setDeliveryMethod(d.id)}
                     className={
-                      'text-left p-3 rounded border transition flex items-start gap-2 ' +
+                      'text-left p-3 rounded-lg border transition-avenzo flex items-start gap-2 ' +
                       (active
-                        ? 'border-[#c7511f] bg-orange-50'
-                        : 'border-gray-200 hover:border-gray-400')
+                        ? 'border-brass-400 bg-brass-50'
+                        : 'border-stone-200 hover:border-stone-400')
                     }
                   >
-                    <Icon className="w-4 h-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                    <Icon className="w-4 h-4 text-charcoal-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {d.label}
-                      </div>
+                      <div className="text-sm font-medium text-charcoal-900">{d.label}</div>
                       {d.fee && (
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          +${d.fee.toFixed(2)} shipping
-                        </div>
+                        <div className="text-caption mt-0.5">+${d.fee.toFixed(2)} shipping</div>
                       )}
                     </div>
                   </button>
@@ -191,64 +180,57 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
 
           {/* Recipient */}
           <div className="grid sm:grid-cols-2 gap-3">
-            <Field label="Recipient name">
-              <input
-                type="text"
-                value={recipientName}
-                onChange={(e) => setRecipientName(e.target.value)}
-                placeholder="e.g. Sarah"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              />
-            </Field>
-            <Field label={`Recipient email${deliveryMethod !== 'email' ? ' (optional)' : ''}`}>
-              <input
-                type="email"
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
-                placeholder="sarah@example.com"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              />
-            </Field>
+            <Input
+              label="Recipient name"
+              type="text"
+              value={recipientName}
+              onChange={(e) => setRecipientName(e.target.value)}
+              placeholder="e.g. Sarah"
+            />
+            <Input
+              label={`Recipient email${deliveryMethod !== 'email' ? ' (optional)' : ''}`}
+              type="email"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+              placeholder="sarah@example.com"
+            />
           </div>
 
-          <Field label="From">
-            <input
-              type="text"
-              value={senderName}
-              onChange={(e) => setSenderName(e.target.value)}
-              placeholder="Your name"
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
-          </Field>
+          <Input
+            label="From"
+            type="text"
+            value={senderName}
+            onChange={(e) => setSenderName(e.target.value)}
+            placeholder="Your name"
+          />
 
-          <Field label="Personal message (optional)">
+          <div>
+            <label className="block text-label mb-1.5">Personal message (optional)</label>
             <textarea
               rows={2}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               maxLength={200}
               placeholder="Happy Birthday! Hope you love it."
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-gray-900"
+              className="w-full rounded-lg border border-stone-300 bg-bone-50 px-3.5 py-2.5 text-sm text-charcoal-900 placeholder:text-charcoal-400 resize-none transition-avenzo focus:outline-none focus:border-brass-400"
             />
-            <div className="text-xs text-gray-400 mt-1 text-right">
-              {message.length}/200
-            </div>
-          </Field>
+            <div className="text-caption mt-1 text-right">{message.length}/200</div>
+          </div>
 
           {/* Schedule */}
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              <Calendar className="w-4 h-4 inline mr-1" /> Deliver
+            <label className="block text-label mb-2">
+              <Calendar className="w-3.5 h-3.5 inline mr-1 -mt-0.5" /> Deliver
             </label>
             <div className="flex gap-2 mb-3">
               <button
                 type="button"
                 onClick={() => setScheduleNow(true)}
                 className={
-                  'flex-1 py-2 rounded border text-sm ' +
+                  'flex-1 py-2 rounded-lg border text-sm transition-avenzo ' +
                   (scheduleNow
-                    ? 'border-[#c7511f] bg-orange-50 font-medium'
-                    : 'border-gray-300 hover:border-gray-400')
+                    ? 'border-brass-400 bg-brass-50 font-medium text-brass-700'
+                    : 'border-stone-300 hover:border-stone-400')
                 }
               >
                 Immediately
@@ -257,10 +239,10 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
                 type="button"
                 onClick={() => setScheduleNow(false)}
                 className={
-                  'flex-1 py-2 rounded border text-sm ' +
+                  'flex-1 py-2 rounded-lg border text-sm transition-avenzo ' +
                   (!scheduleNow
-                    ? 'border-[#c7511f] bg-orange-50 font-medium'
-                    : 'border-gray-300 hover:border-gray-400')
+                    ? 'border-brass-400 bg-brass-50 font-medium text-brass-700'
+                    : 'border-stone-300 hover:border-stone-400')
                 }
               >
                 On a specific date
@@ -272,46 +254,28 @@ export default function AddGiftCardModal({ card, onClose, onAdd }) {
                 value={scheduledDate}
                 onChange={(e) => setScheduledDate(e.target.value)}
                 min={new Date().toISOString().slice(0, 10)}
-                className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                className="rounded-lg border border-stone-300 bg-bone-50 px-3 py-2 text-sm text-charcoal-900 transition-avenzo focus:outline-none focus:border-brass-400"
               />
             )}
           </div>
 
           {error && (
-            <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            <div className="text-sm text-error-700 bg-error-50 border border-error-500/20 rounded-lg p-3">
               {error}
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-3 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
-            >
+          <div className="flex justify-end gap-3 pt-3 border-t border-stone-200">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-6 py-2 rounded transition"
-            >
+            </Button>
+            <Button type="submit" variant="secondary">
               Add to Cart — ${finalAmount || 0}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
-    </div>
-  )
-}
-
-function Field({ label, children }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-800 mb-1">
-        {label}
-      </label>
-      {children}
     </div>
   )
 }

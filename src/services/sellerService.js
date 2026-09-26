@@ -125,6 +125,26 @@ export async function getSellerStats(userId) {
 }
 
 /**
+ * Fetch products needing inventory attention (out of stock or low stock).
+ */
+export async function getInventoryAlerts(userId, limit = 3) {
+  if (!userId) return []
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, title, image_url, stock, low_stock_threshold')
+    .eq('seller_id', userId)
+    .order('stock', { ascending: true })
+  if (error) return []
+
+  return (data || [])
+    .filter((p) => {
+      const threshold = p.low_stock_threshold ?? 5
+      return (p.stock ?? 0) === 0 || (p.stock ?? 0) <= threshold
+    })
+    .slice(0, limit)
+}
+
+/**
  * Fetch all products belonging to this seller.
  */
 export async function getSellerProducts(userId) {
@@ -953,7 +973,6 @@ export async function getSellerReport(userId, from, to) {
   if (pErr) throw pErr
 
   const productIds = (products || []).map((p) => p.id)
-  const productById = Object.fromEntries((products || []).map((p) => [p.id, p]))
 
   if (productIds.length === 0) {
     return emptyReport(from, to)
@@ -1183,7 +1202,6 @@ export async function getSellerPayments(userId) {
     .order('created_at', { ascending: false })
   if (oErr) throw oErr
 
-  const ordersById = Object.fromEntries((orders || []).map((o) => [o.id, o]))
   const itemsByOrder = {}
   for (const it of items || []) {
     if (!itemsByOrder[it.order_id]) itemsByOrder[it.order_id] = []
@@ -1726,6 +1744,21 @@ export async function markThreadRead(userId, threadId) {
     .eq('direction', 'inbound')
     .eq('status', 'unread')
   if (error) throw error
+}
+
+/**
+ * Count unread inbound messages for the seller (for header badge).
+ */
+export async function getUnreadMessageCount(userId) {
+  if (!userId) return 0
+  const { count, error } = await supabase
+    .from('seller_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('seller_id', userId)
+    .eq('direction', 'inbound')
+    .eq('status', 'unread')
+  if (error) return 0
+  return count || 0
 }
 
 /**
@@ -2585,7 +2618,6 @@ export async function getSellerReturn(userId, returnId) {
  * Aggregate counts for the summary tiles.
  */
 export function computeReturnsSummary(returns) {
-  const now = Date.now()
   return {
     pendingActions: returns.filter((r) =>
       ['requested', 'pending_authorization'].includes(r.status)
@@ -2946,7 +2978,6 @@ export async function getSellerCustomerInsights(userId) {
     .order('created_at', { ascending: false })
   if (oErr) throw oErr
 
-  const ordersById = Object.fromEntries((orders || []).map((o) => [o.id, o]))
   const itemsByOrder = {}
   for (const it of items || []) {
     if (!itemsByOrder[it.order_id]) itemsByOrder[it.order_id] = []
@@ -3073,4 +3104,42 @@ function emptyCustomerInsights() {
     topCities: [],
     recentCustomers: [],
   }
+}
+
+/**
+ * Fetch a buyer's public contact info (name/email) for a given order's
+ * customer. Relies on an RLS policy granting the seller read access to the
+ * profile of any buyer who has ordered one of their products
+ * (see docs/seller_order_actions.sql). Returns null if unavailable.
+ */
+export async function getBuyerProfile(buyerId) {
+  if (!buyerId) return null
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .eq('id', buyerId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Insert a seller-issued refund record. Does not itself change order_status —
+ * callers should also call updateOrderStatus(orderId, 'refunded').
+ */
+export async function createSellerRefund(sellerId, { orderId, amount, refundType, reason, notes }) {
+  const { data, error } = await supabase
+    .from('seller_refunds')
+    .insert({
+      seller_id: sellerId,
+      order_id: orderId,
+      amount: Number(amount) || 0,
+      refund_type: refundType,
+      reason: reason || null,
+      notes: notes || null,
+    })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
 }

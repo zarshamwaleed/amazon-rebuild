@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { redeemGiftCardCode } from '../services/giftCardService'
+import Button from '../components/Button'
 
 export default function GiftCardRedeem() {
   const { user } = useAuth()
@@ -60,16 +61,16 @@ export default function GiftCardRedeem() {
     <div className="max-w-2xl mx-auto py-6 space-y-6">
       <Link
         to="/gift-cards"
-        className="text-sm text-[#007185] hover:underline flex items-center gap-1"
+        className="text-sm text-charcoal-600 hover:text-brass-700 transition-avenzo flex items-center gap-1"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Gift Cards
       </Link>
 
       {/* Hero */}
-      <div className="bg-gradient-to-br from-[#232f3e] to-[#131921] text-white rounded-lg p-8 md:p-10">
-        <Gift className="w-10 h-10 text-[#febd69] mb-3" />
-        <h1 className="text-3xl font-bold mb-2">Redeem a Gift Card</h1>
-        <p className="text-gray-200">
+      <div className="rounded-2xl bg-gradient-to-br from-charcoal-900 via-charcoal-800 to-brass-900 text-bone-50 p-8 md:p-10 shadow-card ring-1 ring-inset ring-bone-50/10">
+        <Gift className="w-9 h-9 text-brass-400 mb-3" strokeWidth={1.5} />
+        <h1 className="font-display text-display-sm font-medium mb-2">Redeem a Gift Card</h1>
+        <p className="text-stone-300">
           Enter your claim code to add the balance to your Amazon Rebuild account.
         </p>
       </div>
@@ -77,12 +78,10 @@ export default function GiftCardRedeem() {
       {/* Form */}
       <form
         onSubmit={handleSubmit}
-        className="bg-white border border-gray-200 rounded-lg p-6 md:p-8 space-y-5"
+        className="bg-bone-50 border border-stone-200 rounded-xl p-6 md:p-8 space-y-5"
       >
         <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            Claim code
-          </label>
+          <label className="block text-label mb-2">Claim code</label>
           <input
             type="text"
             value={code}
@@ -90,24 +89,19 @@ export default function GiftCardRedeem() {
             placeholder="XXXX-XXXXXX-XXXX"
             maxLength={20}
             autoFocus
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg font-mono tracking-wider text-center focus:outline-none focus:ring-2 focus:ring-[#febd69]"
+            className="w-full rounded-lg border border-stone-300 bg-bone-50 px-4 py-3.5 text-lg font-mono tracking-[0.15em] text-center text-charcoal-900 placeholder:text-charcoal-300 transition-avenzo focus:outline-none focus:border-brass-400"
           />
-          <p className="text-xs text-gray-500 mt-2">
-            Codes are case-insensitive. Don't share your code with anyone
-            outside Amazon Rebuild.
+          <p className="text-caption mt-2">
+            Codes are case-insensitive. Don't share your code with anyone outside Amazon Rebuild.
           </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading || !code.trim()}
-          className="w-full bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-semibold py-3 rounded-lg disabled:opacity-60 transition"
-        >
+        <Button type="submit" variant="secondary" size="lg" loading={loading} disabled={!code.trim()} className="w-full">
           {loading ? 'Redeeming…' : 'Redeem Gift Card'}
-        </button>
+        </Button>
 
         {!user && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-4 text-sm">
+          <div className="bg-warning-50 border border-warning-500/20 text-warning-700 rounded-lg p-4 text-sm">
             You need to{' '}
             <Link to="/login" className="font-medium underline">
               sign in
@@ -119,40 +113,32 @@ export default function GiftCardRedeem() {
 
       {/* Result */}
       {result && result.type === 'success' && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-          <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-green-900 mb-1">
-            Gift card redeemed!
-          </h2>
-          <p className="text-3xl font-bold text-green-700 mb-1">
+        <div className="bg-success-50 border border-success-500/20 rounded-xl p-6 text-center animate-fade-in-up">
+          <CheckCircle2 className="w-12 h-12 text-success-700 mx-auto mb-3" />
+          <h2 className="text-lg font-semibold text-success-700 mb-1">Gift card redeemed!</h2>
+          <p className="font-mono text-3xl font-semibold text-success-700 mb-1">
             +${Number(result.amount).toFixed(2)}
           </p>
-          <p className="text-sm text-green-800 mb-5">
-            New balance: ${Number(result.newBalance).toFixed(2)}
+          <p className="text-sm text-charcoal-700 mb-5">
+            New balance: <span className="font-mono font-medium">${Number(result.newBalance).toFixed(2)}</span>
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Link
-              to="/gift-cards/balance"
-              className="bg-green-600 hover:bg-green-500 text-white font-medium px-5 py-2.5 rounded"
-            >
-              View balance
+            <Link to="/gift-cards/balance">
+              <Button variant="secondary">View balance</Button>
             </Link>
-            <Link
-              to="/products"
-              className="border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 font-medium px-5 py-2.5 rounded"
-            >
-              Start shopping
+            <Link to="/products">
+              <Button variant="outline">Start shopping</Button>
             </Link>
           </div>
         </div>
       )}
 
       {result && result.type === 'error' && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="bg-error-50 border border-error-500/20 rounded-xl p-6 flex items-start gap-3 animate-fade-in-up">
+          <AlertCircle className="w-5 h-5 text-error-700 flex-shrink-0 mt-0.5" />
           <div>
-            <h2 className="font-bold text-red-900 mb-1">Could not redeem</h2>
-            <p className="text-sm text-red-800">{result.message}</p>
+            <h2 className="font-semibold text-error-700 mb-1">Could not redeem</h2>
+            <p className="text-sm text-charcoal-700">{result.message}</p>
           </div>
         </div>
       )}
@@ -178,10 +164,10 @@ export default function GiftCardRedeem() {
         ].map((f) => {
           const Icon = f.icon
           return (
-            <div key={f.title} className="bg-white border border-gray-200 rounded-lg p-5">
-              <Icon className="w-6 h-6 text-[#c7511f] mb-2" />
-              <h3 className="font-bold text-gray-900 text-sm mb-1">{f.title}</h3>
-              <p className="text-xs text-gray-600">{f.desc}</p>
+            <div key={f.title} className="bg-bone-50 border border-stone-200 rounded-xl p-5">
+              <Icon className="w-5 h-5 text-brass-700 mb-2" strokeWidth={1.5} />
+              <h3 className="text-sm font-semibold text-charcoal-900 mb-1">{f.title}</h3>
+              <p className="text-caption">{f.desc}</p>
             </div>
           )
         })}

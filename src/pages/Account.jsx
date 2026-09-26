@@ -1,19 +1,25 @@
-﻿import AccountSidebar from '../components/AccountSidebar'
+import AccountSidebar from '../components/AccountSidebar'
 import ProfileForm from '../components/ProfileForm'
 import { useAuth } from '../context/AuthContext'
 
 export default function Account() {
   const { user, profile } = useAuth()
+  const firstName = (profile?.full_name || '').trim().split(' ')[0]
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Account</h1>
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="mb-8">
+        <h1 className="heading-page">{firstName ? `Welcome back, ${firstName}` : 'Your Account'}</h1>
+        <p className="text-body-sm mt-1.5">Manage your profile, orders, and preferences.</p>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8">
         <AccountSidebar />
-        <div className="flex-1 bg-white border border-gray-200 rounded-md p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Profile</h2>
-          <p className="text-sm text-gray-600 mb-6">
-            Signed in as <strong>{profile?.email || user?.email}</strong>
+        <div className="flex-1 min-w-0 bg-bone-50 border border-stone-200 rounded-xl p-6 sm:p-8">
+          <h2 className="heading-section mb-1">Profile</h2>
+          <p className="text-body-sm mb-8">
+            Signed in as{' '}
+            <span className="font-medium text-charcoal-800">{profile?.email || user?.email}</span>
           </p>
           <ProfileForm />
         </div>

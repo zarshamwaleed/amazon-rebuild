@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import Input from './Input'
 import Button from './Button'
 
@@ -10,16 +10,20 @@ export default function AddressForm({ initial = {}, onSubmit, onCancel, submitLa
   const [postalCode, setPostalCode] = useState(initial.postal_code || '')
   const [country, setCountry] = useState(initial.country || 'Pakistan')
   const [error, setError] = useState(null)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
 
-    if (!fullName.trim()) return setError('Full name is required')
-    if (!addressLine.trim()) return setError('Address is required')
-    if (!city.trim()) return setError('City is required')
-    if (!country.trim()) return setError('Country is required')
+    const nextFieldErrors = {}
+    if (!fullName.trim()) nextFieldErrors.fullName = 'Full name is required'
+    if (!addressLine.trim()) nextFieldErrors.addressLine = 'Address is required'
+    if (!city.trim()) nextFieldErrors.city = 'City is required'
+    if (!country.trim()) nextFieldErrors.country = 'Country is required'
+    setFieldErrors(nextFieldErrors)
+    if (Object.keys(nextFieldErrors).length > 0) return
 
     setSaving(true)
     try {
@@ -39,51 +43,58 @@ export default function AddressForm({ initial = {}, onSubmit, onCancel, submitLa
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <Input
-        label="Full name"
-        value={fullName}
-        onChange={(e) => setFullName(e.target.value)}
-        required
-      />
-      <Input
-        label="Phone (optional)"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        placeholder="+92 300 1234567"
-      />
+    <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Input
+          label="Full name"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          error={fieldErrors.fullName}
+          required
+        />
+        <Input
+          label="Phone (optional)"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="+92 300 1234567"
+        />
+      </div>
       <Input
         label="Address"
         value={addressLine}
         onChange={(e) => setAddressLine(e.target.value)}
         placeholder="Street, building, apartment"
+        error={fieldErrors.addressLine}
         required
       />
-      <div className="grid grid-cols-2 gap-3">
-        <Input label="City" value={city} onChange={(e) => setCity(e.target.value)} required />
+      <div className="grid sm:grid-cols-2 gap-4">
         <Input
-          label="Postal code"
-          value={postalCode}
-          onChange={(e) => setPostalCode(e.target.value)}
+          label="City"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          error={fieldErrors.city}
+          required
         />
+        <Input label="Postal code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
       </div>
       <Input
         label="Country"
         value={country}
         onChange={(e) => setCountry(e.target.value)}
+        error={fieldErrors.country}
         required
       />
       {error && (
-        <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
+        <div className="text-sm text-error-700 bg-error-50 border border-error-500/20 rounded-lg p-3 animate-fade-in">
           {error}
         </div>
       )}
       <div className="flex gap-2 pt-1">
-        <Button type="submit" variant="secondary" disabled={saving}>
+        <Button type="submit" variant="secondary" loading={saving}>
           {saving ? 'Saving…' : submitLabel}
         </Button>
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
             Cancel
           </Button>
         )}

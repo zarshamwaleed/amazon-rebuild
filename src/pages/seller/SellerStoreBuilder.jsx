@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft,
-  Save,
   Eye,
   Monitor,
   Smartphone,
-  Check,
-  Plus,
-  X,
-  Upload,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -18,6 +12,11 @@ import {
   upsertSellerStore,
   getSellerProducts,
 } from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Card from '../../components/Card'
+import Badge from '../../components/Badge'
+import Button from '../../components/Button'
+import Input from '../../components/Input'
 
 const EMPTY = {
   store_name: '',
@@ -47,10 +46,7 @@ export default function SellerStoreBuilder() {
     if (!user) return
     try {
       setLoading(true)
-      const [s, p] = await Promise.all([
-        getSellerStore(user.id),
-        getSellerProducts(user.id),
-      ])
+      const [s, p] = await Promise.all([getSellerStore(user.id), getSellerProducts(user.id)])
       setProducts(p)
       if (s) {
         setForm({
@@ -108,9 +104,7 @@ export default function SellerStoreBuilder() {
     try {
       const payload = { ...form, status: nextStatus || form.status }
       await upsertSellerStore(user.id, payload)
-      pushToast(nextStatus === 'published' ? 'Store published' : 'Store saved', {
-        type: 'success',
-      })
+      pushToast(nextStatus === 'published' ? 'Store published' : 'Store saved', { type: 'success' })
       if (nextStatus === 'published') navigate('/seller/store')
       else load()
     } catch (err) {
@@ -121,7 +115,15 @@ export default function SellerStoreBuilder() {
   }
 
   if (loading) {
-    return <div className="text-sm text-gray-600">Loading builder…</div>
+    return (
+      <div className="space-y-6">
+        <div className="h-10 w-56 rounded-lg skeleton-shimmer" />
+        <div className="grid lg:grid-cols-[1fr_360px] gap-5">
+          <div className="h-96 rounded-xl skeleton-shimmer" />
+          <div className="h-96 rounded-xl skeleton-shimmer" />
+        </div>
+      </div>
+    )
   }
 
   const featuredProducts = form.featured_product_ids
@@ -129,107 +131,73 @@ export default function SellerStoreBuilder() {
     .filter(Boolean)
 
   return (
-    <div className="space-y-5 pb-20">
-      <div className="flex items-center gap-3 flex-wrap">
-        <Link
-          to="/seller/store"
-          className="p-2 hover:bg-white rounded border border-gray-200"
-          aria-label="Back"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">Store builder</h1>
-          <p className="text-sm text-gray-600">
-            Design your brand storefront. Save as draft or publish live.
-          </p>
-        </div>
-        <span
-          className={
-            'text-xs font-bold px-3 py-1 rounded-full ' +
-            (form.status === 'published'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-gray-100 text-gray-600')
-          }
-        >
-          {form.status === 'published' ? 'Published' : 'Draft'}
-        </span>
-      </div>
+    <div className="space-y-6 pb-20">
+      <SellerPageHeader
+        title="Store builder"
+        description="Design your brand storefront. Save as draft or publish live."
+        backTo="/seller/store"
+        actions={<Badge color={form.status === 'published' ? 'green' : 'gray'}>{form.status === 'published' ? 'Published' : 'Draft'}</Badge>}
+      />
 
       <div className="grid lg:grid-cols-[1fr_360px] gap-5">
         {/* Left: form */}
         <div className="space-y-5">
-          {/* Identity */}
           <Card title="Store identity">
-            <Field label="Store name">
-              <input
+            <div className="space-y-4">
+              <Input
+                label="Store name"
                 type="text"
                 value={form.store_name}
                 onChange={(e) => update('store_name', e.target.value)}
                 placeholder="e.g. Zarsham Store"
-                className="input"
               />
-            </Field>
-            <Field label="Tagline (short slogan)">
-              <input
+              <Input
+                label="Tagline (short slogan)"
                 type="text"
                 value={form.tagline}
                 onChange={(e) => update('tagline', e.target.value)}
                 placeholder="e.g. Premium audio, engineered for life."
-                className="input"
               />
-            </Field>
-            <Field label="Brand description">
-              <textarea
+              <TextField
+                label="Brand description"
                 rows={3}
                 value={form.brand_description}
                 onChange={(e) => update('brand_description', e.target.value)}
                 placeholder="Short summary of what your brand sells."
-                className="input resize-none"
               />
-            </Field>
+            </div>
           </Card>
 
-          {/* Visuals */}
           <Card title="Visuals">
-            <Field label="Logo URL">
-              <input
+            <div className="space-y-4">
+              <Input
+                label="Logo URL"
                 type="url"
                 value={form.logo_url}
                 onChange={(e) => update('logo_url', e.target.value)}
                 placeholder="https://..."
-                className="input"
               />
-            </Field>
-            {form.logo_url && (
-              <img
-                src={form.logo_url}
-                alt=""
-                className="w-16 h-16 rounded object-cover border bg-white"
-              />
-            )}
+              {form.logo_url && (
+                <img src={form.logo_url} alt="" className="w-16 h-16 rounded-lg object-cover border border-stone-200 bg-bone-50" />
+              )}
 
-            <Field label="Hero banner URL">
-              <input
+              <Input
+                label="Hero banner URL"
                 type="url"
                 value={form.hero_image_url}
                 onChange={(e) => update('hero_image_url', e.target.value)}
                 placeholder="https://..."
-                className="input"
               />
-            </Field>
-            {form.hero_image_url && (
-              <div className="aspect-[16/6] rounded overflow-hidden border bg-gray-100">
-                <img src={form.hero_image_url} alt="" className="w-full h-full object-cover" />
-              </div>
-            )}
+              {form.hero_image_url && (
+                <div className="aspect-[16/6] rounded-lg overflow-hidden border border-stone-200 bg-stone-100">
+                  <img src={form.hero_image_url} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
           </Card>
 
-          {/* Featured products */}
-          <Card title="Featured products (up to 4)">
-            <p className="text-xs text-gray-500 mb-3">
-              Selected: {featuredProducts.length} / 4
-            </p>
+          <Card title="Featured products" subtitle="Up to 4 products highlighted at the top of your store">
+            <p className="text-caption mb-3">Selected: {featuredProducts.length} / 4</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-72 overflow-y-auto">
               {products.map((p) => {
                 const active = form.featured_product_ids.includes(p.id)
@@ -239,29 +207,24 @@ export default function SellerStoreBuilder() {
                     type="button"
                     onClick={() => toggleFeatured(p.id)}
                     className={
-                      'text-left border rounded overflow-hidden transition ' +
-                      (active
-                        ? 'border-[#c7511f] ring-2 ring-[#c7511f]/20'
-                        : 'border-gray-200 hover:border-gray-400')
+                      'text-left border rounded-lg overflow-hidden transition-avenzo ' +
+                      (active ? 'border-brass-500 ring-2 ring-brass-400/30' : 'border-stone-200 hover:border-stone-400')
                     }
                   >
                     {p.image_url ? (
                       <img src={p.image_url} alt="" className="w-full aspect-square object-cover" />
                     ) : (
-                      <div className="aspect-square bg-gray-100" />
+                      <div className="aspect-square bg-stone-100" />
                     )}
-                    <div className="p-2 text-xs text-gray-700 line-clamp-2">
-                      {p.title}
-                    </div>
+                    <div className="p-2 text-xs text-charcoal-700 line-clamp-2">{p.title}</div>
                   </button>
                 )
               })}
             </div>
           </Card>
 
-          {/* Product grid */}
-          <Card title="Product grid (all or pick specific)">
-            <p className="text-xs text-gray-500 mb-3">
+          <Card title="Product grid" subtitle="All products show by default, or pick specific ones">
+            <p className="text-caption mb-3">
               {form.grid_product_ids.length === 0
                 ? 'All products will show (none manually selected).'
                 : `${form.grid_product_ids.length} selected`}
@@ -275,41 +238,34 @@ export default function SellerStoreBuilder() {
                     type="button"
                     onClick={() => toggleGrid(p.id)}
                     className={
-                      'text-left border rounded overflow-hidden transition ' +
-                      (active
-                        ? 'border-[#c7511f] ring-2 ring-[#c7511f]/20'
-                        : 'border-gray-200 hover:border-gray-400')
+                      'text-left border rounded-lg overflow-hidden transition-avenzo ' +
+                      (active ? 'border-brass-500 ring-2 ring-brass-400/30' : 'border-stone-200 hover:border-stone-400')
                     }
                   >
                     {p.image_url ? (
                       <img src={p.image_url} alt="" className="w-full aspect-square object-cover" />
                     ) : (
-                      <div className="aspect-square bg-gray-100" />
+                      <div className="aspect-square bg-stone-100" />
                     )}
-                    <div className="p-2 text-xs text-gray-700 line-clamp-2">
-                      {p.title}
-                    </div>
+                    <div className="p-2 text-xs text-charcoal-700 line-clamp-2">{p.title}</div>
                   </button>
                 )
               })}
             </div>
           </Card>
 
-          {/* Brand story */}
           <Card title="Brand story">
-            <Field label="Your story">
-              <textarea
-                rows={5}
-                value={form.brand_story}
-                onChange={(e) => update('brand_story', e.target.value)}
-                placeholder="Tell shoppers about your brand — how you started, what makes your products special."
-                className="input resize-none"
-              />
-            </Field>
+            <TextField
+              label="Your story"
+              rows={5}
+              value={form.brand_story}
+              onChange={(e) => update('brand_story', e.target.value)}
+              placeholder="Tell shoppers about your brand — how you started, what makes your products special."
+            />
           </Card>
 
           {error && (
-            <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            <div className="text-sm text-error-700 bg-error-50 border border-error-500/25 rounded-lg p-3">
               {error}
             </div>
           )}
@@ -317,15 +273,15 @@ export default function SellerStoreBuilder() {
 
         {/* Right: live preview */}
         <div className="lg:sticky lg:top-20 self-start">
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
-              <div className="text-xs uppercase tracking-wider text-gray-500">Preview</div>
-              <div className="flex gap-1">
+          <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-200 bg-stone-50">
+              <div className="text-label">Preview</div>
+              <div className="flex gap-1 bg-bone-50 rounded-lg p-0.5 border border-stone-200">
                 <button
                   onClick={() => setPreview('desktop')}
                   className={
-                    'p-1.5 rounded ' +
-                    (preview === 'desktop' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-200')
+                    'p-1.5 rounded-md transition-avenzo ' +
+                    (preview === 'desktop' ? 'bg-charcoal-900 text-bone-50' : 'text-charcoal-500 hover:bg-stone-100')
                   }
                   aria-label="Desktop preview"
                 >
@@ -334,8 +290,8 @@ export default function SellerStoreBuilder() {
                 <button
                   onClick={() => setPreview('mobile')}
                   className={
-                    'p-1.5 rounded ' +
-                    (preview === 'mobile' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-200')
+                    'p-1.5 rounded-md transition-avenzo ' +
+                    (preview === 'mobile' ? 'bg-charcoal-900 text-bone-50' : 'text-charcoal-500 hover:bg-stone-100')
                   }
                   aria-label="Mobile preview"
                 >
@@ -348,12 +304,12 @@ export default function SellerStoreBuilder() {
               <div
                 className={
                   preview === 'mobile'
-                    ? 'w-[280px] mx-auto border rounded-lg overflow-hidden bg-white'
+                    ? 'w-[280px] mx-auto border border-stone-200 rounded-lg overflow-hidden bg-bone-50'
                     : ''
                 }
               >
                 {/* Hero */}
-                <div className="relative aspect-[16/8] bg-gradient-to-br from-[#232f3e] to-[#131921]">
+                <div className="relative aspect-[16/8] bg-gradient-to-br from-charcoal-800 to-charcoal-900">
                   {form.hero_image_url && (
                     <img
                       src={form.hero_image_url}
@@ -366,31 +322,27 @@ export default function SellerStoreBuilder() {
                       <img
                         src={form.logo_url}
                         alt=""
-                        className="w-10 h-10 rounded object-cover border-2 border-white bg-white mb-2"
+                        className="w-10 h-10 rounded object-cover border-2 border-bone-50 bg-bone-50 mb-2"
                       />
                     )}
-                    <h3 className="text-white font-bold drop-shadow-md truncate">
+                    <h3 className="font-display text-bone-50 drop-shadow-md truncate">
                       {form.store_name || 'Your Store'}
                     </h3>
-                    {form.tagline && (
-                      <p className="text-gray-100 text-xs drop-shadow truncate">
-                        {form.tagline}
-                      </p>
-                    )}
+                    {form.tagline && <p className="text-stone-200 text-xs drop-shadow truncate">{form.tagline}</p>}
                   </div>
                 </div>
 
                 {/* Featured */}
                 {featuredProducts.length > 0 && (
                   <div className="p-3">
-                    <div className="text-xs font-bold text-gray-900 mb-2">Featured</div>
+                    <div className="text-xs font-semibold text-charcoal-900 mb-2">Featured</div>
                     <div className="grid grid-cols-2 gap-2">
                       {featuredProducts.slice(0, 4).map((p) => (
-                        <div key={p.id} className="border rounded overflow-hidden">
+                        <div key={p.id} className="border border-stone-200 rounded overflow-hidden">
                           {p.image_url ? (
                             <img src={p.image_url} alt="" className="w-full aspect-square object-cover" />
                           ) : (
-                            <div className="aspect-square bg-gray-100" />
+                            <div className="aspect-square bg-stone-100" />
                           )}
                         </div>
                       ))}
@@ -400,14 +352,12 @@ export default function SellerStoreBuilder() {
 
                 {/* Grid preview */}
                 {products.length > 0 && (
-                  <div className="p-3 border-t">
-                    <div className="text-xs font-bold text-gray-900 mb-2">Products</div>
+                  <div className="p-3 border-t border-stone-200">
+                    <div className="text-xs font-semibold text-charcoal-900 mb-2">Products</div>
                     <div className="grid grid-cols-3 gap-1.5">
                       {products.slice(0, 6).map((p) => (
-                        <div key={p.id} className="aspect-square border rounded overflow-hidden bg-gray-100">
-                          {p.image_url && (
-                            <img src={p.image_url} alt="" className="w-full h-full object-cover" />
-                          )}
+                        <div key={p.id} className="aspect-square border border-stone-200 rounded overflow-hidden bg-stone-100">
+                          {p.image_url && <img src={p.image_url} alt="" className="w-full h-full object-cover" />}
                         </div>
                       ))}
                     </div>
@@ -420,47 +370,31 @@ export default function SellerStoreBuilder() {
       </div>
 
       {/* Sticky footer actions */}
-      <div className="sticky bottom-0 bg-white border-t -mx-6 px-6 py-3 flex items-center justify-end gap-3">
-        <Link
-          to="/seller/store"
-          className="px-5 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
-        >
-          Cancel
+      <div className="sticky bottom-0 bg-bone-50 border-t border-stone-200 -mx-6 px-6 py-3 flex items-center justify-end gap-3">
+        <Link to="/seller/store">
+          <Button variant="outline" size="md">
+            Cancel
+          </Button>
         </Link>
-        <button
-          onClick={() => save('draft')}
-          disabled={saving}
-          className="px-5 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-60"
-        >
-          {saving ? 'Saving…' : 'Save draft'}
-        </button>
-        <button
-          onClick={() => save('published')}
-          disabled={saving}
-          className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded flex items-center gap-2 disabled:opacity-60 transition"
-        >
-          <Eye className="w-4 h-4" />
-          {saving ? 'Publishing…' : 'Publish store'}
-        </button>
+        <Button variant="outline" size="md" onClick={() => save('draft')} loading={saving}>
+          Save draft
+        </Button>
+        <Button variant="secondary" size="md" onClick={() => save('published')} loading={saving}>
+          <Eye className="w-4 h-4" /> Publish store
+        </Button>
       </div>
     </div>
   )
 }
 
-function Card({ title, children }) {
+function TextField({ label, ...props }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
-      <h2 className="text-lg font-bold text-gray-900 pb-2 border-b">{title}</h2>
-      {children}
-    </div>
-  )
-}
-
-function Field({ label, children }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-800 mb-1">{label}</label>
-      {children}
+    <div className="w-full">
+      <label className="block text-label mb-1.5">{label}</label>
+      <textarea
+        className="w-full rounded-lg border border-stone-300 bg-bone-50 px-3.5 py-2.5 text-sm text-charcoal-900 placeholder:text-charcoal-400 transition-avenzo focus:outline-none focus:border-brass-400 resize-none"
+        {...props}
+      />
     </div>
   )
 }

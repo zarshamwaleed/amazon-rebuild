@@ -1,11 +1,13 @@
-﻿import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import CategoryHeader from '../components/CategoryHeader'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import CategoryHeroBanner from '../components/CategoryHeroBanner'
+import FilterSidebar from '../components/FilterSidebar'
 import SortDropdown from '../components/SortDropdown'
 import ProductGrid from '../components/ProductGrid'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import EmptyState from '../components/EmptyState'
 import Pagination from '../components/Pagination'
+import Button from '../components/Button'
 import { getCategoryBySlug } from '../services/categoryService'
 import { queryProducts } from '../services/productService'
 
@@ -13,7 +15,6 @@ const PAGE_SIZE = 12
 
 export default function Category() {
   const { slug } = useParams()
-  const navigate = useNavigate()
 
   const [category, setCategory] = useState(null)
   const [products, setProducts] = useState([])
@@ -23,8 +24,16 @@ export default function Category() {
 
   const [sort, setSort] = useState('newest')
   const [page, setPage] = useState(1)
+  const [priceRange, setPriceRange] = useState({})
 
-  // Load category + products whenever slug/sort/page change
+  // Reset filters/sort/page whenever navigating to a different category
+  useEffect(() => {
+    setSort('newest')
+    setPage(1)
+    setPriceRange({})
+  }, [slug])
+
+  // Load category + products whenever slug/sort/page/price change
   useEffect(() => {
     let cancelled = false
     async function load() {
@@ -45,6 +54,8 @@ export default function Category() {
 
         const { data, count } = await queryProducts({
           categoryId: cat.id,
+          minPrice: priceRange.min,
+          maxPrice: priceRange.max,
           sort,
           page,
           pageSize: PAGE_SIZE,
@@ -62,7 +73,7 @@ export default function Category() {
     return () => {
       cancelled = true
     }
-  }, [slug, sort, page])
+  }, [slug, sort, page, priceRange])
 
   if (!loading && !category) {
     return (
@@ -73,35 +84,76 @@ export default function Category() {
     )
   }
 
+  const hasFilters = priceRange.min !== undefined || priceRange.max !== undefined
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
     <div>
-      <CategoryHeader
+      <CategoryHeroBanner
+        eyebrow="Category"
         title={category?.name || 'Category'}
-        count={total}
+        resultCount={total}
         description={category?.description}
+        image={category?.image_url}
+        categorySlug={category?.slug}
+        breadcrumb={[
+          { label: 'Home', to: '/' },
+          { label: 'All Products', to: '/products' },
+          { label: category?.name || '' },
+        ]}
       />
 
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <SortDropdown value={sort} onChange={(v) => { setSort(v); setPage(1) }} />
-      </div>
-
-      {loading ? (
-        <LoadingSkeleton count={PAGE_SIZE} />
-      ) : error ? (
-        <EmptyState title="Could not load products" message={error} />
-      ) : products.length === 0 ? (
-        <EmptyState
-          title="No products in this category"
-          message="Check back soon."
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
+        <FilterSidebar
+          showCategoryFilter={false}
+          minPrice={priceRange.min}
+          maxPrice={priceRange.max}
+          onPriceChange={(range) => {
+            setPriceRange(range)
+            setPage(1)
+          }}
+          onClear={() => setPriceRange({})}
+          resultCount={total}
         />
-      ) : (
-        <>
-          <ProductGrid products={products} cols={3} />
-          <Pagination page={page} totalPages={totalPages} onChange={setPage} />
-        </>
-      )}
+
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex items-center justify-between mb-5 gap-3">
+            <p className="text-body-sm hidden sm:block">
+              {loading ? 'Loading products…' : `${total.toLocaleString()} item${total === 1 ? '' : 's'}`}
+            </p>
+            <SortDropdown
+              value={sort}
+              onChange={(v) => {
+                setSort(v)
+                setPage(1)
+              }}
+            />
+          </div>
+
+          {loading ? (
+            <LoadingSkeleton count={PAGE_SIZE} cols={3} />
+          ) : error ? (
+            <EmptyState title="Could not load products" message={error} />
+          ) : products.length === 0 ? (
+            <EmptyState
+              title="No products in this category"
+              message={hasFilters ? 'Try widening your price range.' : 'Check back soon.'}
+              action={
+                hasFilters ? (
+                  <Button variant="outline" size="sm" onClick={() => setPriceRange({})}>
+                    Clear filters
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <>
+              <ProductGrid products={products} cols={4} />
+              <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+            </>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

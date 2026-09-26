@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
-  ArrowLeft,
   MapPin,
   Save,
   Settings as SettingsIcon,
@@ -12,10 +10,11 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import {
-  getReturnSettings,
-  saveReturnSettings,
-} from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Card from '../../components/Card'
+import Button from '../../components/Button'
+import Input from '../../components/Input'
+import { getReturnSettings, saveReturnSettings } from '../../services/sellerService'
 
 const DEFAULTS = {
   business_name: '',
@@ -31,6 +30,9 @@ const DEFAULTS = {
   default_return_method: 'prepaid_label',
   refund_preference: 'full',
 }
+
+const selectCls =
+  'w-full rounded-lg border border-stone-300 bg-bone-50 px-3.5 py-2.5 text-sm text-charcoal-900 transition-avenzo focus:outline-none focus:border-brass-400'
 
 export default function SellerReturnsSettings() {
   const { user } = useAuth()
@@ -64,14 +66,7 @@ export default function SellerReturnsSettings() {
         state: form.state,
         zip: form.zip,
         country: form.country,
-        return_address: [
-          form.business_name,
-          form.street,
-          form.city,
-          form.state,
-          form.zip,
-          form.country,
-        ]
+        return_address: [form.business_name, form.street, form.city, form.state, form.zip, form.country]
           .filter(Boolean)
           .join(', '),
         returnless_refund: form.returnless_refund,
@@ -82,7 +77,7 @@ export default function SellerReturnsSettings() {
         refund_preference: form.refund_preference,
       })
       pushToast('Return settings saved', { type: 'success' })
-    } catch (err) {
+    } catch {
       pushToast('Could not save settings', { type: 'error' })
     } finally {
       setSaving(false)
@@ -90,100 +85,62 @@ export default function SellerReturnsSettings() {
   }
 
   if (loading) {
-    return <div className="text-sm text-gray-600">Loading settings…</div>
+    return (
+      <div className="space-y-5 max-w-3xl animate-fade-in">
+        <div className="h-14 rounded-xl skeleton-shimmer" />
+        <div className="h-56 rounded-xl skeleton-shimmer" />
+        <div className="h-40 rounded-xl skeleton-shimmer" />
+        <div className="h-48 rounded-xl skeleton-shimmer" />
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-5 max-w-3xl">
-      <div className="flex items-center gap-3">
-        <Link
-          to="/seller/orders/returns"
-          className="p-2 hover:bg-white rounded border border-gray-200"
-          aria-label="Back"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">Return Settings</h1>
-          <p className="text-sm text-gray-600">
-            Configure your return address, preferences, and policy defaults.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-5 max-w-3xl animate-fade-in">
+      <SellerPageHeader
+        backTo="/seller/orders/returns"
+        title="Return Settings"
+        description="Configure your return address, preferences, and policy defaults."
+      />
 
-      {/* Return address */}
-      <section className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <MapPin className="w-4 h-4" /> Return Address
-        </h2>
-        <p className="text-xs text-gray-500 mb-4">
-          This address is used when you authorize a return. Keep it current — the
-          address active when a return is requested determines where the item is
-          sent.
-        </p>
-
+      <Card
+        title={
+          <span className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-charcoal-500" /> Return Address
+          </span>
+        }
+        subtitle="This address is used when you authorize a return. Keep it current — the address active when a return is requested determines where the item is sent."
+      >
         <div className="space-y-4">
-          <Field label="Business name">
-            <input
-              type="text"
-              value={form.business_name}
-              onChange={(e) => update('business_name', e.target.value)}
-              placeholder="Returns Department"
-              className="input"
-            />
-          </Field>
-          <Field label="Street address">
-            <input
-              type="text"
-              value={form.street}
-              onChange={(e) => update('street', e.target.value)}
-              placeholder="123 Warehouse Rd"
-              className="input"
-            />
-          </Field>
+          <Input
+            label="Business name"
+            value={form.business_name}
+            onChange={(e) => update('business_name', e.target.value)}
+            placeholder="Returns Department"
+          />
+          <Input
+            label="Street address"
+            value={form.street}
+            onChange={(e) => update('street', e.target.value)}
+            placeholder="123 Warehouse Rd"
+          />
           <div className="grid md:grid-cols-3 gap-3">
-            <Field label="City">
-              <input
-                type="text"
-                value={form.city}
-                onChange={(e) => update('city', e.target.value)}
-                className="input"
-              />
-            </Field>
-            <Field label="State / Region">
-              <input
-                type="text"
-                value={form.state}
-                onChange={(e) => update('state', e.target.value)}
-                className="input"
-              />
-            </Field>
-            <Field label="Postal code">
-              <input
-                type="text"
-                value={form.zip}
-                onChange={(e) => update('zip', e.target.value)}
-                className="input"
-              />
-            </Field>
+            <Input label="City" value={form.city} onChange={(e) => update('city', e.target.value)} />
+            <Input label="State / Region" value={form.state} onChange={(e) => update('state', e.target.value)} />
+            <Input label="Postal code" value={form.zip} onChange={(e) => update('zip', e.target.value)} />
           </div>
-          <Field label="Country">
-            <input
-              type="text"
-              value={form.country}
-              onChange={(e) => update('country', e.target.value)}
-              className="input"
-            />
-          </Field>
+          <Input label="Country" value={form.country} onChange={(e) => update('country', e.target.value)} />
         </div>
-      </section>
+      </Card>
 
-      {/* Return preferences */}
-      <section className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <SettingsIcon className="w-4 h-4" /> Return Preferences
-        </h2>
-        <div className="space-y-1 divide-y">
+      <Card
+        title={
+          <span className="flex items-center gap-2">
+            <SettingsIcon className="w-4 h-4 text-charcoal-500" /> Return Preferences
+          </span>
+        }
+      >
+        <div className="divide-y divide-stone-200">
           <Toggle
             icon={RefreshCw}
             title="Returnless refunds"
@@ -206,102 +163,89 @@ export default function SellerReturnsSettings() {
             onChange={(v) => update('return_notifications', v)}
           />
         </div>
-      </section>
+      </Card>
 
-      {/* Return rules */}
-      <section className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <Shield className="w-4 h-4" /> Return Rules
-        </h2>
-
+      <Card
+        title={
+          <span className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-charcoal-500" /> Return Rules
+          </span>
+        }
+      >
         <div className="space-y-4">
-          <Field label="Return window (days)">
-            <input
+          <div>
+            <Input
+              label="Return window (days)"
               type="number"
               value={form.return_window_days}
               onChange={(e) => update('return_window_days', e.target.value)}
               min={7}
               max={90}
-              className="input max-w-xs"
+              className="max-w-xs"
+              hint="Number of days a customer has to request a return."
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Number of days a customer has to request a return.
-            </p>
-          </Field>
+          </div>
 
-          <Field label="Default return method">
+          <div className="max-w-xs">
+            <label className="block text-label mb-1.5">Default return method</label>
             <select
               value={form.default_return_method}
               onChange={(e) => update('default_return_method', e.target.value)}
-              className="input max-w-xs"
+              className={selectCls}
             >
               <option value="prepaid_label">Amazon prepaid label</option>
               <option value="seller_label">Seller-provided label</option>
             </select>
-          </Field>
+          </div>
 
-          <Field label="Refund preference">
+          <div className="max-w-xs">
+            <label className="block text-label mb-1.5">Refund preference</label>
             <select
               value={form.refund_preference}
               onChange={(e) => update('refund_preference', e.target.value)}
-              className="input max-w-xs"
+              className={selectCls}
             >
               <option value="full">Full refund by default</option>
               <option value="partial">Partial refund by default</option>
               <option value="case_by_case">Case by case</option>
             </select>
-          </Field>
+          </div>
         </div>
-      </section>
+      </Card>
 
-      {/* Save */}
       <div className="flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-6 py-2.5 rounded flex items-center gap-2 disabled:opacity-60 transition"
-        >
+        <Button onClick={handleSave} loading={saving}>
           <Save className="w-4 h-4" />
-          {saving ? 'Saving…' : 'Save settings'}
-        </button>
+          Save settings
+        </Button>
       </div>
     </div>
   )
 }
 
-function Field({ label, children }) {
+function Toggle({ icon, title, description, value, onChange }) {
+  const Icon = icon
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-800 mb-1">
-        {label}
-      </label>
-      {children}
-    </div>
-  )
-}
-
-function Toggle({ icon: Icon, title, description, value, onChange }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-3">
+    <div className="flex items-center justify-between gap-4 py-3.5 first:pt-0 last:pb-0">
       <div className="flex items-start gap-3">
-        {Icon && <Icon className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />}
+        {Icon && <Icon className="w-4 h-4 text-charcoal-400 mt-1 flex-shrink-0" />}
         <div>
-          <div className="text-sm font-medium text-gray-900">{title}</div>
-          <div className="text-xs text-gray-500 mt-0.5">{description}</div>
+          <div className="text-sm font-medium text-charcoal-900">{title}</div>
+          <div className="text-xs text-charcoal-500 mt-0.5">{description}</div>
         </div>
       </div>
       <button
         type="button"
         onClick={() => onChange(!value)}
         className={
-          'relative inline-flex h-6 w-11 rounded-full transition-colors flex-shrink-0 ' +
-          (value ? 'bg-[#c7511f]' : 'bg-gray-300')
+          'relative inline-flex h-6 w-11 rounded-full transition-avenzo flex-shrink-0 ' +
+          (value ? 'bg-brass-500' : 'bg-stone-300')
         }
         aria-pressed={value}
       >
         <span
           className={
-            'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ' +
+            'absolute top-0.5 left-0.5 w-5 h-5 bg-bone-50 rounded-full shadow-subtle transition-transform duration-base ' +
             (value ? 'translate-x-5' : '')
           }
         />

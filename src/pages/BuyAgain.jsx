@@ -1,9 +1,12 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { RotateCcw } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../services/supabase'
 import ProductGrid from '../components/ProductGrid'
 import EmptyState from '../components/EmptyState'
+import LoadingSkeleton from '../components/LoadingSkeleton'
+import Button from '../components/Button'
 
 export default function BuyAgain() {
   const { user } = useAuth()
@@ -45,21 +48,33 @@ export default function BuyAgain() {
   if (!user) {
     return (
       <EmptyState
+        icon={RotateCcw}
         title="Sign in to see your Buy Again items"
         message="Products you've purchased will appear here."
+        action={
+          <Link to="/login">
+            <Button size="sm">Sign in</Button>
+          </Link>
+        }
       />
     )
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Buy Again</h1>
-      <p className="text-sm text-gray-600 mb-6">Items you've purchased before.</p>
+      <div className="mb-6 md:mb-8">
+        <p className="text-label mb-1.5 flex items-center gap-1.5 text-brass-600">
+          <RotateCcw className="w-3.5 h-3.5" /> Order again
+        </p>
+        <h1 className="heading-page">Buy Again</h1>
+        <p className="text-body-sm mt-1.5">Items you&apos;ve purchased before.</p>
+      </div>
 
       {loading ? (
-        <div className="text-sm text-gray-600">Loading…</div>
+        <LoadingSkeleton cols={4} />
       ) : products.length === 0 ? (
         <EmptyState
+          icon={RotateCcw}
           title="Nothing to buy again yet"
           message="Place your first order and it'll appear here."
         />

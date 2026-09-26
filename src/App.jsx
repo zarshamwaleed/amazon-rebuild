@@ -87,10 +87,14 @@ import Wishlist from './pages/Wishlist'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Account from './pages/Account'
-import InfoPage from './pages/InfoPage'
+import About from './pages/About'
+import Careers from './pages/Careers'
+import Press from './pages/Press'
+import Investors from './pages/Investors'
+import Sustainability from './pages/Sustainability'
+import Accessibility from './pages/Accessibility'
 import CustomerService from './pages/CustomerService'
 import GiftCards from './pages/GiftCards'
-import Registry from './pages/Registry'
 import AlexaShopping from './pages/AlexaShopping'
 import Coupons from './pages/Coupons'
 import MyCoupons from './pages/MyCoupons'
@@ -179,6 +183,20 @@ export default function App() {
                       <Route path="settings" element={<SellerSettings />} />
                     </Route>
 
+                    {/* ============ Prime Video — own layout, own chrome ============ */}
+                    <Route path="/prime-video" element={<PVLayout />}>
+                      <Route index element={<PVHome />} />
+                      <Route path="movies" element={<PVMovies />} />
+                      <Route path="tv" element={<PVTV />} />
+                      <Route path="my-stuff" element={<PVMyStuff />} />
+                      <Route path="search" element={<PVSearch />} />
+                      <Route path="watch/:id" element={<PVWatch />} />
+                      <Route path="sports" element={<PVSimple />} />
+                      <Route path="live" element={<PVSimple />} />
+                      <Route path="subscriptions" element={<PVSimple />} />
+                      <Route path="categories" element={<PVSimple />} />
+                    </Route>
+
                     {/* ============ Amazon storefront — main layout ============ */}
                     <Route element={<MainLayout />}>
                       <Route path="/" element={<Home />} />
@@ -228,26 +246,12 @@ export default function App() {
 <Route path="/registry/:id/edit" element={<ProtectedRoute><EditRegistry /></ProtectedRoute>} />
 <Route path="/registry/:id" element={<RegistryDetail />} />
 
-                      <Route path="/about" element={<InfoPage />} />
-                      <Route path="/careers" element={<InfoPage />} />
-                      <Route path="/press" element={<InfoPage />} />
-                      <Route path="/investor-relations" element={<InfoPage />} />
-                      <Route path="/sustainability" element={<InfoPage />} />
-                      <Route path="/accessibility" element={<InfoPage />} />
-
-                      {/* Prime Video — nested so Amazon header stays on top */}
-                      <Route path="/prime-video" element={<PVLayout />}>
-                        <Route index element={<PVHome />} />
-                        <Route path="movies" element={<PVMovies />} />
-                        <Route path="tv" element={<PVTV />} />
-                        <Route path="my-stuff" element={<PVMyStuff />} />
-                        <Route path="search" element={<PVSearch />} />
-                        <Route path="watch/:id" element={<PVWatch />} />
-                        <Route path="sports" element={<PVSimple />} />
-                        <Route path="live" element={<PVSimple />} />
-                        <Route path="subscriptions" element={<PVSimple />} />
-                        <Route path="categories" element={<PVSimple />} />
-                      </Route>
+                      <Route path="/about" element={<About />} />
+                      <Route path="/careers" element={<Careers />} />
+                      <Route path="/press" element={<Press />} />
+                      <Route path="/investor-relations" element={<Investors />} />
+                      <Route path="/sustainability" element={<Sustainability />} />
+                      <Route path="/accessibility" element={<Accessibility />} />
 
                       <Route path="*" element={<NotFound />} />
                     </Route>

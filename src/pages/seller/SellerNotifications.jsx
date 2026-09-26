@@ -1,15 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  Bell,
-  RefreshCw,
-  Check,
-  Trash2,
-  Filter,
-} from 'lucide-react'
+import { Bell, RefreshCw, Check, Trash2 } from 'lucide-react'
 import { useSellerNotifications } from '../../hooks/useSellerNotifications'
-import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Button from '../../components/Button'
+import Badge from '../../components/Badge'
+import EmptyState from '../../components/EmptyState'
 
 const TYPE_META = {
   new_order: { label: 'Order', emoji: '🛒' },
@@ -43,7 +40,6 @@ function matchesFilter(n, filter) {
 }
 
 export default function SellerNotifications() {
-  const { user } = useAuth()
   const { pushToast } = useToast()
   const {
     notifications,
@@ -85,51 +81,49 @@ export default function SellerNotifications() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-          <p className="text-sm text-gray-600">
+      <SellerPageHeader
+        title="Notifications"
+        description={
+          <>
             {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
             {unreadCount > 0 && (
               <>
                 {' · '}
-                <span className="text-[#c7511f] font-medium">
-                  {unreadCount} unread
-                </span>
+                <span className="text-brass-600 font-medium">{unreadCount} unread</span>
               </>
             )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={async () => {
-              await markAllRead()
-              pushToast('All marked as read', { type: 'success' })
-            }}
-            className="border border-gray-300 bg-white hover:bg-gray-50 px-3 py-2 rounded text-sm flex items-center gap-2"
-          >
-            <Check className="w-4 h-4" /> Mark all read
-          </button>
-          <button
-            onClick={reload}
-            className="border border-gray-300 bg-white hover:bg-gray-50 px-3 py-2 rounded text-sm flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                await markAllRead()
+                pushToast('All marked as read', { type: 'success' })
+              }}
+            >
+              <Check className="w-4 h-4" /> Mark all read
+            </Button>
+            <Button variant="outline" size="sm" onClick={reload} aria-label="Refresh">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </>
+        }
+      />
 
       {/* Filters */}
-      <div className="flex gap-1 border-b overflow-x-auto no-scrollbar">
+      <div className="flex gap-1 border-b border-stone-200 overflow-x-auto no-scrollbar">
         {FILTERS.map((f) => (
           <button
             key={f.id}
             onClick={() => setFilter(f.id)}
             className={
-              'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition ' +
+              'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-avenzo ' +
               (filter === f.id
-                ? 'border-[#c7511f] text-[#c7511f]'
-                : 'border-transparent text-gray-600 hover:text-gray-900')
+                ? 'border-brass-500 text-charcoal-900'
+                : 'border-transparent text-charcoal-500 hover:text-charcoal-800')
             }
           >
             {f.label}
@@ -138,104 +132,88 @@ export default function SellerNotifications() {
       </div>
 
       {/* List */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        {loading ? (
-          <div className="p-10 text-center text-sm text-gray-600">
-            Loading notifications…
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              {filter === 'unread' ? 'No unread notifications' : 'No notifications'}
-            </h3>
-            <p className="text-sm text-gray-600">
-              You're all caught up.
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y">
-            {filtered.map((n) => {
-              const meta = TYPE_META[n.type] || { label: 'Notice', emoji: '🔔' }
-              const unread = !n.read && !n.derived
-              return (
-                <li
-                  key={n.id}
-                  className={
-                    'flex items-start gap-4 px-5 py-4 transition ' +
-                    (unread ? 'bg-orange-50/40' : 'hover:bg-gray-50')
-                  }
-                >
-                  <span className="text-2xl flex-shrink-0 mt-0.5">{meta.emoji}</span>
+      {loading ? (
+        <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle p-4 space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-20 rounded-lg skeleton-shimmer" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Bell}
+          title={filter === 'unread' ? 'No unread notifications' : "You're all caught up"}
+          message="No notifications to show right now."
+        />
+      ) : (
+        <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle divide-y divide-stone-100">
+          {filtered.map((n) => {
+            const meta = TYPE_META[n.type] || { label: 'Notice', emoji: '🔔' }
+            const unread = !n.read && !n.derived
+            return (
+              <div
+                key={n.id}
+                className={
+                  'flex items-start gap-3 px-4 sm:px-5 py-4 hover:bg-stone-50 transition-avenzo ' +
+                  (unread ? 'bg-brass-50/50' : '')
+                }
+              >
+                <span className="text-lg flex-shrink-0 mt-0.5 leading-none">{meta.emoji}</span>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-xs uppercase tracking-wider text-gray-500">
-                        {meta.label}
-                      </span>
-                      {unread && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#c7511f] text-white">
-                          NEW
-                        </span>
-                      )}
-                      {n.derived && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                          AUTO
-                        </span>
-                      )}
-                    </div>
-                    <Link
-                      to={n.link || '/seller'}
-                      className={
-                        'block ' +
-                        (unread
-                          ? 'font-bold text-gray-900'
-                          : 'font-medium text-gray-800') +
-                        ' hover:text-[#c7511f]'
-                      }
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="text-label">{meta.label}</span>
+                    {n.derived && <Badge color="blue">Auto</Badge>}
+                  </div>
+                  <Link
+                    to={n.link || '/seller'}
+                    className={
+                      'block text-sm hover:text-brass-600 transition-avenzo ' +
+                      (unread ? 'font-semibold text-charcoal-900' : 'font-medium text-charcoal-700')
+                    }
+                  >
+                    {n.title}
+                  </Link>
+                  {n.body && (
+                    <div className="text-sm text-charcoal-600 mt-0.5 line-clamp-2">{n.body}</div>
+                  )}
+                  <div className="text-caption mt-2">
+                    {new Date(n.created_at).toLocaleString()}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {unread && (
+                    <button
+                      onClick={() => handleMarkRead(n)}
+                      className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
+                      title="Mark as read"
                     >
-                      {n.title}
-                    </Link>
-                    {n.body && (
-                      <div className="text-sm text-gray-600 mt-0.5 line-clamp-2">
-                        {n.body}
-                      </div>
-                    )}
-                    <div className="text-xs text-gray-400 mt-2">
-                      {new Date(n.created_at).toLocaleString()}
-                    </div>
-                  </div>
+                      <Check className="w-4 h-4 text-charcoal-500" />
+                    </button>
+                  )}
+                  {!n.derived && (
+                    <button
+                      onClick={() => handleRemove(n)}
+                      className="p-1.5 hover:bg-error-50 rounded-lg transition-avenzo"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4 text-error-500" />
+                    </button>
+                  )}
+                </div>
 
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {unread && (
-                      <button
-                        onClick={() => handleMarkRead(n)}
-                        className="p-1.5 hover:bg-gray-100 rounded"
-                        title="Mark as read"
-                      >
-                        <Check className="w-4 h-4 text-gray-500" />
-                      </button>
-                    )}
-                    {!n.derived && (
-                      <button
-                        onClick={() => handleRemove(n)}
-                        className="p-1.5 hover:bg-red-50 rounded"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
-                    )}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </div>
+                {unread && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-brass-500 mt-1.5 flex-shrink-0" />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
 
-      <p className="text-xs text-gray-500">
-        <strong>Auto</strong> notices reflect the current state of your account
-        and cannot be dismissed. Other notices are recorded events.
+      <p className="text-caption">
+        <strong className="text-charcoal-600">Auto</strong> notices reflect the current state of your
+        account and cannot be dismissed. Other notices are recorded events.
       </p>
     </div>
   )

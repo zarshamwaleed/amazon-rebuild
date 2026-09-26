@@ -1,4 +1,21 @@
-﻿import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
+
+function PageButton({ p, page, onChange }) {
+  const active = p === page
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(p)}
+      aria-current={active ? 'page' : undefined}
+      className={
+        'w-9 h-9 rounded-full text-av-body-sm font-medium transition-avenzo ' +
+        (active ? 'bg-charcoal-900 text-bone-50' : 'text-charcoal-600 hover:bg-stone-100 hover:text-charcoal-900')
+      }
+    >
+      {p}
+    </button>
+  )
+}
 
 export default function Pagination({ page, totalPages, onChange }) {
   if (totalPages <= 1) return null
@@ -9,63 +26,55 @@ export default function Pagination({ page, totalPages, onChange }) {
   for (let i = from; i <= to; i++) pages.push(i)
 
   return (
-    <nav className="flex items-center justify-center gap-1 mt-8" aria-label="Pagination">
-      <button
-        onClick={() => onChange(page - 1)}
-        disabled={page <= 1}
-        className="p-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-        aria-label="Previous page"
-      >
-        <ChevronLeft className="w-4 h-4" />
-      </button>
-
-      {from > 1 && (
-        <>
-          <button
-            onClick={() => onChange(1)}
-            className="px-3 py-1.5 rounded border border-gray-300 bg-white text-sm hover:bg-gray-50"
-          >
-            1
-          </button>
-          {from > 2 && <span className="px-2 text-gray-500">…</span>}
-        </>
-      )}
-
-      {pages.map((p) => (
+    <nav className="flex flex-col items-center gap-2.5 mt-10 md:mt-12" aria-label="Pagination">
+      <div className="flex items-center gap-1">
         <button
-          key={p}
-          onClick={() => onChange(p)}
-          className={
-            'px-3 py-1.5 rounded border text-sm ' +
-            (p === page
-              ? 'bg-[#232f3e] text-white border-[#232f3e]'
-              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50')
-          }
+          onClick={() => onChange(page - 1)}
+          disabled={page <= 1}
+          aria-label="Previous page"
+          className="w-9 h-9 rounded-full inline-flex items-center justify-center text-charcoal-600 hover:bg-stone-100 hover:text-charcoal-900 transition-avenzo disabled:opacity-30 disabled:pointer-events-none"
         >
-          {p}
+          <ChevronLeft className="w-4 h-4" />
         </button>
-      ))}
 
-      {to < totalPages && (
-        <>
-          {to < totalPages - 1 && <span className="px-2 text-gray-500">…</span>}
-          <button
-            onClick={() => onChange(totalPages)}
-            className="px-3 py-1.5 rounded border border-gray-300 bg-white text-sm hover:bg-gray-50"
-          >
-            {totalPages}
-          </button>
-        </>
-      )}
+        {from > 1 && (
+          <>
+            <PageButton p={1} page={page} onChange={onChange} />
+            {from > 2 && (
+              <span className="w-9 h-9 flex items-center justify-center text-charcoal-300">
+                <MoreHorizontal className="w-4 h-4" />
+              </span>
+            )}
+          </>
+        )}
 
-      <button
-        onClick={() => onChange(page + 1)}
-        disabled={page >= totalPages}
-        className="p-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-        aria-label="Next page"
-      >
-        <ChevronRight className="w-4 h-4" />
-      </button>
+        {pages.map((p) => (
+          <PageButton key={p} p={p} page={page} onChange={onChange} />
+        ))}
+
+        {to < totalPages && (
+          <>
+            {to < totalPages - 1 && (
+              <span className="w-9 h-9 flex items-center justify-center text-charcoal-300">
+                <MoreHorizontal className="w-4 h-4" />
+              </span>
+            )}
+            <PageButton p={totalPages} page={page} onChange={onChange} />
+          </>
+        )}
+
+        <button
+          onClick={() => onChange(page + 1)}
+          disabled={page >= totalPages}
+          aria-label="Next page"
+          className="w-9 h-9 rounded-full inline-flex items-center justify-center text-charcoal-600 hover:bg-stone-100 hover:text-charcoal-900 transition-avenzo disabled:opacity-30 disabled:pointer-events-none"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+      <p className="text-caption">
+        Page {page} of {totalPages}
+      </p>
     </nav>
   )
 }

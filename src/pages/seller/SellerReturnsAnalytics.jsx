@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ArrowLeft,
   Download,
   RotateCcw,
   DollarSign,
@@ -13,6 +12,10 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { getReturnsAnalytics, getSellerReturns } from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import SellerStatCard from '../../components/seller/SellerStatCard'
+import Card from '../../components/Card'
+import Button from '../../components/Button'
 
 export default function SellerReturnsAnalytics() {
   const { user } = useAuth()
@@ -67,9 +70,7 @@ export default function SellerReturnsAnalytics() {
           r.requested_at ? new Date(r.requested_at).toISOString().slice(0, 10) : '',
         ]),
       ]
-      const csv = rows
-        .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
-        .join('\n')
+      const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
       const blob = new Blob([csv], { type: 'text/csv' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -78,240 +79,169 @@ export default function SellerReturnsAnalytics() {
       a.click()
       URL.revokeObjectURL(url)
       pushToast('Returns report downloaded', { type: 'success' })
-    } catch (err) {
+    } catch {
       pushToast('Could not generate report', { type: 'error' })
     }
   }
 
   if (loading) {
-    return <div className="text-sm text-gray-600">Loading analytics…</div>
+    return (
+      <div className="space-y-6 max-w-6xl animate-fade-in">
+        <div className="h-14 rounded-xl skeleton-shimmer" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-28 rounded-xl skeleton-shimmer" />
+          ))}
+        </div>
+        <div className="h-56 rounded-xl skeleton-shimmer" />
+      </div>
+    )
   }
   if (!data) return null
 
   const maxMonth = Math.max(...data.months.map((m) => m.count), 1)
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      {/* Header */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <Link
-          to="/seller/orders/returns"
-          className="p-2 hover:bg-white rounded border border-gray-200"
-          aria-label="Back"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">Return Analytics</h1>
-          <p className="text-sm text-gray-600">
-            Return rate, refund exposure, and product-level insights.
-          </p>
-        </div>
-        <button
-          onClick={handleDownload}
-          className="border border-gray-300 bg-white hover:bg-gray-50 px-3 py-2 rounded text-sm flex items-center gap-2"
-        >
-          <Download className="w-4 h-4" /> Download Report
-        </button>
-      </div>
+    <div className="space-y-6 max-w-6xl animate-fade-in">
+      <SellerPageHeader
+        backTo="/seller/orders/returns"
+        title="Return Analytics"
+        description="Return rate, refund exposure, and product-level insights."
+        actions={
+          <Button variant="outline" onClick={handleDownload}>
+            <Download className="w-4 h-4" /> Download Report
+          </Button>
+        }
+      />
 
       {/* KPI tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiTile
-          label="Total Returns"
-          value={data.totalReturns}
-          icon={RotateCcw}
-          tone="blue"
-        />
-        <KpiTile
-          label="Total Refunded"
-          value={'$' + data.refundTotal.toLocaleString()}
-          icon={DollarSign}
-          tone="red"
-        />
-        <KpiTile
-          label="Avg Return Value"
-          value={'$' + data.avgReturnValue.toFixed(2)}
-          icon={TrendingUp}
-          tone="amber"
-        />
-        <KpiTile
-          label="Top Reason"
-          value={data.topReason}
-          icon={AlertTriangle}
-          tone="purple"
-          small
-        />
+        <SellerStatCard label="Total Returns" value={data.totalReturns} icon={RotateCcw} />
+        <SellerStatCard label="Total Refunded" value={'$' + data.refundTotal.toLocaleString()} icon={DollarSign} invert />
+        <SellerStatCard label="Avg Return Value" value={'$' + data.avgReturnValue.toFixed(2)} icon={TrendingUp} />
+        <SellerStatCard label="Top Reason" value={data.topReason} icon={AlertTriangle} />
       </div>
 
       {/* Returns over time */}
-      <section className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4" /> Returns Over Time
-        </h2>
+      <Card
+        title={
+          <span className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-charcoal-500" /> Returns Over Time
+          </span>
+        }
+      >
         <div className="flex items-end justify-between gap-3 h-40">
           {data.months.map((m) => {
             const height = (m.count / maxMonth) * 100
             return (
-              <div key={m.key} className="flex flex-col items-center flex-1">
-                <div className="text-xs font-medium text-gray-700 mb-1">
-                  {m.count}
-                </div>
+              <div key={m.key} className="flex flex-col items-center flex-1 group">
+                <div className="text-xs font-medium text-charcoal-700 mb-1">{m.count}</div>
                 <div className="w-full flex items-end h-full">
                   <div
-                    className="w-full bg-gradient-to-t from-[#f3a847] to-[#febd69] rounded-t transition-all"
+                    className="w-full max-w-[36px] mx-auto bg-brass-400 group-hover:bg-brass-500 rounded-t-md transition-avenzo"
                     style={{ height: Math.max(4, height) + '%' }}
                   />
                 </div>
-                <div className="text-xs text-gray-500 mt-2">{m.label}</div>
+                <div className="text-caption mt-2">{m.label}</div>
               </div>
             )
           })}
         </div>
-      </section>
+      </Card>
 
       {/* Reason breakdown */}
-      <section className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="font-bold text-gray-900 mb-4">Return Reasons</h2>
+      <Card title="Return Reasons">
         {data.reasonBreakdown.length === 0 ? (
-          <p className="text-sm text-gray-500">No returns to analyze yet.</p>
+          <p className="text-body-sm">No returns to analyze yet.</p>
         ) : (
           <div className="space-y-3">
             {data.reasonBreakdown.map((r) => (
               <div key={r.reason}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700">{r.reason}</span>
-                  <span className="text-gray-900 font-medium">
+                  <span className="text-charcoal-700">{r.reason}</span>
+                  <span className="text-charcoal-900 font-medium">
                     {r.percent.toFixed(0)}% · {r.count}
                   </span>
                 </div>
-                <div className="bg-gray-100 rounded h-2 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#f3a847] to-[#febd69]"
-                    style={{ width: r.percent + '%' }}
-                  />
+                <div className="bg-stone-100 rounded-full h-2 overflow-hidden">
+                  <div className="h-full bg-brass-400 rounded-full" style={{ width: r.percent + '%' }} />
                 </div>
               </div>
             ))}
           </div>
         )}
-      </section>
+      </Card>
 
       {/* Top products */}
-      <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b">
-          <h2 className="font-bold text-gray-900 flex items-center gap-2">
-            <Package className="w-4 h-4" /> Products With Highest Return Rate
-          </h2>
-        </div>
-
+      <Card
+        padding="none"
+        title={
+          <span className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-charcoal-500" /> Products With Highest Return Rate
+          </span>
+        }
+      >
         {data.topProducts.length === 0 ? (
-          <div className="p-10 text-center text-sm text-gray-500">
-            No product return data yet.
-          </div>
+          <div className="p-10 text-center text-body-sm">No product return data yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="text-left px-6 py-3">Product</th>
-                  <th className="text-right px-4 py-3">Returns</th>
-                  <th className="text-right px-4 py-3">Units Sold</th>
-                  <th className="text-right px-4 py-3">Return Rate</th>
-                  <th className="text-right px-6 py-3">Refund Total</th>
+                  <th className="text-left px-6 py-3 text-label">Product</th>
+                  <th className="text-right px-4 py-3 text-label">Returns</th>
+                  <th className="text-right px-4 py-3 text-label">Units Sold</th>
+                  <th className="text-right px-4 py-3 text-label">Return Rate</th>
+                  <th className="text-right px-6 py-3 text-label">Refund Total</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-stone-100">
                 {data.topProducts.map((p) => (
-                  <tr key={p.product_id || p.product_title} className="border-t">
-                    <td className="px-6 py-3">
+                  <tr key={p.product_id || p.product_title} className="hover:bg-stone-50/60 transition-avenzo">
+                    <td className="px-6 py-3.5">
                       <div className="flex items-center gap-3">
                         {p.product_image ? (
-                          <img
-                            src={p.product_image}
-                            alt=""
-                            className="w-9 h-9 rounded object-cover border"
-                          />
+                          <img src={p.product_image} alt="" className="w-9 h-9 rounded-md object-cover border border-stone-200" />
                         ) : (
-                          <div className="w-9 h-9 rounded bg-gray-100" />
+                          <div className="w-9 h-9 rounded-md bg-stone-100" />
                         )}
-                        <div className="font-medium text-gray-900 truncate max-w-xs">
-                          {p.product_title}
-                        </div>
+                        <div className="font-medium text-charcoal-900 truncate max-w-xs">{p.product_title}</div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-700">
-                      {p.count}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700">
-                      {p.sold}
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3.5 text-right text-charcoal-700">{p.count}</td>
+                    <td className="px-4 py-3.5 text-right text-charcoal-700">{p.sold}</td>
+                    <td className="px-4 py-3.5 text-right">
                       <span
                         className={
                           'font-medium ' +
-                          (p.returnRate > 10
-                            ? 'text-red-700'
-                            : p.returnRate > 5
-                            ? 'text-amber-700'
-                            : 'text-green-700')
+                          (p.returnRate > 10 ? 'text-error-700' : p.returnRate > 5 ? 'text-warning-700' : 'text-success-700')
                         }
                       >
                         {p.returnRate.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="px-6 py-3 text-right text-gray-900">
-                      ${p.refundTotal.toFixed(2)}
-                    </td>
+                    <td className="px-6 py-3.5 text-right text-charcoal-900">${p.refundTotal.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </section>
+      </Card>
 
       {/* Link to Growth */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+      <div className="bg-info-50 border border-info-500/25 rounded-xl p-5 flex items-start gap-3">
+        <AlertTriangle className="w-5 h-5 text-info-500 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
-          <div className="font-bold text-blue-900">High return rate = growth opportunity</div>
-          <p className="text-sm text-blue-800 mt-1">
-            Products with high return rates are flagged automatically on your Growth page
-            as opportunities to improve listing quality or address quality issues.
+          <div className="font-semibold text-info-700">High return rate = growth opportunity</div>
+          <p className="text-sm text-info-700/90 mt-1">
+            Products with high return rates are flagged automatically on your Growth page as opportunities to
+            improve listing quality or address quality issues.
           </p>
         </div>
-        <Link
-          to="/seller/growth"
-          className="text-sm font-medium text-blue-900 hover:underline flex-shrink-0"
-        >
+        <Link to="/seller/growth" className="text-sm font-medium text-info-700 hover:underline flex-shrink-0">
           View Growth →
         </Link>
-      </div>
-    </div>
-  )
-}
-
-function KpiTile({ label, value, icon: Icon, tone, small }) {
-  const toneCls = {
-    blue: 'border-blue-200 bg-blue-50 text-blue-900',
-    red: 'border-red-200 bg-red-50 text-red-900',
-    amber: 'border-amber-200 bg-amber-50 text-amber-900',
-    purple: 'border-purple-200 bg-purple-50 text-purple-900',
-  }[tone] || 'border-gray-200 bg-white text-gray-900'
-
-  return (
-    <div className={'border rounded-lg p-5 ' + toneCls}>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs uppercase tracking-wider opacity-70">{label}</span>
-        {Icon && <Icon className="w-4 h-4 opacity-60" />}
-      </div>
-      <div
-        className={
-          (small ? 'text-lg' : 'text-2xl md:text-3xl') + ' font-bold truncate'
-        }
-      >
-        {value}
       </div>
     </div>
   )

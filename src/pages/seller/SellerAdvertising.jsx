@@ -22,11 +22,23 @@ import {
   deleteCampaign,
   getSellerProducts,
 } from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import SellerStatCard from '../../components/seller/SellerStatCard'
+import Button from '../../components/Button'
+import Input from '../../components/Input'
+import Badge from '../../components/Badge'
+import EmptyState from '../../components/EmptyState'
 
 const TYPE_LABELS = {
   sponsored_product: 'Sponsored Products',
   sponsored_brand: 'Sponsored Brands',
   display: 'Display',
+}
+
+const STATUS_BADGE = {
+  active: 'green',
+  paused: 'gray',
+  ended: 'gray',
 }
 
 export default function SellerAdvertising() {
@@ -49,7 +61,7 @@ export default function SellerAdvertising() {
       ])
       setCampaigns(c)
       setProducts(p)
-    } catch (err) {
+    } catch {
       pushToast('Could not load campaigns', { type: 'error' })
     } finally {
       setLoading(false)
@@ -104,40 +116,32 @@ export default function SellerAdvertising() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Campaign Manager</h1>
-          <p className="text-sm text-gray-600">
-            Run Sponsored Products, Brands, and Display ads. Metrics are simulated.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowCreate(true)}
-            className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-4 py-2 rounded flex items-center gap-2 transition text-sm"
-          >
-            <Plus className="w-4 h-4" /> Create Campaign
-          </button>
-          <button
-            onClick={load}
-            className="border border-gray-300 bg-white hover:bg-gray-50 px-3 py-2 rounded text-sm flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <SellerPageHeader
+        title="Campaign Manager"
+        description="Run Sponsored Products, Brands, and Display ads. Metrics are simulated."
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setShowCreate(true)}>
+              <Plus className="w-4 h-4" /> Create Campaign
+            </Button>
+            <Button variant="outline" onClick={load} aria-label="Refresh">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </>
+        }
+      />
 
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <KPI label="Impressions" value={totals.impressions.toLocaleString()} icon={Eye} />
-        <KPI label="Clicks" value={totals.clicks.toLocaleString()} icon={MousePointerClick} />
-        <KPI label="Spend" value={'$' + totals.spend.toFixed(2)} icon={DollarSign} />
-        <KPI label="Sales" value={'$' + totals.sales.toFixed(2)} icon={TrendingUp} />
-        <KPI label="ROAS" value={totals.roas + '×'} icon={Target} highlight />
+        <SellerStatCard label="Impressions" value={totals.impressions.toLocaleString()} icon={Eye} />
+        <SellerStatCard label="Clicks" value={totals.clicks.toLocaleString()} icon={MousePointerClick} />
+        <SellerStatCard label="Spend" value={'$' + totals.spend.toFixed(2)} icon={DollarSign} />
+        <SellerStatCard label="Sales" value={'$' + totals.sales.toFixed(2)} icon={TrendingUp} />
+        <SellerStatCard label="ROAS" value={totals.roas + '×'} icon={Target} />
       </div>
 
       {/* Filter row */}
-      <div className="flex gap-1 border-b">
+      <div className="flex gap-1 border-b border-stone-200">
         {[
           { id: 'all', label: 'All' },
           { id: 'active', label: 'Active' },
@@ -148,15 +152,15 @@ export default function SellerAdvertising() {
             key={f.id}
             onClick={() => setStatusFilter(f.id)}
             className={
-              'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition ' +
+              'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-avenzo ' +
               (statusFilter === f.id
-                ? 'border-[#c7511f] text-[#c7511f]'
-                : 'border-transparent text-gray-600 hover:text-gray-900')
+                ? 'border-brass-500 text-brass-700'
+                : 'border-transparent text-charcoal-500 hover:text-charcoal-900')
             }
           >
             {f.label}
             {f.id !== 'all' && (
-              <span className="text-xs ml-1 text-gray-500">
+              <span className="text-xs ml-1 text-charcoal-400">
                 ({campaigns.filter((c) => c.status === f.id).length})
               </span>
             )}
@@ -165,119 +169,121 @@ export default function SellerAdvertising() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-sm text-gray-600">Loading campaigns…</div>
+          <div className="p-5 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-14 rounded-lg skeleton-shimmer" />
+            ))}
+          </div>
         ) : filtered.length === 0 ? (
-          <EmptyState onCreate={() => setShowCreate(true)} />
+          <EmptyState
+            icon={Megaphone}
+            title="No campaigns yet"
+            message="Create a Sponsored Products campaign to start driving traffic."
+            action={
+              <Button variant="secondary" onClick={() => setShowCreate(true)}>
+                <Plus className="w-4 h-4" /> Create your first campaign
+              </Button>
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="text-left px-5 py-3">Campaign</th>
-                  <th className="text-left px-4 py-3">Type</th>
-                  <th className="text-center px-4 py-3">Status</th>
-                  <th className="text-right px-4 py-3">Budget/day</th>
-                  <th className="text-right px-4 py-3">Impressions</th>
-                  <th className="text-right px-4 py-3">Clicks</th>
-                  <th className="text-right px-4 py-3">Spend</th>
-                  <th className="text-right px-4 py-3">Sales</th>
-                  <th className="text-right px-4 py-3">ROAS</th>
-                  <th className="text-right px-5 py-3">Actions</th>
+                  <th className="text-label text-left px-5 py-3">Campaign</th>
+                  <th className="text-label text-left px-4 py-3">Type</th>
+                  <th className="text-label text-center px-4 py-3">Status</th>
+                  <th className="text-label text-right px-4 py-3">Budget/day</th>
+                  <th className="text-label text-right px-4 py-3">Impressions</th>
+                  <th className="text-label text-right px-4 py-3">Clicks</th>
+                  <th className="text-label text-right px-4 py-3">Spend</th>
+                  <th className="text-label text-right px-4 py-3">Sales</th>
+                  <th className="text-label text-right px-4 py-3">ROAS</th>
+                  <th className="text-label text-right px-5 py-3">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-stone-100">
                 {filtered.map((c) => (
-                  <tr key={c.id} className="border-t hover:bg-gray-50">
-                    <td className="px-5 py-3">
+                  <tr key={c.id} className="hover:bg-stone-50/60 transition-avenzo">
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         {c.product?.image_url ? (
                           <img
                             src={c.product.image_url}
                             alt=""
-                            className="w-9 h-9 rounded object-cover border"
+                            className="w-9 h-9 rounded-lg object-cover border border-stone-200"
                           />
                         ) : (
-                          <div className="w-9 h-9 rounded bg-gray-100 flex items-center justify-center">
-                            <Megaphone className="w-4 h-4 text-gray-400" />
+                          <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center">
+                            <Megaphone className="w-4 h-4 text-charcoal-400" />
                           </div>
                         )}
                         <div className="min-w-0">
-                          <div className="font-medium text-gray-900 truncate max-w-[220px]">
+                          <div className="font-medium text-charcoal-900 truncate max-w-[220px]">
                             {c.name}
                           </div>
-                          <div className="text-xs text-gray-500 truncate max-w-[220px]">
+                          <div className="text-xs text-charcoal-500 truncate max-w-[220px]">
                             {c.product?.title}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">
+                    <td className="px-4 py-3.5 text-charcoal-700">
                       {TYPE_LABELS[c.campaign_type]}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={
-                          'inline-block text-xs font-medium px-2 py-0.5 rounded-full ' +
-                          (c.status === 'active'
-                            ? 'bg-green-100 text-green-800'
-                            : c.status === 'paused'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-gray-100 text-gray-600')
-                        }
-                      >
-                        {c.status}
-                      </span>
+                    <td className="px-4 py-3.5 text-center">
+                      <Badge color={STATUS_BADGE[c.status] || 'gray'}>{c.status}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-900">
+                    <td className="px-4 py-3.5 text-right text-charcoal-900">
                       ${Number(c.daily_budget).toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-700">
+                    <td className="px-4 py-3.5 text-right text-charcoal-700">
                       {c.metrics.impressions.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-700">
+                    <td className="px-4 py-3.5 text-right text-charcoal-700">
                       {c.metrics.clicks.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-700">
+                    <td className="px-4 py-3.5 text-right text-charcoal-700">
                       ${c.metrics.spend.toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-900 font-medium">
+                    <td className="px-4 py-3.5 text-right text-charcoal-900 font-medium">
                       ${c.metrics.sales.toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3.5 text-right">
                       <span
                         className={
-                          'font-bold ' +
+                          'font-semibold ' +
                           (c.metrics.roas >= 3
-                            ? 'text-green-700'
+                            ? 'text-success-700'
                             : c.metrics.roas >= 1
-                            ? 'text-gray-900'
-                            : 'text-red-600')
+                            ? 'text-charcoal-900'
+                            : 'text-error-600')
                         }
                       >
                         {c.metrics.roas}×
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-right">
+                    <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handleToggle(c)}
-                          className="p-1.5 hover:bg-gray-100 rounded"
+                          className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
                           title={c.status === 'active' ? 'Pause' : 'Activate'}
                         >
                           {c.status === 'active' ? (
-                            <Pause className="w-4 h-4 text-gray-600" />
+                            <Pause className="w-4 h-4 text-charcoal-600" />
                           ) : (
-                            <Play className="w-4 h-4 text-gray-600" />
+                            <Play className="w-4 h-4 text-charcoal-600" />
                           )}
                         </button>
                         <button
                           onClick={() => handleDelete(c)}
-                          className="p-1.5 hover:bg-red-50 rounded"
+                          className="p-1.5 hover:bg-error-50 rounded-lg transition-avenzo"
                           title="Delete"
                         >
-                          <Trash2 className="w-4 h-4 text-red-600" />
+                          <Trash2 className="w-4 h-4 text-error-600" />
                         </button>
                       </div>
                     </td>
@@ -299,47 +305,6 @@ export default function SellerAdvertising() {
           }}
         />
       )}
-    </div>
-  )
-}
-
-function KPI({ label, value, icon: Icon, highlight }) {
-  return (
-    <div
-      className={
-        'rounded-lg border p-4 ' +
-        (highlight ? 'border-[#febd69] bg-orange-50' : 'border-gray-200 bg-white')
-      }
-    >
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs uppercase tracking-wider text-gray-500">{label}</span>
-        {Icon && <Icon className="w-4 h-4 text-gray-400" />}
-      </div>
-      <div
-        className={
-          'text-2xl font-bold ' + (highlight ? 'text-[#c7511f]' : 'text-gray-900')
-        }
-      >
-        {value}
-      </div>
-    </div>
-  )
-}
-
-function EmptyState({ onCreate }) {
-  return (
-    <div className="p-12 text-center">
-      <Megaphone className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-      <h3 className="font-semibold text-gray-900 mb-1">No campaigns yet</h3>
-      <p className="text-sm text-gray-600 mb-4">
-        Create a Sponsored Products campaign to start driving traffic.
-      </p>
-      <button
-        onClick={onCreate}
-        className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded inline-flex items-center gap-2"
-      >
-        <Plus className="w-4 h-4" /> Create your first campaign
-      </button>
     </div>
   )
 }
@@ -395,25 +360,23 @@ function CreateCampaignModal({ products, onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-5 py-3 flex items-center justify-between">
-          <h2 className="font-bold text-gray-900">Create Campaign</h2>
+      <div className="absolute inset-0 bg-charcoal-900/50 backdrop-blur-[1px]" onClick={onClose} />
+      <div className="relative bg-bone-50 rounded-xl shadow-lifted border border-stone-200 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scale-in">
+        <div className="sticky top-0 bg-bone-50 border-b border-stone-200 px-5 py-3.5 flex items-center justify-between">
+          <h2 className="heading-sub">Create Campaign</h2>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 rounded"
+            className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
             aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-charcoal-500" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              Campaign type
-            </label>
+            <label className="block text-label mb-2">Campaign type</label>
             <div className="space-y-2">
               {TYPES.map((t) => (
                 <button
@@ -421,26 +384,24 @@ function CreateCampaignModal({ products, onClose, onCreated }) {
                   type="button"
                   onClick={() => setType(t.id)}
                   className={
-                    'w-full text-left px-4 py-3 rounded-lg border-2 transition ' +
+                    'w-full text-left px-4 py-3 rounded-lg border-2 transition-avenzo ' +
                     (type === t.id
-                      ? 'border-[#c7511f] bg-orange-50'
-                      : 'border-gray-200 hover:border-gray-400 bg-white')
+                      ? 'border-brass-400 bg-brass-50'
+                      : 'border-stone-200 hover:border-stone-300 bg-bone-50')
                   }
                 >
                   <div className="flex items-center gap-2">
                     <span
                       className={
-                        'w-4 h-4 rounded-full border-2 flex items-center justify-center ' +
-                        (type === t.id ? 'border-[#c7511f]' : 'border-gray-300')
+                        'w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ' +
+                        (type === t.id ? 'border-brass-500' : 'border-stone-300')
                       }
                     >
-                      {type === t.id && (
-                        <span className="w-2 h-2 rounded-full bg-[#c7511f]" />
-                      )}
+                      {type === t.id && <span className="w-2 h-2 rounded-full bg-brass-500" />}
                     </span>
-                    <span className="font-medium text-gray-900">{t.label}</span>
+                    <span className="font-medium text-charcoal-900">{t.label}</span>
                   </div>
-                  <p className="text-xs text-gray-600 ml-6 mt-0.5">{t.desc}</p>
+                  <p className="text-xs text-charcoal-500 ml-6 mt-0.5">{t.desc}</p>
                 </button>
               ))}
             </div>
@@ -448,13 +409,11 @@ function CreateCampaignModal({ products, onClose, onCreated }) {
 
           {/* Product */}
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
-              Product
-            </label>
+            <label className="block text-label mb-1.5">Product</label>
             <select
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+              className="w-full border border-stone-300 rounded-lg px-3.5 py-2.5 text-sm bg-bone-50 text-charcoal-900 focus:outline-none focus:border-brass-400 transition-avenzo"
             >
               <option value="">Select a product</option>
               {products.map((p) => (
@@ -467,43 +426,25 @@ function CreateCampaignModal({ products, onClose, onCreated }) {
 
           {/* Budget + bid */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-1">
-                Daily budget
-              </label>
-              <div className="flex items-center gap-1 border border-gray-300 rounded px-3 py-2 bg-white">
-                <DollarSign className="w-4 h-4 text-gray-500" />
-                <input
-                  type="number"
-                  step="0.01"
-                  value={dailyBudget}
-                  onChange={(e) => setDailyBudget(e.target.value)}
-                  className="flex-1 text-sm focus:outline-none"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-1">
-                Bid per click
-              </label>
-              <div className="flex items-center gap-1 border border-gray-300 rounded px-3 py-2 bg-white">
-                <DollarSign className="w-4 h-4 text-gray-500" />
-                <input
-                  type="number"
-                  step="0.01"
-                  value={bid}
-                  onChange={(e) => setBid(e.target.value)}
-                  className="flex-1 text-sm focus:outline-none"
-                />
-              </div>
-            </div>
+            <Input
+              label="Daily budget (USD)"
+              type="number"
+              step="0.01"
+              value={dailyBudget}
+              onChange={(e) => setDailyBudget(e.target.value)}
+            />
+            <Input
+              label="Bid per click (USD)"
+              type="number"
+              step="0.01"
+              value={bid}
+              onChange={(e) => setBid(e.target.value)}
+            />
           </div>
 
           {/* Targeting */}
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
-              Targeting
-            </label>
+            <label className="block text-label mb-1.5">Targeting</label>
             <div className="flex gap-2">
               {['auto', 'manual'].map((t) => (
                 <button
@@ -511,17 +452,17 @@ function CreateCampaignModal({ products, onClose, onCreated }) {
                   type="button"
                   onClick={() => setTargeting(t)}
                   className={
-                    'flex-1 px-3 py-2 rounded border text-sm capitalize ' +
+                    'flex-1 px-3 py-2 rounded-lg border text-sm capitalize transition-avenzo ' +
                     (targeting === t
-                      ? 'border-[#c7511f] bg-orange-50 text-[#c7511f] font-medium'
-                      : 'border-gray-300 hover:border-gray-400')
+                      ? 'border-brass-400 bg-brass-50 text-brass-700 font-medium'
+                      : 'border-stone-300 hover:border-stone-400 text-charcoal-700')
                   }
                 >
                   {t}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-caption mt-1.5">
               {targeting === 'auto'
                 ? 'Amazon targets relevant keywords for you.'
                 : 'You choose keywords and bids manually.'}
@@ -529,43 +470,27 @@ function CreateCampaignModal({ products, onClose, onCreated }) {
           </div>
 
           {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
-              Campaign name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={autoName}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Leave blank to auto-generate.
-            </p>
-          </div>
+          <Input
+            label="Campaign name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={autoName}
+            hint="Leave blank to auto-generate."
+          />
 
           {error && (
-            <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            <div className="text-body-sm text-error-700 bg-error-50 border border-error-500/25 rounded-lg p-3">
               {error}
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-3 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
-            >
+          <div className="flex justify-end gap-3 pt-3 border-t border-stone-200">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded disabled:opacity-60 transition"
-            >
-              {saving ? 'Launching…' : 'Launch Campaign'}
-            </button>
+            </Button>
+            <Button type="submit" variant="secondary" loading={saving}>
+              Launch Campaign
+            </Button>
           </div>
         </form>
       </div>

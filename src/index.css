@@ -1,29 +1,141 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ===================================================================
+   AVENZO DESIGN SYSTEM — global foundations
+   ===================================================================
+   This file establishes the base visual canvas (background, text,
+   focus, selection, motion) and a small set of reusable typography
+   classes. It intentionally does NOT restyle existing components or
+   pages — those still use their original Tailwind utility classes
+   and will be migrated to these tokens in later sessions.
+
+   Token reference (see tailwind.config.js for the full scale):
+     Color      — bone (bg), stone (secondary surfaces/borders),
+                  charcoal (text), brass (accent, used sparingly)
+     Type       — font-display (Fraunces), font-sans (Inter), font-mono
+     Radius     — --radius-xs / sm / md / lg / xl / pill (below)
+     Shadow     — shadow-subtle / soft / card / lifted / popover
+     Motion     — duration-fast/base/slow/slower,
+                  ease-avenzo-out/in/in-out
+   =================================================================== */
+
 @layer base {
+  :root {
+    /* Border radius scale — exposed as CSS variables (rather than
+       overriding Tailwind's default rounded-* utilities) so existing
+       components keep their current radii until migrated deliberately. */
+    --radius-xs: 4px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-pill: 999px;
+  }
+
   html {
     scroll-behavior: smooth;
   }
 
   body {
+    @apply bg-bone-100 text-charcoal-900 font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Make keyboard focus clearly visible on interactive elements */
+  /* Warm, refined text selection instead of the browser default blue */
+  ::selection {
+    @apply bg-brass-200 text-charcoal-900;
+  }
+
+  /* Soft, premium focus ring — replaces harsh solid outlines app-wide */
   button:focus-visible,
   a:focus-visible,
   input:focus-visible,
   select:focus-visible,
-  textarea:focus-visible {
-    outline: 2px solid #febd69;
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid transparent;
     outline-offset: 2px;
+    box-shadow: 0 0 0 2px theme('colors.bone.100'), 0 0 0 4px theme('colors.brass.400');
+  }
+
+  /* Subtle, warm-toned scrollbar (WebKit) */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: theme('colors.stone.300');
+    border-radius: var(--radius-pill);
+    border: 2px solid theme('colors.bone.100');
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: theme('colors.stone.400');
   }
 }
 
 @layer components {
+  /* -----------------------------------------------------------------
+     Typography hierarchy — reusable, opt-in classes for future page
+     and component work. Combine font family + size + weight + color
+     so callers don't have to re-stack four utilities every time.
+     ----------------------------------------------------------------- */
+  .heading-display-lg {
+    @apply font-display text-display-lg font-medium text-charcoal-900;
+  }
+  .heading-display {
+    @apply font-display text-display font-medium text-charcoal-900;
+  }
+  .heading-display-sm {
+    @apply font-display text-display-sm font-medium text-charcoal-900;
+  }
+  .heading-page {
+    @apply font-sans text-heading-page font-semibold text-charcoal-900;
+  }
+  .heading-section {
+    @apply font-sans text-heading-section font-semibold text-charcoal-900;
+  }
+  .heading-sub {
+    @apply font-sans text-heading-sub font-medium text-charcoal-800;
+  }
+  .text-body-lg {
+    @apply font-sans text-av-body-lg text-charcoal-700;
+  }
+  .text-body {
+    @apply font-sans text-av-body text-charcoal-700;
+  }
+  .text-body-sm {
+    @apply font-sans text-av-body-sm text-charcoal-600;
+  }
+  .text-label {
+    @apply font-sans text-av-label font-medium uppercase text-charcoal-600;
+  }
+  .text-caption {
+    @apply font-sans text-av-caption text-charcoal-500;
+  }
+  .text-price-lg {
+    @apply font-sans text-av-price-lg font-semibold text-charcoal-900;
+  }
+  .text-price {
+    @apply font-sans text-av-price font-semibold text-charcoal-900;
+  }
+  .text-metadata {
+    @apply font-mono text-av-metadata text-charcoal-500;
+  }
+
+  /* Motion — a couple of ready-to-use transition presets */
+  .transition-avenzo {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+    transition-duration: theme('transitionDuration.base');
+    transition-timing-function: theme('transitionTimingFunction.avenzo-out');
+  }
+
   /* Utility: hide scrollbars on horizontal nav strips */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
@@ -50,6 +162,47 @@
   .line-clamp-3 {
     -webkit-line-clamp: 3;
   }
+
+  /* Premium shimmer skeleton — used by LoadingSkeleton in place of a flat pulse */
+  .skeleton-shimmer {
+    background-color: theme('colors.stone.100');
+    background-image: linear-gradient(
+      90deg,
+      theme('colors.stone.100') 0%,
+      theme('colors.stone.50') 50%,
+      theme('colors.stone.100') 100%
+    );
+    background-size: 400px 100%;
+    background-repeat: no-repeat;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+/* Toast auto-dismiss progress indicator — duration is set per-toast via an
+   inline animationDuration style, so this stays a plain keyframe (not a
+   Tailwind utility) to allow that dynamic value. */
+.toast-progress-bar {
+  transform-origin: left;
+  animation-name: toast-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 /* Prevent horizontal overflow globally */
@@ -58,8 +211,88 @@ body {
   overflow-x: hidden;
 }
 
+/* ===================================================================
+   MOTION SYSTEM — shared primitives (final polish pass)
+   Reused everywhere instead of one-off transitions per component:
+     .reveal-modal / .reveal-dropdown  — modal/dropdown enter (fade + slide)
+     .tab-fade                          — accordion/tab content switch
+     .hover-lift-card                   — card hover (translateY + shadow)
+     .hover-lift-btn                    — button hover (darken + lift)
+     .hover-zoom-img (+ .hover-zoom-img-wrap) — image hover zoom, clipped
+     .table-row-hover                   — table row hover affordance
+   =================================================================== */
 @layer components {
-  .input {
-    @apply w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900;
+  .reveal-dropdown {
+    animation: fadeInSlide200 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .reveal-modal {
+    animation: scaleIn 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .tab-fade {
+    animation: fadeIn 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .hover-lift-card {
+    @apply transition-avenzo duration-base hover:-translate-y-1 hover:shadow-lifted;
+  }
+  .hover-lift-btn {
+    @apply transition-avenzo duration-fast hover:-translate-y-0.5;
+  }
+  .hover-zoom-img-wrap {
+    @apply overflow-hidden;
+  }
+  .hover-zoom-img {
+    @apply transition-transform duration-slower ease-avenzo-out;
+  }
+  .hover-zoom-img-wrap:hover .hover-zoom-img {
+    transform: scale(1.04);
+  }
+  .table-row-hover {
+    @apply transition-colors duration-fast hover:bg-stone-50;
+  }
+
+  /* Small delight: brass underline sweep on hover, for plain text link lists
+     (footer columns, etc.) — not used on the pill-style primary nav, which
+     already has its own filled-background hover treatment. */
+  .link-underline-brass {
+    @apply relative;
+  }
+  .link-underline-brass::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    height: 1px;
+    width: 0;
+    background-color: theme('colors.brass.500');
+    transition: width theme('transitionDuration.base') theme('transitionTimingFunction.avenzo-out');
+  }
+  .link-underline-brass:hover::after {
+    width: 100%;
+  }
+}
+
+@keyframes fadeInSlide200 {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect the user's OS-level motion preference: neutralize animation and
+   transition duration/iteration globally rather than trusting every
+   component to check matchMedia itself. Scroll-linked JS effects (e.g.
+   HomeHero's parallax) still separately no-op via matchMedia. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

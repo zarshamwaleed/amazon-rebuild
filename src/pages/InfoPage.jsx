@@ -53,16 +53,20 @@ export default function InfoPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-6">
-      <nav className="text-xs text-gray-600 mb-4">
-        <Link to="/" className="hover:underline">Home</Link>
-        <span className="mx-1">/</span>
-        <span className="text-gray-900">{content.title}</span>
+    <div className="max-w-3xl mx-auto py-2 md:py-6">
+      <nav className="text-caption mb-5">
+        <Link to="/" className="hover:text-charcoal-700 hover:underline">Home</Link>
+        <span className="mx-1.5">/</span>
+        <span className="text-charcoal-700">{content.title}</span>
       </nav>
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">{content.title}</h1>
-      <div className="space-y-4 text-gray-700 leading-relaxed">
+      <h1 className="font-display text-display-sm md:text-display text-charcoal-900 mb-6">
+        {content.title}
+      </h1>
+      <div className="space-y-4">
         {content.body.map((p, i) => (
-          <p key={i}>{p}</p>
+          <p key={i} className="text-body-lg leading-relaxed">
+            {p}
+          </p>
         ))}
       </div>
     </div>

@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  ArrowLeft,
   Package,
   Truck,
-  FileText,
   RotateCcw,
   MessageCircle,
   User,
@@ -13,20 +11,30 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useSeller } from '../../hooks/useSeller'
 import {
   getSellerOrder,
   updateOrderStatus,
 } from '../../services/sellerService'
 import OrderStatusBadge from '../../components/OrderStatusBadge'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import ShippingLabelButton from '../../components/seller/ShippingLabelButton'
+import RefundModal from '../../components/seller/RefundModal'
+import ContactCustomerModal from '../../components/seller/ContactCustomerModal'
+import Card from '../../components/Card'
+import Button from '../../components/Button'
 
 export default function SellerOrderDetail() {
   const { id } = useParams()
   const { user } = useAuth()
   const { pushToast } = useToast()
+  const { seller } = useSeller()
 
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [showRefund, setShowRefund] = useState(false)
+  const [showContact, setShowContact] = useState(false)
 
   async function load() {
     if (!user || !id) return
@@ -34,7 +42,7 @@ export default function SellerOrderDetail() {
       setLoading(true)
       const result = await getSellerOrder(user.id, id)
       setData(result)
-    } catch (err) {
+    } catch {
       pushToast('Could not load order', { type: 'error' })
     } finally {
       setLoading(false)
@@ -64,25 +72,32 @@ export default function SellerOrderDetail() {
     }
   }
 
-  function handleSimulated(action) {
-    pushToast(action + ' — simulated in this demo', { type: 'info' })
-  }
-
   if (loading) {
-    return <div className="text-sm text-gray-600">Loading order…</div>
+    return (
+      <div className="space-y-5 animate-fade-in">
+        <div className="h-16 rounded-xl skeleton-shimmer" />
+        <div className="h-14 rounded-xl skeleton-shimmer" />
+        <div className="grid lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 h-72 rounded-xl skeleton-shimmer" />
+          <div className="h-72 rounded-xl skeleton-shimmer" />
+        </div>
+      </div>
+    )
   }
 
   if (!data) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-        <h3 className="font-semibold text-gray-900 mb-1">Order not found</h3>
-        <p className="text-sm text-gray-600 mb-4">
-          This order does not exist or does not contain any of your products.
-        </p>
-        <Link to="/seller/orders" className="text-[#007185] hover:underline text-sm">
-          ← Back to orders
-        </Link>
-      </div>
+      <Card>
+        <div className="text-center py-8">
+          <h3 className="heading-sub mb-1">Order not found</h3>
+          <p className="text-body-sm mb-4">
+            This order does not exist or does not contain any of your products.
+          </p>
+          <Link to="/seller/orders" className="text-sm font-medium text-brass-600 hover:text-brass-700 transition-avenzo">
+            ← Back to orders
+          </Link>
+        </div>
+      </Card>
     )
   }
 
@@ -97,127 +112,120 @@ export default function SellerOrderDetail() {
   )
 
   return (
-    <div className="space-y-5 pb-10">
-      {/* Header */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <Link
-          to="/seller/orders"
-          className="p-2 hover:bg-white rounded border border-gray-200"
-          aria-label="Back"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Order #{order.id.slice(0, 8)}
-          </h1>
-          <p className="text-sm text-gray-600">
-            Placed on {new Date(order.created_at).toLocaleString()}
-          </p>
-        </div>
-        <OrderStatusBadge status={order.order_status} />
-      </div>
+    <div className="space-y-6 pb-10">
+      <SellerPageHeader
+        backTo="/seller/orders"
+        title={`Order #${order.id.slice(0, 8)}`}
+        description={`Placed on ${new Date(order.created_at).toLocaleString()}`}
+        actions={<OrderStatusBadge status={order.order_status} />}
+      />
 
       {/* Actions bar */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap gap-2">
-        {canShip && (
-          <button
-            onClick={handleConfirmShipment}
-            disabled={updating}
-            className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-4 py-2 rounded flex items-center gap-2 text-sm transition disabled:opacity-60"
+      <Card padding="sm">
+        <div className="flex flex-wrap gap-2">
+          {canShip && (
+            <Button onClick={handleConfirmShipment} loading={updating} size="md">
+              <Truck className="w-4 h-4" />
+              {updating ? 'Updating…' : 'Confirm Shipment'}
+            </Button>
+          )}
+          <ShippingLabelButton order={order} seller={seller} size="md" />
+          <Button
+            variant="outline"
+            size="md"
+            onClick={() => setShowRefund(true)}
+            disabled={(order.order_status || '').toLowerCase() === 'refunded'}
           >
-            <Truck className="w-4 h-4" />
-            {updating ? 'Updating…' : 'Confirm Shipment'}
-          </button>
-        )}
-        <button
-          onClick={() => handleSimulated('Printing shipping label')}
-          className="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded flex items-center gap-2 text-sm"
-        >
-          <FileText className="w-4 h-4" /> Print Shipping Label
-        </button>
-        <button
-          onClick={() => handleSimulated('Refunding order')}
-          className="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded flex items-center gap-2 text-sm"
-        >
-          <RotateCcw className="w-4 h-4" /> Refund
-        </button>
-        <button
-          onClick={() => handleSimulated('Contacting customer')}
-          className="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded flex items-center gap-2 text-sm"
-        >
-          <MessageCircle className="w-4 h-4" /> Contact Customer
-        </button>
-      </div>
+            <RotateCcw className="w-4 h-4" />
+            {(order.order_status || '').toLowerCase() === 'refunded' ? 'Refunded' : 'Refund'}
+          </Button>
+          <Button variant="outline" size="md" onClick={() => setShowContact(true)}>
+            <MessageCircle className="w-4 h-4" /> Contact Customer
+          </Button>
+        </div>
+      </Card>
 
       <div className="grid lg:grid-cols-3 gap-5">
         {/* Left: items + customer + address */}
         <div className="lg:col-span-2 space-y-5">
-          <section className="bg-white border border-gray-200 rounded-lg">
-            <div className="px-5 py-3 border-b flex items-center gap-2">
-              <Package className="w-4 h-4 text-gray-600" />
-              <h2 className="font-bold text-gray-900">Items in this order</h2>
-            </div>
-            <ul className="divide-y">
+          <Card
+            padding="none"
+            title={
+              <span className="flex items-center gap-2">
+                <Package className="w-4 h-4 text-charcoal-500" /> Items in this order
+              </span>
+            }
+            footer={
+              <div className="flex justify-between text-sm">
+                <span className="text-charcoal-600">
+                  Your items total ({itemCount} unit{itemCount !== 1 ? 's' : ''})
+                </span>
+                <span className="font-semibold text-charcoal-900">${sellerTotal.toFixed(2)}</span>
+              </div>
+            }
+          >
+            <ul className="divide-y divide-stone-100">
               {seller_items.map((it) => (
                 <li key={it.id} className="px-5 py-4 flex items-center gap-4">
                   {it.product_image ? (
                     <img
                       src={it.product_image}
                       alt=""
-                      className="w-14 h-14 rounded object-cover border"
+                      className="w-14 h-14 rounded-lg object-cover border border-stone-200"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded bg-gray-100" />
+                    <div className="w-14 h-14 rounded-lg bg-stone-100" />
                   )}
                   <div className="flex-1 min-w-0">
                     <Link
                       to={`/products/${it.product_id}`}
                       target="_blank"
-                      className="text-sm font-medium text-gray-900 hover:text-[#c7511f] line-clamp-2"
+                      className="text-sm font-medium text-charcoal-900 hover:text-brass-600 line-clamp-2 transition-avenzo"
                     >
                       {it.product_title}
                     </Link>
-                    <div className="text-xs text-gray-500 mt-0.5">
+                    <div className="text-xs text-charcoal-500 mt-0.5">
                       Qty: {it.quantity} · ${Number(it.price).toFixed(2)} each
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-charcoal-900">
                       ${(Number(it.price) * it.quantity).toFixed(2)}
                     </div>
                   </div>
                 </li>
               ))}
             </ul>
-            <div className="px-5 py-3 border-t bg-gray-50 flex justify-between text-sm">
-              <span className="text-gray-600">
-                Your items total ({itemCount} unit{itemCount !== 1 ? 's' : ''})
-              </span>
-              <span className="font-bold text-gray-900">${sellerTotal.toFixed(2)}</span>
-            </div>
-          </section>
+          </Card>
 
           <div className="grid md:grid-cols-2 gap-5">
-            <section className="bg-white border border-gray-200 rounded-lg p-5">
-              <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <User className="w-4 h-4" /> Customer
-              </h2>
-              <div className="text-sm text-gray-700">
+            <Card
+              padding="md"
+              title={
+                <span className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-charcoal-500" /> Customer
+                </span>
+              }
+            >
+              <div className="text-sm text-charcoal-700">
                 <div className="font-medium">{order.addresses?.full_name || '—'}</div>
                 {order.addresses?.phone && (
-                  <div className="text-xs text-gray-500 mt-0.5">
+                  <div className="text-xs text-charcoal-500 mt-0.5">
                     {order.addresses.phone}
                   </div>
                 )}
               </div>
-            </section>
+            </Card>
 
-            <section className="bg-white border border-gray-200 rounded-lg p-5">
-              <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> Shipping address
-              </h2>
-              <div className="text-sm text-gray-700 leading-relaxed">
+            <Card
+              padding="md"
+              title={
+                <span className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-charcoal-500" /> Shipping address
+                </span>
+              }
+            >
+              <div className="text-sm text-charcoal-700 leading-relaxed">
                 {order.addresses ? (
                   <>
                     <div className="font-medium">{order.addresses.full_name}</div>
@@ -229,25 +237,29 @@ export default function SellerOrderDetail() {
                     <div>{order.addresses.country}</div>
                   </>
                 ) : (
-                  <span className="text-gray-500">No address on file.</span>
+                  <span className="text-charcoal-500">No address on file.</span>
                 )}
               </div>
-            </section>
+            </Card>
           </div>
         </div>
 
         {/* Right: totals + payment */}
         <div className="lg:col-span-1 space-y-5">
-          <section className="bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <CreditCard className="w-4 h-4" /> Order summary
-            </h2>
+          <Card
+            padding="md"
+            title={
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-charcoal-500" /> Order summary
+              </span>
+            }
+          >
             <dl className="text-sm space-y-2">
-              <div className="flex justify-between text-gray-700">
+              <div className="flex justify-between text-charcoal-700">
                 <dt>Order subtotal</dt>
                 <dd>${Number(order.subtotal).toFixed(2)}</dd>
               </div>
-              <div className="flex justify-between text-gray-700">
+              <div className="flex justify-between text-charcoal-700">
                 <dt>Shipping</dt>
                 <dd>
                   {Number(order.shipping_fee) === 0
@@ -255,32 +267,31 @@ export default function SellerOrderDetail() {
                     : '$' + Number(order.shipping_fee).toFixed(2)}
                 </dd>
               </div>
-              <div className="flex justify-between text-gray-700">
+              <div className="flex justify-between text-charcoal-700">
                 <dt>Tax</dt>
                 <dd>${Number(order.tax).toFixed(2)}</dd>
               </div>
-              <div className="flex justify-between pt-3 border-t text-base font-bold text-gray-900">
+              <div className="flex justify-between pt-3 border-t border-stone-200 text-base font-semibold text-charcoal-900">
                 <dt>Order total</dt>
                 <dd>${Number(order.total).toFixed(2)}</dd>
               </div>
-              <div className="flex justify-between text-gray-700 pt-3 border-t">
+              <div className="flex justify-between text-charcoal-700 pt-3 border-t border-stone-200">
                 <dt>Payment method</dt>
                 <dd className="capitalize">
                   {(order.payment_method || '').replace(/_/g, ' ')}
                 </dd>
               </div>
-              <div className="flex justify-between text-gray-700">
+              <div className="flex justify-between text-charcoal-700">
                 <dt>Payment status</dt>
                 <dd className="capitalize">{order.payment_status}</dd>
               </div>
             </dl>
-            <div className="mt-4 text-xs text-gray-500 border-t pt-3">
-              Your share of this order: <strong>${sellerTotal.toFixed(2)}</strong>
+            <div className="mt-4 text-xs text-charcoal-500 border-t border-stone-200 pt-3">
+              Your share of this order: <strong className="text-charcoal-800">${sellerTotal.toFixed(2)}</strong>
             </div>
-          </section>
+          </Card>
 
-          <section className="bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="font-bold text-gray-900 mb-3">Order status</h2>
+          <Card padding="md" title="Order status">
             <ol className="text-sm space-y-3">
               {[
                 { key: 'order_placed', label: 'Order placed' },
@@ -299,16 +310,16 @@ export default function SellerOrderDetail() {
                     <span
                       className={
                         'w-2.5 h-2.5 rounded-full ' +
-                        (done ? 'bg-green-600' : 'bg-gray-300')
+                        (done ? 'bg-success-500' : 'bg-stone-300')
                       }
                     />
                     <span
                       className={
-                        (active
-                          ? 'text-[#c7511f] font-medium'
+                        active
+                          ? 'text-brass-600 font-medium'
                           : done
-                          ? 'text-gray-900'
-                          : 'text-gray-400')
+                          ? 'text-charcoal-900'
+                          : 'text-charcoal-400'
                       }
                     >
                       {s.label}
@@ -317,9 +328,27 @@ export default function SellerOrderDetail() {
                 )
               })}
             </ol>
-          </section>
+          </Card>
         </div>
       </div>
+
+      {showRefund && (
+        <RefundModal
+          order={order}
+          sellerTotal={sellerTotal}
+          sellerId={user.id}
+          onClose={() => setShowRefund(false)}
+          onRefunded={load}
+        />
+      )}
+
+      {showContact && (
+        <ContactCustomerModal
+          order={order}
+          sellerId={user.id}
+          onClose={() => setShowContact(false)}
+        />
+      )}
     </div>
   )
 }

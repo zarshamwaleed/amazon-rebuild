@@ -75,8 +75,10 @@ export function CartProvider({ children }) {
           }
           return
         }
-        const productIds = items.map((i) => i.product.id)
-        const couponMap = await getCouponsForProducts(productIds)
+        const realProductIds = items.filter((i) => !i.giftCard).map((i) => i.product.id)
+        const couponMap = realProductIds.length
+          ? await getCouponsForProducts(realProductIds)
+          : {}
 
         // Read clipped IDs: from DB rows if user is signed in, else localStorage
         let clipped = []
@@ -90,7 +92,9 @@ export function CartProvider({ children }) {
             clipped = JSON.parse(
               localStorage.getItem('amazon-rebuild-clipped-coupons-v1') || '[]'
             )
-          } catch {}
+          } catch {
+            /* ignore malformed/unavailable localStorage */
+          }
         }
 
         let totalSavings = 0
@@ -191,7 +195,7 @@ async function addItem(product, quantity = 1, options = {}) {
       setItems((prev) =>
         prev.map((i) => (i.product.id === productId ? { ...i, quantity: clamped } : i))
       )
-    } catch (err) {
+    } catch {
       pushToast('Could not update quantity', { type: 'error' })
     }
   }
@@ -201,7 +205,7 @@ async function addItem(product, quantity = 1, options = {}) {
       if (user) await removeCartItem(user.id, productId)
       setItems((prev) => prev.filter((i) => i.product.id !== productId))
       pushToast('Removed from cart', { type: 'info' })
-    } catch (err) {
+    } catch {
       pushToast('Could not remove item', { type: 'error' })
     }
   }
@@ -212,8 +216,10 @@ async function addItem(product, quantity = 1, options = {}) {
       setItems([])
       try {
         localStorage.removeItem(STORAGE_KEY)
-      } catch {}
-    } catch (err) {
+      } catch {
+        /* ignore unavailable localStorage */
+      }
+    } catch {
       pushToast('Could not clear cart', { type: 'error' })
     }
   }

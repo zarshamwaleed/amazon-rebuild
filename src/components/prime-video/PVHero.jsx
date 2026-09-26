@@ -1,129 +1,79 @@
-﻿import { Link } from 'react-router-dom'
-import { Play, Plus, Check, Volume2, VolumeX, Share2, ThumbsUp, ThumbsDown } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { Play, Plus, Check, ThumbsUp, ThumbsDown, Share2 } from 'lucide-react'
 import { usePVWatchlist } from '../../hooks/usePVWatchlist'
 
 export default function PVHero({ title }) {
   const { isInWatchlist, toggleWatchlist } = usePVWatchlist()
   const inList = isInWatchlist(title.id)
 
-  const videoRef = useRef(null)
-  const [muted, setMuted] = useState(true)
-  const [videoReady, setVideoReady] = useState(false)
-
-  // Autoplay muted video in background
-  useEffect(() => {
-    const v = videoRef.current
-    if (!v) return
-    v.muted = true
-    v.play().catch(() => {})
-  }, [title.id])
-
-  // Pause video when user scrolls away
-  useEffect(() => {
-    const v = videoRef.current
-    if (!v) return
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) v.play().catch(() => {})
-        else v.pause()
-      },
-      { threshold: 0.2 }
-    )
-    obs.observe(v)
-    return () => obs.disconnect()
-  }, [])
-
-  function toggleMute() {
-    const v = videoRef.current
-    if (!v) return
-    v.muted = !v.muted
-    setMuted(v.muted)
-  }
-
   return (
-    <section className="relative w-full h-[380px] md:h-[480px] lg:h-[540px] overflow-hidden -mx-4 rounded-lg">
-      {/* Background video */}
-      <video
-        ref={videoRef}
-        src={title.videoUrl}
-        poster={title.backdrop}
-        muted={muted}
-        loop
-        playsInline
-        autoPlay
-        onCanPlay={() => setVideoReady(true)}
-        className={
-          'absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ' +
-          (videoReady ? 'opacity-100' : 'opacity-0')
-        }
-      />
-      {/* Poster shown while video loads */}
-      {!videoReady && (
+    <section className="relative w-full h-[70vh] min-h-[460px] max-h-[720px] overflow-hidden rounded-xl mb-14">
+      <div className="absolute inset-0 overflow-hidden">
         <img
           src={title.backdrop}
-          alt={title.title}
-          className="absolute inset-0 w-full h-full object-cover"
+          alt=""
+          className="pv-kenburns absolute inset-0 w-full h-full object-cover"
         />
-      )}
+      </div>
 
-      {/* Dark gradient overlays for legibility */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0F171E] via-transparent to-transparent" />
+      {/* Legibility gradients */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[var(--ink)] via-[var(--ink)]/55 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink)] via-transparent to-transparent" />
 
       {/* Content */}
-      <div className="relative z-10 max-w-[1500px] mx-auto h-full px-6 md:px-12 flex flex-col justify-end md:justify-center pb-8 md:pb-0">
-        <div className="max-w-2xl">
-          <p className="text-white text-sm font-semibold uppercase tracking-widest mb-2">
-            prime original
+      <div className="relative z-10 h-full flex items-end md:items-center px-6 md:px-12 pb-10 md:pb-0">
+        <div className="max-w-xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--brass)] mb-3">
+            A Prime Original
           </p>
-          <h1 className="text-4xl md:text-6xl font-black text-white leading-none mb-4 drop-shadow-lg">
+          <h1 className="font-display italic font-normal text-[42px] leading-[1.0] sm:text-6xl md:text-7xl text-[var(--bone)] mb-5">
             {title.title}
           </h1>
 
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-200 mb-4">
-            <span>NEW SERIES</span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[var(--muted)] mb-5">
             <span>{title.year}</span>
-            <span className="border border-gray-400 px-1.5 py-0.5 text-xs">{title.rating}</span>
+            <span className="opacity-40">·</span>
+            <span className="border border-[var(--border)] rounded px-1.5 py-0.5 text-[11px]">{title.rating}</span>
+            <span className="opacity-40">·</span>
             <span>{title.duration}</span>
-            {title.genres.map((g) => (
-              <span key={g} className="text-gray-300">{g}</span>
-            ))}
+            <span className="opacity-40">·</span>
+            <span>{title.genres.join(', ')}</span>
           </div>
 
-          <p className="text-sm md:text-base text-gray-100 mb-6 max-w-xl line-clamp-3 drop-shadow">
+          <p className="text-[15px] leading-relaxed text-[var(--bone)]/80 max-w-[560px] mb-8 line-clamp-3">
             {title.description}
           </p>
 
-          {/* Action row */}
-          <div className="flex flex-wrap items-center gap-2 mb-6">
+          {/* Actions */}
+          <div className="flex flex-wrap items-center gap-3">
             <Link
               to={'/prime-video/watch/' + title.id}
-              className="bg-white hover:bg-gray-200 text-black font-bold px-6 py-2.5 rounded flex items-center gap-2 transition"
+              className="inline-flex items-center gap-2 h-11 px-6 rounded-full bg-[var(--bone)] text-[var(--ink)] text-sm font-semibold hover:scale-[1.03] transition-avenzo"
             >
-              <Play className="w-4 h-4 fill-black" /> Watch now
+              <Play className="w-4 h-4 fill-[var(--ink)]" /> Watch now
             </Link>
+
             <button
               onClick={() => toggleWatchlist(title.id)}
-              className="bg-white/15 hover:bg-white/25 backdrop-blur border border-white/20 text-white px-4 py-2.5 rounded flex items-center gap-2"
+              className="w-11 h-11 rounded-full border border-[var(--bone)]/20 flex items-center justify-center text-[var(--bone)] hover:border-[var(--brass)] hover:text-[var(--brass)] transition-avenzo"
               aria-label={inList ? 'Remove from watchlist' : 'Add to watchlist'}
             >
               {inList ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
             </button>
             <button
-              className="bg-white/15 hover:bg-white/25 backdrop-blur border border-white/20 text-white p-2.5 rounded"
+              className="w-11 h-11 rounded-full border border-[var(--bone)]/20 flex items-center justify-center text-[var(--bone)] hover:border-[var(--brass)] hover:text-[var(--brass)] transition-avenzo"
               aria-label="Like"
             >
               <ThumbsUp className="w-4 h-4" />
             </button>
             <button
-              className="bg-white/15 hover:bg-white/25 backdrop-blur border border-white/20 text-white p-2.5 rounded"
+              className="w-11 h-11 rounded-full border border-[var(--bone)]/20 flex items-center justify-center text-[var(--bone)] hover:border-[var(--brass)] hover:text-[var(--brass)] transition-avenzo"
               aria-label="Dislike"
             >
               <ThumbsDown className="w-4 h-4" />
             </button>
             <button
-              className="bg-white/15 hover:bg-white/25 backdrop-blur border border-white/20 text-white p-2.5 rounded"
+              className="w-11 h-11 rounded-full border border-[var(--bone)]/20 flex items-center justify-center text-[var(--bone)] hover:border-[var(--brass)] hover:text-[var(--brass)] transition-avenzo"
               aria-label="Share"
             >
               <Share2 className="w-4 h-4" />
@@ -131,17 +81,6 @@ export default function PVHero({ title }) {
           </div>
         </div>
       </div>
-
-      {/* Mute toggle (bottom right like Prime Video) */}
-      <button
-        onClick={toggleMute}
-        className="absolute bottom-8 right-6 z-20 w-11 h-11 rounded-full border-2 border-white/70 bg-black/40 backdrop-blur flex items-center justify-center text-white hover:bg-black/60"
-        aria-label={muted ? 'Unmute' : 'Mute'}
-      >
-        {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-      </button>
     </section>
   )
 }
-
-

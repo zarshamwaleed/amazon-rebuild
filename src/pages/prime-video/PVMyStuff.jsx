@@ -1,10 +1,17 @@
-﻿import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import VideoRow from '../../components/prime-video/VideoRow'
-import { TITLES, getTitleById } from '../../data/prime-video/catalog'
+import { getTitleById } from '../../data/prime-video/catalog'
 import { usePVWatchlist } from '../../hooks/usePVWatchlist'
 import { getProgressMap } from '../../hooks/usePVProgress'
-import EmptyState from '../../components/EmptyState'
+
+function PVEmptyState({ title, message }) {
+  return (
+    <div className="text-center py-20 px-6 border border-dashed border-[var(--border)] rounded-xl">
+      <h3 className="font-display italic text-2xl text-[var(--bone)] mb-2">{title}</h3>
+      {message && <p className="text-sm text-[var(--muted)] max-w-sm mx-auto">{message}</p>}
+    </div>
+  )
+}
 
 export default function PVMyStuff() {
   const [tab, setTab] = useState('watchlist')
@@ -28,54 +35,48 @@ export default function PVMyStuff() {
   ]
 
   return (
-    <div>
-      <h1 className="text-2xl md:text-3xl font-bold text-white mb-6">My Stuff</h1>
+    <div className="animate-fade-in">
+      <div className="mb-8">
+        <h1 className="font-display text-4xl md:text-5xl text-[var(--bone)] mb-2">My Stuff</h1>
+        <p className="text-[15px] text-[var(--muted)]">Everything you're watching, saving, and picking up again.</p>
+      </div>
 
-      <div className="flex gap-2 mb-6 border-b border-white/10 overflow-x-auto no-scrollbar">
+      <div className="flex flex-wrap gap-2 mb-10">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={
-              'px-4 py-2 text-sm font-medium whitespace-nowrap transition border-b-2 ' +
+              'px-4 py-1.5 rounded-full text-xs font-medium uppercase tracking-wide transition-avenzo ' +
               (tab === t.id
-                ? 'border-[#00A8E1] text-white'
-                : 'border-transparent text-gray-400 hover:text-white')
+                ? 'bg-[var(--brass)] text-[var(--ink)]'
+                : 'border border-[var(--bone)]/15 text-[var(--muted)] hover:text-[var(--bone)] hover:border-[var(--bone)]/30')
             }
           >
-            {t.label} {t.count > 0 && <span className="text-xs">({t.count})</span>}
+            {t.label} {t.count > 0 && '(' + t.count + ')'}
           </button>
         ))}
       </div>
 
-      {tab === 'watchlist' && (
-        watchlistTitles.length === 0 ? (
-          <EmptyState
-            title="Your watchlist is empty"
-            message="Add titles to your watchlist from any video card."
-          />
-        ) : (
-          <VideoRow heading="Saved Titles" titles={watchlistTitles} />
-        )
-      )}
+      <div key={tab} className="tab-fade">
+        {tab === 'watchlist' &&
+          (watchlistTitles.length === 0 ? (
+            <PVEmptyState title="Your watchlist is empty" message="Add titles to your watchlist from any video card." />
+          ) : (
+            <VideoRow heading="Saved Titles" titles={watchlistTitles} />
+          ))}
 
-      {tab === 'continue' && (
-        continueWatching.length === 0 ? (
-          <EmptyState
-            title="Nothing to continue"
-            message="Start watching something and it will appear here."
-          />
-        ) : (
-          <VideoRow heading="Pick up where you left off" titles={continueWatching} progressMap={progressMap} />
-        )
-      )}
+        {tab === 'continue' &&
+          (continueWatching.length === 0 ? (
+            <PVEmptyState title="Nothing to continue" message="Start watching something and it will appear here." />
+          ) : (
+            <VideoRow heading="Pick up where you left off" titles={continueWatching} progressMap={progressMap} />
+          ))}
 
-      {tab === 'purchases' && (
-        <EmptyState
-          title="No purchases yet"
-          message="Rentals and purchases will show up here."
-        />
-      )}
+        {tab === 'purchases' && (
+          <PVEmptyState title="No purchases yet" message="Rentals and purchases will show up here." />
+        )}
+      </div>
     </div>
   )
 }

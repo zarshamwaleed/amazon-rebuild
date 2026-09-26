@@ -1,10 +1,12 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Package } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getUserOrders } from '../services/orderService'
 import EmptyState from '../components/EmptyState'
-import LoadingSkeleton from '../components/LoadingSkeleton'
 import OrderStatusBadge from '../components/OrderStatusBadge'
+import Button from '../components/Button'
+import { formatPrice } from '../lib/utils'
 
 function formatDate(iso) {
   const d = new Date(iso)
@@ -40,8 +42,30 @@ export default function Orders() {
   if (loading) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Orders</h1>
-        <LoadingSkeleton count={3} cols={3} />
+        <h1 className="heading-page mb-8">Your Orders</h1>
+        <div className="space-y-5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-bone-50 border border-stone-200 rounded-xl overflow-hidden">
+              <div className="bg-stone-50 border-b border-stone-200 grid grid-cols-2 md:grid-cols-4 gap-4 px-5 sm:px-6 py-4">
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <div key={j} className="skeleton-shimmer h-8 rounded-md" />
+                ))}
+              </div>
+              <div className="px-5 sm:px-6 py-5 space-y-3.5">
+                <div className="skeleton-shimmer h-6 w-24 rounded-full mb-1" />
+                {Array.from({ length: 2 }).map((_, j) => (
+                  <div key={j} className="flex items-center gap-3.5">
+                    <div className="skeleton-shimmer w-14 h-14 rounded-lg flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="skeleton-shimmer h-3 w-2/3 rounded-md" />
+                      <div className="skeleton-shimmer h-3 w-1/4 rounded-md" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -49,7 +73,7 @@ export default function Orders() {
   if (error) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Orders</h1>
+        <h1 className="heading-page mb-8">Your Orders</h1>
         <EmptyState title="Could not load orders" message={error} />
       </div>
     )
@@ -58,105 +82,105 @@ export default function Orders() {
   if (orders.length === 0) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Orders</h1>
+        <h1 className="heading-page mb-8">Your Orders</h1>
         <EmptyState
+          icon={Package}
           title="You have no orders yet"
           message="Browse products and place your first order."
+          action={
+            <Link to="/products">
+              <Button>Start shopping</Button>
+            </Link>
+          }
         />
-        <div className="text-center mt-6">
-          <Link
-            to="/products"
-            className="inline-block bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-6 py-2.5 rounded transition"
-          >
-            Start shopping
-          </Link>
-        </div>
       </div>
     )
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Orders</h1>
+      <div className="mb-8">
+        <h1 className="heading-page">Your Orders</h1>
+        <p className="text-body-sm mt-1.5">
+          {orders.length} order{orders.length !== 1 ? 's' : ''} placed
+        </p>
+      </div>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {orders.map((order) => {
           const items = order.order_items || []
-          const itemCount = items.reduce((s, i) => s + i.quantity, 0)
           return (
             <div
               key={order.id}
-              className="bg-white border border-gray-200 rounded-md overflow-hidden"
+              className="bg-bone-50 border border-stone-200 rounded-xl overflow-hidden transition-avenzo hover:border-stone-300 hover:shadow-soft hover:-translate-y-0.5"
             >
               {/* Order header strip */}
-              <div className="bg-gray-50 border-b grid grid-cols-2 md:grid-cols-4 gap-4 px-5 py-3 text-xs">
+              <div className="bg-stone-50 border-b border-stone-200 grid grid-cols-2 md:grid-cols-4 gap-4 px-5 sm:px-6 py-4">
                 <div>
-                  <div className="text-gray-500 uppercase tracking-wider">Order placed</div>
-                  <div className="text-gray-900 font-medium mt-0.5">
+                  <div className="text-label">Order placed</div>
+                  <div className="text-sm text-charcoal-900 font-medium mt-1">
                     {formatDate(order.created_at)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-500 uppercase tracking-wider">Total</div>
-                  <div className="text-gray-900 font-medium mt-0.5">
-                    ${Number(order.total).toFixed(2)}
+                  <div className="text-label">Total</div>
+                  <div className="text-sm text-charcoal-900 font-medium mt-1">
+                    {formatPrice(order.total)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-500 uppercase tracking-wider">Ship to</div>
-                  <div className="text-gray-900 font-medium mt-0.5 line-clamp-1">
+                  <div className="text-label">Ship to</div>
+                  <div className="text-sm text-charcoal-900 font-medium mt-1 line-clamp-1">
                     {order.addresses?.full_name || '—'}
                   </div>
                 </div>
-                <div className="text-right md:text-right">
-                  <div className="text-gray-500 uppercase tracking-wider">Order #</div>
-                  <div className="text-gray-900 font-mono mt-0.5 break-all text-[10px]">
+                <div className="text-right">
+                  <div className="text-label">Order #</div>
+                  <div className="text-xs text-charcoal-600 font-mono mt-1 break-all">
                     {order.id.split('-')[0]}
                   </div>
                 </div>
               </div>
 
               {/* Body */}
-              <div className="px-5 py-4">
-                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <div className="px-5 sm:px-6 py-5">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                   <OrderStatusBadge status={order.order_status} />
                   <Link
                     to={'/orders/' + order.id}
-                    className="text-sm text-blue-600 hover:text-[#c7511f] hover:underline"
+                    className="text-sm font-medium text-charcoal-900 hover:text-brass-600 underline underline-offset-2"
                   >
                     View order details
                   </Link>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {items.slice(0, 3).map((it) => (
-                    <div key={it.id} className="flex items-center gap-3">
+                    <div key={it.id} className="flex items-center gap-3.5">
                       {it.product_image && (
                         <img
                           src={it.product_image}
                           alt=""
-                          className="w-14 h-14 object-cover rounded border border-gray-200"
+                          className="w-14 h-14 object-cover rounded-lg border border-stone-200"
                         />
                       )}
                       <div className="flex-1 min-w-0">
                         <Link
                           to={'/products/' + it.product_id}
-                          className="text-sm text-gray-900 hover:text-[#c7511f] line-clamp-1"
+                          className="text-sm text-charcoal-800 hover:text-charcoal-900 line-clamp-1"
                         >
                           {it.product_title}
                         </Link>
-                        <div className="text-xs text-gray-500">Qty: {it.quantity}</div>
+                        <div className="text-caption mt-0.5">Qty: {it.quantity}</div>
                       </div>
                     </div>
                   ))}
                   {items.length > 3 && (
-                    <div className="text-xs text-gray-500 pl-1">
+                    <div className="text-caption pl-1">
                       + {items.length - 3} more item{items.length - 3 !== 1 ? 's' : ''}
                     </div>
                   )}
-                  {items.length === 0 && (
-                    <div className="text-xs text-gray-500">No items recorded.</div>
-                  )}
+                  {items.length === 0 && <div className="text-caption">No items recorded.</div>}
                 </div>
               </div>
             </div>

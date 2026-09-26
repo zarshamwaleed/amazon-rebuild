@@ -16,6 +16,11 @@ import { useToast } from '../../context/ToastContext'
 import { getSellerReviews, localReviewAnalysis } from '../../services/sellerService'
 import { analyzeReviews } from '../../services/reviewAIService'
 import Rating from '../../components/Rating'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Button from '../../components/Button'
+import Card from '../../components/Card'
+import Badge from '../../components/Badge'
+import EmptyState from '../../components/EmptyState'
 
 const FILTERS = [
   { id: 'all', label: 'All reviews' },
@@ -43,7 +48,7 @@ export default function SellerReviews() {
       setLoading(true)
       const data = await getSellerReviews(user.id)
       setReviews(data)
-    } catch (err) {
+    } catch {
       pushToast('Could not load reviews', { type: 'error' })
     } finally {
       setLoading(false)
@@ -59,7 +64,6 @@ export default function SellerReviews() {
     return reviews.filter((r) => String(r.rating) === filter)
   }, [reviews, filter])
 
-  // Summary stats
   const summary = useMemo(() => {
     const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
     let sum = 0
@@ -83,12 +87,10 @@ export default function SellerReviews() {
       const result = await analyzeReviews(reviews)
       setAnalysis(result)
       pushToast(
-        result.aiUsed
-          ? 'Analyzed with Groq (Llama 3.3)'
-          : 'Analyzed locally (AI unavailable)',
+        result.aiUsed ? 'Analyzed with Groq (Llama 3.3)' : 'Analyzed locally (AI unavailable)',
         { type: 'success' }
       )
-    } catch (err) {
+    } catch {
       setAnalysis(localReviewAnalysis(reviews))
       pushToast('Could not reach AI. Showing local analysis.', { type: 'info' })
     } finally {
@@ -98,95 +100,90 @@ export default function SellerReviews() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reviews & Feedback</h1>
-          <p className="text-sm text-gray-600">
-            {summary.total} review{summary.total !== 1 ? 's' : ''} across your products.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={runAnalysis}
-            disabled={reviews.length === 0}
-            className="bg-gradient-to-br from-[#febd69] to-[#f3a847] hover:shadow-md text-gray-900 font-semibold px-4 py-2 rounded flex items-center gap-2 transition text-sm disabled:opacity-60"
-          >
-            <Sparkles className="w-4 h-4" /> Analyze Reviews
-          </button>
-          <button
-            onClick={load}
-            className="border border-gray-300 bg-white hover:bg-gray-50 px-3 py-2 rounded text-sm flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <SellerPageHeader
+        title="Reviews & Feedback"
+        description={`${summary.total} review${summary.total !== 1 ? 's' : ''} across your products.`}
+        actions={
+          <>
+            <Button variant="outline" size="md" onClick={load} aria-label="Refresh">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={runAnalysis}
+              disabled={reviews.length === 0}
+            >
+              <Sparkles className="w-4 h-4" /> Analyze Reviews
+            </Button>
+          </>
+        }
+      />
 
       {/* Summary */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 grid md:grid-cols-[200px_1fr] gap-8">
-        <div>
-          <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
-            Average rating
+      <Card>
+        <div className="grid md:grid-cols-[200px_1fr] gap-8">
+          <div>
+            <div className="text-label mb-1">Average rating</div>
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-5xl text-charcoal-900">
+                {summary.avg.toFixed(1)}
+              </span>
+              <span className="text-charcoal-400">/ 5</span>
+            </div>
+            <div className="mt-2">
+              <Rating value={summary.avg} showCount={false} />
+            </div>
+            <div className="text-caption mt-2">
+              Based on {summary.total} review{summary.total !== 1 ? 's' : ''}
+            </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-bold text-gray-900">
-              {summary.avg.toFixed(1)}
-            </span>
-            <span className="text-gray-500">/ 5</span>
-          </div>
-          <div className="mt-2">
-            <Rating value={summary.avg} />
-          </div>
-          <div className="text-xs text-gray-500 mt-2">
-            Based on {summary.total} review{summary.total !== 1 ? 's' : ''}
-          </div>
-        </div>
 
-        <div>
-          <div className="text-xs uppercase tracking-wider text-gray-500 mb-3">
-            Rating distribution
-          </div>
-          <div className="space-y-1.5">
-            {[5, 4, 3, 2, 1].map((star) => {
-              const count = summary.counts[star] || 0
-              const pct = summary.total > 0 ? (count / summary.total) * 100 : 0
-              return (
-                <button
-                  key={star}
-                  onClick={() => setFilter(String(star))}
-                  className="flex items-center gap-3 w-full text-left group"
-                >
-                  <div className="flex items-center gap-1 w-16 flex-shrink-0">
-                    <span className="text-sm text-gray-700">{star}</span>
-                    <Star className="w-3.5 h-3.5 fill-[#ffa41c] text-[#ffa41c]" />
-                  </div>
-                  <div className="flex-1 bg-gray-100 rounded h-4 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[#ffa41c] to-[#f3a847] transition-all"
-                      style={{ width: pct + '%' }}
-                    />
-                  </div>
-                  <span className="text-sm text-gray-700 w-16 text-right">
-                    {count} ({Math.round(pct)}%)
-                  </span>
-                </button>
-              )
-            })}
+          <div>
+            <div className="text-label mb-3">Rating distribution</div>
+            <div className="space-y-1.5">
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = summary.counts[star] || 0
+                const pct = summary.total > 0 ? (count / summary.total) * 100 : 0
+                return (
+                  <button
+                    key={star}
+                    onClick={() => setFilter(String(star))}
+                    className="flex items-center gap-3 w-full text-left"
+                  >
+                    <div className="flex items-center gap-1 w-16 flex-shrink-0">
+                      <span className="text-sm text-charcoal-700">{star}</span>
+                      <Star className="w-3.5 h-3.5 fill-warning-500 text-warning-500" />
+                    </div>
+                    <div className="flex-1 bg-stone-100 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="h-full bg-warning-500 transition-avenzo"
+                        style={{ width: pct + '%' }}
+                      />
+                    </div>
+                    <span className="text-sm text-charcoal-600 w-20 text-right">
+                      {count} ({Math.round(pct)}%)
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2">
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle p-4 flex flex-wrap items-center gap-2">
+        <span className="text-label mr-1">Filter</span>
         {FILTERS.map((f) => (
           <button
             key={f.id}
             onClick={() => setFilter(f.id)}
             className={
-              'px-3 py-1.5 rounded-full border text-sm transition ' +
+              'px-3 py-1.5 rounded-full border text-sm transition-avenzo ' +
               (filter === f.id
-                ? 'bg-[#232f3e] text-white border-[#232f3e]'
-                : 'border-gray-300 hover:border-gray-500 bg-white')
+                ? 'bg-charcoal-900 text-bone-50 border-charcoal-900'
+                : 'border-stone-300 hover:border-stone-400 bg-bone-50 text-charcoal-700')
             }
           >
             {f.label}
@@ -199,116 +196,90 @@ export default function SellerReviews() {
         ))}
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        {loading ? (
-          <div className="p-10 text-center text-sm text-gray-600">
-            Loading reviews…
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <Star className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-1">
-              {filter === 'all'
-                ? 'No reviews yet'
-                : `No ${filter}-star reviews`}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {filter === 'all'
-                ? 'Reviews will appear as customers rate your products.'
-                : 'Try a different filter.'}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="text-left px-5 py-3">Product</th>
-                  <th className="text-left px-4 py-3">Rating</th>
-                  <th className="text-left px-4 py-3">Review</th>
-                  <th className="text-left px-4 py-3">Date</th>
-                  <th className="text-center px-4 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => (
-                  <tr key={r.id} className="border-t hover:bg-gray-50">
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        {r.product?.image_url ? (
-                          <img
-                            src={r.product.image_url}
-                            alt=""
-                            className="w-9 h-9 rounded object-cover border"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded bg-gray-100" />
-                        )}
-                        <Link
-                          to={`/products/${r.product?.id}`}
-                          target="_blank"
-                          className="text-gray-900 hover:text-[#c7511f] truncate max-w-[200px]"
-                        >
-                          {r.product?.title || 'Unknown product'}
-                        </Link>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Rating value={Number(r.rating)} />
-                    </td>
-                    <td className="px-4 py-3 max-w-md">
-                      {r.title && (
-                        <div className="font-medium text-gray-900 text-sm">
-                          {r.title}
-                        </div>
-                      )}
-                      <div className="text-gray-600 text-xs line-clamp-2">
-                        {r.body}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        — {r.author_name}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 whitespace-nowrap text-xs">
-                      {new Date(r.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-800">
-                        Published
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Review list */}
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-28 rounded-xl skeleton-shimmer" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Star}
+          title={filter === 'all' ? 'No reviews yet' : `No ${filter}-star reviews`}
+          message={
+            filter === 'all'
+              ? 'Reviews will appear as customers rate your products.'
+              : 'Try a different filter.'
+          }
+        />
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((r) => (
+            <Card key={r.id} hoverable>
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  {r.product?.image_url ? (
+                    <img
+                      src={r.product.image_url}
+                      alt=""
+                      className="w-10 h-10 rounded-lg object-cover border border-stone-200 flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-stone-100 flex-shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <Link
+                      to={`/products/${r.product?.id}`}
+                      target="_blank"
+                      className="text-sm font-medium text-charcoal-900 hover:text-brass-600 transition-avenzo truncate block max-w-[240px]"
+                    >
+                      {r.product?.title || 'Unknown product'}
+                    </Link>
+                    <div className="flex items-center gap-1.5 text-xs text-charcoal-500 mt-0.5">
+                      <span>{r.author_name}</span>
+                      <span>·</span>
+                      <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="inline-flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-warning-500 text-warning-500" />
+                    <span className="text-sm font-medium text-charcoal-900">{r.rating}</span>
+                  </span>
+                  <Badge color="green">Published</Badge>
+                </div>
+              </div>
+
+              {r.title && <h4 className="font-medium text-charcoal-900 text-sm mb-1">{r.title}</h4>}
+              <p className="text-body-sm">{r.body}</p>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Analysis drawer */}
       {showAnalysis && (
         <div className="fixed inset-0 z-50 flex">
-          <div
-            className="flex-1 bg-black/40"
-            onClick={() => setShowAnalysis(false)}
-          />
-          <aside className="w-full max-w-md bg-white shadow-2xl flex flex-col overflow-hidden">
-            <div className="bg-gradient-to-r from-[#232f3e] to-[#37475a] text-white px-5 py-4 flex items-center justify-between">
+          <div className="flex-1 bg-charcoal-900/40" onClick={() => setShowAnalysis(false)} />
+          <aside className="w-full max-w-md bg-bone-50 shadow-lifted flex flex-col overflow-hidden animate-fade-in">
+            <div className="bg-charcoal-900 text-bone-50 px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#febd69]" />
-                <span className="font-bold">Review Analysis</span>
+                <Sparkles className="w-5 h-5 text-brass-300" />
+                <span className="font-semibold">Review Analysis</span>
               </div>
               <button
                 onClick={() => setShowAnalysis(false)}
-                className="p-1 rounded hover:bg-white/10"
+                className="p-1 rounded-lg hover:bg-white/10 transition-avenzo"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="px-5 py-3 border-b bg-gray-50 text-xs text-gray-600">
+            <div className="px-5 py-3 border-b border-stone-200 bg-stone-50 text-xs text-charcoal-600">
               {analyzing
                 ? 'Analyzing with AI…'
                 : analysis?.aiUsed
@@ -318,7 +289,7 @@ export default function SellerReviews() {
 
             <div className="p-5 flex-1 overflow-y-auto space-y-5">
               {analyzing && (
-                <div className="flex items-center gap-3 text-sm text-gray-600">
+                <div className="flex items-center gap-3 text-sm text-charcoal-600">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Reading {Math.min(reviews.length, 40)} reviews…
                 </div>
@@ -326,35 +297,15 @@ export default function SellerReviews() {
 
               {analysis && (
                 <>
-                  <AnalysisBlock
-                    title="Positive Themes"
-                    icon={TrendingUp}
-                    tone="green"
-                    items={analysis.positiveThemes}
-                  />
-                  <AnalysisBlock
-                    title="Negative Themes"
-                    icon={TrendingDown}
-                    tone="red"
-                    items={analysis.negativeThemes}
-                  />
-                  <AnalysisBlock
-                    title="Common Complaints"
-                    icon={AlertTriangle}
-                    tone="amber"
-                    items={analysis.commonComplaints}
-                  />
-                  <AnalysisBlock
-                    title="Customer Requests"
-                    icon={Lightbulb}
-                    tone="blue"
-                    items={analysis.customerRequests}
-                  />
+                  <AnalysisBlock title="Positive Themes" icon={TrendingUp} tone="green" items={analysis.positiveThemes} />
+                  <AnalysisBlock title="Negative Themes" icon={TrendingDown} tone="red" items={analysis.negativeThemes} />
+                  <AnalysisBlock title="Common Complaints" icon={AlertTriangle} tone="amber" items={analysis.commonComplaints} />
+                  <AnalysisBlock title="Customer Requests" icon={Lightbulb} tone="blue" items={analysis.customerRequests} />
                 </>
               )}
             </div>
 
-            <div className="border-t px-5 py-3 text-xs text-gray-500">
+            <div className="border-t border-stone-200 px-5 py-3 text-xs text-charcoal-500">
               AI-generated insights are suggestions. Always verify against raw reviews.
             </div>
           </aside>
@@ -364,40 +315,33 @@ export default function SellerReviews() {
   )
 }
 
-function AnalysisBlock({ title, icon: Icon, tone, items }) {
-  const toneCls =
-    tone === 'green'
-      ? 'border-green-200 bg-green-50'
-      : tone === 'red'
-      ? 'border-red-200 bg-red-50'
-      : tone === 'amber'
-      ? 'border-amber-200 bg-amber-50'
-      : 'border-blue-200 bg-blue-50'
-  const iconCls =
-    tone === 'green'
-      ? 'text-green-600'
-      : tone === 'red'
-      ? 'text-red-600'
-      : tone === 'amber'
-      ? 'text-amber-600'
-      : 'text-blue-600'
+const TONE_STYLES = {
+  green: { box: 'border-success-500/25 bg-success-50', icon: 'text-success-700' },
+  red: { box: 'border-error-500/25 bg-error-50', icon: 'text-error-700' },
+  amber: { box: 'border-warning-500/25 bg-warning-50', icon: 'text-warning-700' },
+  blue: { box: 'border-info-500/25 bg-info-50', icon: 'text-info-700' },
+}
+
+function AnalysisBlock({ title, icon, tone, items }) {
+  const Icon = icon
+  const styles = TONE_STYLES[tone] || TONE_STYLES.blue
   return (
-    <div className={'border rounded-lg p-4 ' + toneCls}>
+    <div className={'border rounded-xl p-4 ' + styles.box}>
       <div className="flex items-center gap-2 mb-3">
-        <Icon className={'w-4 h-4 ' + iconCls} />
-        <h3 className="font-bold text-gray-900 text-sm">{title}</h3>
+        <Icon className={'w-4 h-4 ' + styles.icon} />
+        <h3 className="font-semibold text-charcoal-900 text-sm">{title}</h3>
       </div>
       {items && items.length > 0 ? (
         <ul className="space-y-2">
           {items.map((t, i) => (
-            <li key={i} className="flex gap-2 text-sm text-gray-800">
-              <span className={iconCls}>•</span>
+            <li key={i} className="flex gap-2 text-sm text-charcoal-800">
+              <span className={styles.icon}>•</span>
               <span>{t}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-gray-500">No items detected.</p>
+        <p className="text-xs text-charcoal-500">No items detected.</p>
       )}
     </div>
   )

@@ -1,256 +1,221 @@
-﻿import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Gift,
-  Search,
   ArrowRight,
   Sparkles,
   Mail,
   Printer,
   Package,
-  Palette,
   Cake,
   Heart,
   GraduationCap,
+  Snowflake,
+  Plane,
+  Baby,
+  HandHeart,
   Star,
   Check,
-  X,
   DollarSign,
+  CheckCircle2,
 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import AddGiftCardModal from '../components/AddGiftCardModal'
+import SectionHeader from '../components/SectionHeader'
+import Button from '../components/Button'
+import LoadingSkeleton from '../components/LoadingSkeleton'
+import EmptyState from '../components/EmptyState'
+import {
+  getGiftCardDesigns,
+  redeemGiftCardCode,
+  getUserGiftCardBalance,
+} from '../services/giftCardService'
 
-const POPULAR = [
-  {
-    id: 'classic-25',
-    name: 'Amazon Rebuild Gift Card',
-    tagline: 'Classic blue',
-    image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80',
-    gradient: 'from-[#232f3e] to-[#131921]',
-    price: 25,
-    rating: 4.9,
-    reviews: 12480,
-    badge: 'Bestseller',
-  },
-  {
-    id: 'birthday-50',
-    name: 'Birthday Gift Card',
-    tagline: 'Balloons & confetti',
-    image: 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&w=600&q=80',
-    gradient: 'from-pink-500 to-rose-500',
-    price: 50,
-    rating: 4.8,
-    reviews: 8240,
-  },
-  {
-    id: 'holiday-100',
-    name: 'Holiday Gift Card',
-    tagline: 'Snowflake design',
-    image: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?auto=format&fit=crop&w=600&q=80',
-    gradient: 'from-blue-500 to-indigo-600',
-    price: 100,
-    rating: 4.7,
-    reviews: 5120,
-  },
-  {
-    id: 'thank-you-25',
-    name: 'Thank You Gift Card',
-    tagline: 'Minimal design',
-    image: 'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?auto=format&fit=crop&w=600&q=80',
-    gradient: 'from-emerald-500 to-teal-600',
-    price: 25,
-    rating: 4.8,
-    reviews: 3980,
-  },
-]
+/* ------------------------------------------------------------------
+   Presentation-only lookups keyed off real gift_card_designs columns
+   (category, delivery_type) — no mock catalog data, every card rendered
+   below comes from getGiftCardDesigns().
+   ------------------------------------------------------------------ */
 
-const AMAZON_CARDS = [
-  {
-    id: 'classic-blue',
-    name: 'Amazon Rebuild Blue',
-    price: 25,
-    gradient: 'from-[#232f3e] to-[#131921]',
-    delivery: 'email',
-  },
-  {
-    id: 'gold',
-    name: 'Amazon Rebuild Gold',
-    price: 50,
-    gradient: 'from-amber-500 to-yellow-500',
-    delivery: 'email',
-  },
-  {
-    id: 'silver',
-    name: 'Amazon Rebuild Silver',
-    price: 50,
-    gradient: 'from-gray-400 to-gray-600',
-    delivery: 'email',
-  },
-  {
-    id: 'emerald',
-    name: 'Amazon Rebuild Emerald',
-    price: 100,
-    gradient: 'from-emerald-500 to-teal-600',
-    delivery: 'email',
-  },
-  {
-    id: 'midnight',
-    name: 'Amazon Rebuild Midnight',
-    price: 100,
-    gradient: 'from-slate-700 to-slate-900',
-    delivery: 'email',
-  },
-  {
-    id: 'sunrise',
-    name: 'Amazon Rebuild Sunrise',
-    price: 50,
-    gradient: 'from-orange-400 to-rose-500',
-    delivery: 'email',
-  },
-]
+const CATEGORY_META = {
+  amazon: { icon: Gift },
+  any: { icon: Sparkles },
+  baby: { icon: Baby },
+  birthday: { icon: Cake },
+  congratulations: { icon: GraduationCap },
+  holiday: { icon: Snowflake },
+  'thank-you': { icon: HandHeart },
+  travel: { icon: Plane },
+  wedding: { icon: Heart },
+  wellness: { icon: HandHeart },
+}
 
-const DIGITAL_CARDS = [
-  {
-    id: 'digital-1',
-    name: 'Instant eGift',
-    tagline: 'Delivered in minutes',
-    price: 25,
-    gradient: 'from-blue-500 to-indigo-600',
-    icon: Mail,
-  },
-  {
-    id: 'digital-2',
-    name: 'Print at Home',
-    tagline: 'Printable PDF',
-    price: 50,
-    gradient: 'from-emerald-500 to-teal-600',
-    icon: Printer,
-  },
-  {
-    id: 'digital-3',
-    name: 'Birthday eGift',
-    tagline: 'Balloon theme',
-    price: 50,
-    gradient: 'from-pink-500 to-rose-500',
-    icon: Cake,
-  },
-  {
-    id: 'digital-4',
-    name: 'Thank You eGift',
-    tagline: 'Minimal design',
-    price: 25,
-    gradient: 'from-purple-500 to-fuchsia-500',
-    icon: Heart,
-  },
-]
+const DELIVERY_META = {
+  email: { icon: Mail, caption: 'Delivered by email' },
+  physical: { icon: Package, caption: '+$2.99 shipping' },
+  print: { icon: Printer, caption: 'Printable PDF' },
+}
 
-const PHYSICAL_CARDS = [
-  {
-    id: 'physical-1',
-    name: 'Classic Boxed',
-    tagline: 'Ships in gift box',
-    price: 50,
-    gradient: 'from-[#232f3e] to-[#131921]',
-  },
-  {
-    id: 'physical-2',
-    name: 'Premium Box',
-    tagline: 'Foil-stamped envelope',
-    price: 100,
-    gradient: 'from-amber-500 to-yellow-500',
-  },
-  {
-    id: 'physical-3',
-    name: 'Birthday Box',
-    tagline: 'Confetti pop-up',
-    price: 50,
-    gradient: 'from-pink-500 to-rose-500',
-  },
-  {
-    id: 'physical-4',
-    name: 'Wedding Card',
-    tagline: 'Elegant ivory',
-    price: 100,
-    gradient: 'from-slate-500 to-slate-700',
-  },
-]
+const FALLBACK_GRADIENT = 'from-charcoal-800 to-charcoal-900'
 
-const RECOMMENDED = [
-  { id: 'r1', name: 'Congratulations', price: 25, gradient: 'from-emerald-500 to-green-600', icon: GraduationCap },
-  { id: 'r2', name: 'Wedding Wishes', price: 50, gradient: 'from-pink-400 to-rose-500', icon: Heart },
-  { id: 'r3', name: 'New Baby', price: 50, gradient: 'from-sky-400 to-blue-500', icon: Sparkles },
-  { id: 'r4', name: 'Get Well Soon', price: 25, gradient: 'from-purple-400 to-fuchsia-500', icon: Heart },
-  { id: 'r5', name: 'Bon Voyage', price: 100, gradient: 'from-cyan-500 to-blue-600', icon: Star },
-  { id: 'r6', name: 'Just Because', price: 25, gradient: 'from-amber-400 to-orange-500', icon: Gift },
-]
+// The design catalog still carries its original "Amazon Rebuild" naming in
+// the database — sanitized for display only, never written back.
+function displayName(name = '') {
+  return name.replace(/Amazon Rebuild\s*/gi, 'Avenzo ').replace(/\s+/g, ' ').trim()
+}
 
 export default function GiftCards() {
   const { pushToast } = useToast()
   const { addGiftCard } = useCart()
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  const [designs, setDesigns] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
+
   const [claimCode, setClaimCode] = useState('')
   const [checking, setChecking] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
 
-  function handleAddToCart(card) {
-    setSelectedCard(card)
+  const [balance, setBalance] = useState(0)
+  const [redeemSuccess, setRedeemSuccess] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getGiftCardDesigns()
+      .then((data) => {
+        if (!cancelled) setDesigns(data)
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err.message)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    if (!user) {
+      setBalance(0)
+      return
+    }
+    getUserGiftCardBalance(user.id).then((bal) => {
+      if (!cancelled) setBalance(bal)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  function handleAddToCart(design) {
+    setSelectedCard({
+      id: design.id,
+      name: displayName(design.name),
+      gradient: design.gradient,
+      delivery: design.delivery_type,
+    })
   }
 
-  function handleRedeem(e) {
+  async function handleRedeem(e) {
     e.preventDefault()
-    if (!claimCode.trim()) {
+    const code = claimCode.trim().toUpperCase()
+    if (!code) {
       return pushToast('Enter a claim code', { type: 'error' })
     }
+    if (!user) {
+      pushToast('Please sign in to redeem a gift card', { type: 'error' })
+      navigate('/login', { state: { from: '/gift-cards' } })
+      return
+    }
+
     setChecking(true)
-    // Simulated redeem check — Tier 2 will wire this to the DB
-    setTimeout(() => {
+    setRedeemSuccess(null)
+    try {
+      const result = await redeemGiftCardCode(code)
+      if (result.success) {
+        pushToast(`$${Number(result.amount).toFixed(2)} added to your balance`, { type: 'success' })
+        setRedeemSuccess({ amount: result.amount, newBalance: result.new_balance })
+        setClaimCode('')
+        const bal = await getUserGiftCardBalance(user.id)
+        setBalance(bal)
+      } else {
+        pushToast(result.error || 'Could not redeem this code', { type: 'error' })
+      }
+    } catch (err) {
+      pushToast(err.message || 'Could not redeem this code', { type: 'error' })
+    } finally {
       setChecking(false)
-      pushToast('Redeem flow coming in the next module', { type: 'info' })
-    }, 800)
+    }
   }
 
+  const popular = designs.filter((d) => d.featured)
+  const classics = designs.filter((d) => d.category === 'amazon')
+  const occasions = designs.filter((d) => d.category !== 'amazon' && d.delivery_type === 'email')
+  const shipOrPrint = designs.filter((d) => d.delivery_type !== 'email')
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-10 md:space-y-14">
       {/* HERO */}
-      <section className="bg-gradient-to-br from-[#232f3e] to-[#131921] text-white rounded-lg overflow-hidden">
-        <div className="grid md:grid-cols-2 gap-8 items-center p-8 md:p-12">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-charcoal-900 via-charcoal-800 to-brass-900 text-bone-50 shadow-card">
+        <div className="grid md:grid-cols-2 gap-10 items-center p-8 md:p-14">
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <Gift className="w-8 h-8 text-[#febd69]" />
-              <span className="text-sm uppercase tracking-wider text-[#febd69] font-bold">
+            <div className="flex items-center gap-2.5 mb-5">
+              <Gift className="w-6 h-6 text-brass-400" />
+              <span className="text-av-label uppercase tracking-wider text-brass-300 font-semibold">
                 Gift Cards
               </span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-4">
+            <h1 className="font-display text-display-sm md:text-display font-medium leading-tight text-bone-50 mb-4">
               The perfect gift for any occasion
             </h1>
-            <p className="text-gray-200 text-lg mb-8">
+            <p className="text-body-lg text-stone-300 mb-8 max-w-md">
               Delivered by email, printable, or shipped in a premium envelope.
               Never expires.
             </p>
             <div className="flex flex-wrap gap-3">
               <a
                 href="#popular"
-                className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-semibold px-6 py-3 rounded flex items-center gap-2 transition"
+                className="inline-flex items-center gap-2 bg-brass-400 hover:bg-brass-300 text-charcoal-900 font-medium h-12 px-6 rounded-lg transition-avenzo"
               >
                 Shop Gift Cards <ArrowRight className="w-4 h-4" />
               </a>
               <a
                 href="#redeem"
-                className="border border-white hover:bg-white hover:text-gray-900 text-white font-semibold px-6 py-3 rounded transition"
+                className="inline-flex items-center gap-2 border border-bone-50/30 hover:bg-bone-50/10 text-bone-50 font-medium h-12 px-6 rounded-lg transition-avenzo"
               >
                 Redeem a Gift Card
               </a>
             </div>
           </div>
           <div className="hidden md:block">
-            <div className="aspect-[4/3] rounded-lg bg-gradient-to-br from-[#febd69] to-[#f3a847] p-6 flex flex-col justify-between shadow-2xl">
-              <div className="text-gray-900 text-sm uppercase tracking-wider font-bold">
-                Amazon Rebuild
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br from-brass-500 via-brass-600 to-brass-800 p-7 flex flex-col justify-between shadow-lifted ring-1 ring-inset ring-bone-50/15">
+              <div
+                className="absolute inset-0 opacity-[0.14] mix-blend-overlay pointer-events-none"
+                style={{
+                  backgroundImage:
+                    'repeating-linear-gradient(135deg, rgba(255,255,255,.8) 0px, rgba(255,255,255,.8) 1px, transparent 1px, transparent 11px)',
+                }}
+                aria-hidden="true"
+              />
+              <div
+                aria-hidden="true"
+                className="absolute -right-4 -bottom-6 font-display italic text-charcoal-900/10 text-[9rem] leading-none select-none pointer-events-none"
+              >
+                A
               </div>
-              <div className="text-gray-900">
-                <div className="text-4xl font-bold">$50</div>
-                <div className="text-sm mt-1">Gift Card</div>
+              <div className="relative font-display italic text-charcoal-900 text-lg tracking-wide">
+                Avenzo
+              </div>
+              <div className="relative text-charcoal-900">
+                <div className="text-av-label uppercase tracking-wider font-semibold opacity-80">Gift Card</div>
+                <div className="font-display text-3xl font-medium mt-1">Choose your amount</div>
               </div>
             </div>
           </div>
@@ -261,136 +226,110 @@ export default function GiftCards() {
       <section className="grid md:grid-cols-2 gap-4">
         <a
           href="#popular"
-          className="bg-white border border-gray-200 rounded-lg p-6 flex items-center gap-4 hover:shadow-md hover:border-gray-400 transition group"
+          className="bg-bone-50 border border-stone-200 rounded-xl p-6 flex items-center gap-4 hover:shadow-card hover:border-stone-300 transition-avenzo group"
         >
-          <div className="w-14 h-14 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
-            <Gift className="w-7 h-7 text-[#c7511f]" />
+          <div className="w-14 h-14 rounded-lg bg-brass-50 flex items-center justify-center flex-shrink-0">
+            <Gift className="w-7 h-7 text-brass-700" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 mb-1">Shop Gift Cards</h3>
-            <p className="text-sm text-gray-600">
-              Browse by occasion, design, or delivery method.
-            </p>
+            <h3 className="heading-sub mb-1">Shop Gift Cards</h3>
+            <p className="text-body-sm">Browse by occasion, design, or delivery method.</p>
           </div>
-          <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#c7511f] transition flex-shrink-0" />
+          <ArrowRight className="w-5 h-5 text-charcoal-400 group-hover:text-brass-700 group-hover:translate-x-0.5 transition-avenzo flex-shrink-0" />
         </a>
 
         <a
           href="#redeem"
-          className="bg-white border border-gray-200 rounded-lg p-6 flex items-center gap-4 hover:shadow-md hover:border-gray-400 transition group"
+          className="bg-bone-50 border border-stone-200 rounded-xl p-6 flex items-center gap-4 hover:shadow-card hover:border-stone-300 transition-avenzo group"
         >
-          <div className="w-14 h-14 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
-            <DollarSign className="w-7 h-7 text-green-700" />
+          <div className="w-14 h-14 rounded-lg bg-success-50 flex items-center justify-center flex-shrink-0">
+            <DollarSign className="w-7 h-7 text-success-700" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 mb-1">Redeem a Gift Card</h3>
-            <p className="text-sm text-gray-600">
-              Add balance to your account instantly.
-            </p>
+            <h3 className="heading-sub mb-1">Redeem a Gift Card</h3>
+            <p className="text-body-sm">Add balance to your account instantly.</p>
           </div>
-          <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#c7511f] transition flex-shrink-0" />
+          <ArrowRight className="w-5 h-5 text-charcoal-400 group-hover:text-brass-700 group-hover:translate-x-0.5 transition-avenzo flex-shrink-0" />
         </a>
       </section>
 
-      {/* POPULAR GIFT CARDS */}
-      <section id="popular">
-        <div className="flex items-baseline justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Popular Gift Cards</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              The most-gifted designs right now.
-            </p>
-          </div>
-          <a href="#amazon-cards" className="text-sm text-[#007185] hover:text-[#c7511f] hover:underline">
-            See all →
-          </a>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {POPULAR.map((card) => (
-            <GiftCardTile
-              key={card.id}
-              card={card}
-              showRating
-              onAdd={() => handleAddToCart(card)}
-            />
-          ))}
-        </div>
-      </section>
+      {loading ? (
+        <LoadingSkeleton count={8} cols={4} />
+      ) : loadError ? (
+        <EmptyState title="Could not load gift cards" message={loadError} />
+      ) : (
+        <>
+          {/* POPULAR GIFT CARDS */}
+          {popular.length > 0 && (
+            <section id="popular">
+              <div className="flex items-end justify-between gap-4 mb-6 md:mb-8">
+                <div>
+                  <h2 className="font-display text-heading-section md:text-heading-page text-charcoal-900">
+                    Popular Gift Cards
+                  </h2>
+                  <p className="text-body-sm mt-1.5">The most-gifted designs right now.</p>
+                </div>
+                <a
+                  href="#avenzo-cards"
+                  className="group shrink-0 inline-flex items-center gap-1.5 text-av-label uppercase tracking-wide text-brass-700 whitespace-nowrap transition-avenzo hover:text-brass-800"
+                >
+                  See all
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-base group-hover:translate-x-0.5" />
+                </a>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {popular.map((design) => (
+                  <GiftCardTile key={design.id} design={design} onAdd={handleAddToCart} />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {/* AMAZON GIFT CARDS */}
-      <section id="amazon-cards">
-        <div className="flex items-baseline justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Amazon Rebuild Gift Cards</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Classic designs in every denomination.
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {AMAZON_CARDS.map((card) => (
-            <GiftCardTile
-              key={card.id}
-              card={card}
-              compact
-              onAdd={() => handleAddToCart(card)}
-            />
-          ))}
-        </div>
-      </section>
+          {/* AVENZO GIFT CARDS */}
+          {classics.length > 0 && (
+            <section id="avenzo-cards">
+              <SectionHeader title="Avenzo Gift Cards" subtitle="Classic designs in every denomination." />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {classics.map((design) => (
+                  <GiftCardTile key={design.id} design={design} size="compact" onAdd={handleAddToCart} />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {/* DIGITAL GIFT CARDS */}
-      <section>
-        <div className="flex items-baseline justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Digital Gift Cards</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Instant delivery by email or printable PDF.
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {DIGITAL_CARDS.map((card) => (
-            <DigitalCard
-              key={card.id}
-              card={card}
-              onAdd={() => handleAddToCart(card)}
-            />
-          ))}
-        </div>
-      </section>
+          {/* OCCASION GIFT CARDS */}
+          {occasions.length > 0 && (
+            <section>
+              <SectionHeader title="Gift Cards for Every Occasion" subtitle="Birthdays, holidays, weddings, and more." />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {occasions.map((design) => (
+                  <GiftCardTile key={design.id} design={design} onAdd={handleAddToCart} />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {/* PHYSICAL GIFT CARDS */}
-      <section>
-        <div className="flex items-baseline justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Physical Gift Cards</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Shipped in a premium envelope or gift box.
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {PHYSICAL_CARDS.map((card) => (
-            <PhysicalCard
-              key={card.id}
-              card={card}
-              onAdd={() => handleAddToCart(card)}
-            />
-          ))}
-        </div>
-      </section>
+          {/* SHIP OR PRINT */}
+          {shipOrPrint.length > 0 && (
+            <section>
+              <SectionHeader title="Ship or Print" subtitle="A premium envelope, gift box, or printable PDF." />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {shipOrPrint.map((design) => (
+                  <GiftCardTile key={design.id} design={design} onAdd={handleAddToCart} />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      )}
 
       {/* REDEEM / CHECK BALANCE */}
-      <section id="redeem" className="bg-gray-50 border border-gray-200 rounded-lg p-6 md:p-10">
+      <section id="redeem" className="bg-stone-50 border border-stone-200 rounded-2xl p-6 md:p-10">
         <div className="grid md:grid-cols-2 gap-8">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Redeem a Gift Card
-            </h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Enter your claim code to add the balance to your Amazon Rebuild
-              account.
+            <h2 className="heading-section mb-2">Redeem a Gift Card</h2>
+            <p className="text-body-sm mb-4">
+              Enter your claim code to add the balance to your Avenzo account.
             </p>
             <form onSubmit={handleRedeem} className="space-y-3 max-w-md">
               <input
@@ -398,56 +337,56 @@ export default function GiftCards() {
                 value={claimCode}
                 onChange={(e) => setClaimCode(e.target.value.toUpperCase())}
                 placeholder="XXXX-XXXXXX-XXXX"
-                className="w-full border border-gray-300 rounded px-4 py-3 text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-[#febd69]"
-              />
-              <button
-                type="submit"
                 disabled={checking}
-                className="w-full bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium py-3 rounded transition disabled:opacity-60"
-              >
-                {checking ? 'Checking…' : 'Redeem'}
-              </button>
+                className="w-full rounded-lg border border-stone-300 bg-bone-50 px-4 py-3 text-sm font-mono tracking-wider text-charcoal-900 placeholder:text-charcoal-400 transition-avenzo focus:outline-none focus:border-brass-400 disabled:opacity-60"
+              />
+              <Button type="submit" variant="secondary" size="lg" loading={checking} disabled={checking} className="w-full">
+                {checking ? 'Redeeming…' : 'Redeem'}
+              </Button>
             </form>
-            <p className="text-xs text-gray-500 mt-3">
-              Codes are case-insensitive. Never share your claim code with
-              anyone outside Amazon Rebuild.
+            {redeemSuccess && (
+              <div className="mt-3 max-w-md flex items-start gap-2 bg-success-50 border border-success-500/20 text-success-700 rounded-lg p-3 text-sm animate-fade-in-up">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">
+                    +${Number(redeemSuccess.amount).toFixed(2)} added — new balance $
+                    {Number(redeemSuccess.newBalance).toFixed(2)}
+                  </p>
+                  <p className="mt-1">
+                    <Link to="/gift-cards/balance" className="underline font-medium">
+                      View balance
+                    </Link>{' '}
+                    ·{' '}
+                    <Link to="/products" className="underline font-medium">
+                      Start shopping
+                    </Link>
+                  </p>
+                </div>
+              </div>
+            )}
+            <p className="text-caption mt-3">
+              Codes are case-insensitive. Never share your claim code with anyone outside Avenzo.
             </p>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="font-bold text-gray-900 mb-2">Your Gift Card Balance</h3>
+          <div className="bg-bone-50 border border-stone-200 rounded-xl p-6">
+            <h3 className="heading-sub mb-2">Your Gift Card Balance</h3>
             <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-3xl font-bold text-gray-900">$0.00</span>
+              <span className="font-mono text-4xl font-semibold text-charcoal-900">
+                ${balance.toFixed(2)}
+              </span>
             </div>
-            <p className="text-xs text-gray-500 mb-4">
-              Redeem a gift card to add to your balance.
-            </p>
-            <div className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
-              Your balance is automatically applied at checkout. You can review
-              your balance anytime from Your Account.
+            <p className="text-caption mb-4">Redeem a gift card to add to your balance.</p>
+            <div className="text-caption bg-stone-50 border border-stone-200 rounded-lg p-3">
+              Your balance is automatically applied at checkout. You can review your balance anytime from Your
+              Account.
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* RECOMMENDED */}
-      <section>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Recommended for You
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {RECOMMENDED.map((card) => (
-            <RecommendedCard
-              key={card.id}
-              card={card}
-              onAdd={() => handleAddToCart(card)}
-            />
-          ))}
         </div>
       </section>
 
       {/* TRUST BADGES */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-8 border-t border-stone-200">
         {[
           { icon: Sparkles, title: 'No expiry', desc: 'Gift cards never expire.' },
           { icon: Mail, title: 'Instant delivery', desc: 'eGifts arrive in minutes.' },
@@ -457,11 +396,11 @@ export default function GiftCards() {
           const Icon = f.icon
           return (
             <div key={f.title} className="text-center">
-              <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-3">
-                <Icon className="w-5 h-5 text-[#c7511f]" />
+              <div className="w-12 h-12 rounded-full bg-brass-50 flex items-center justify-center mx-auto mb-3">
+                <Icon className="w-5 h-5 text-brass-700" />
               </div>
-              <h3 className="font-bold text-gray-900 text-sm mb-1">{f.title}</h3>
-              <p className="text-xs text-gray-600">{f.desc}</p>
+              <h3 className="text-sm font-semibold text-charcoal-900 mb-1">{f.title}</h3>
+              <p className="text-caption">{f.desc}</p>
             </div>
           )
         })}
@@ -482,169 +421,101 @@ export default function GiftCards() {
 }
 
 /* ============================================================
-   Card components
+   Card component — every visual detail (wordmark, monogram, fine-line
+   pattern, denomination range, delivery caption) is rendered on top of
+   the design's own `gradient`/`image_url` fields; nothing is added to
+   the gift_card_designs table itself.
    ============================================================ */
 
-function GiftCardTile({ card, showRating, compact, onAdd }) {
+function GiftCardTile({ design, size = 'default', onAdd }) {
+  const compact = size === 'compact'
+  const meta = CATEGORY_META[design.category] || CATEGORY_META.amazon
+  const delivery = DELIVERY_META[design.delivery_type] || DELIVERY_META.email
+  const Icon = meta.icon
+  const name = displayName(design.name)
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition group flex flex-col">
+    <div className="flex flex-col bg-bone-50 border border-stone-200 rounded-xl overflow-hidden hover:shadow-card hover:border-stone-300 hover:-translate-y-0.5 transition-avenzo">
       <div
         className={
-          'relative bg-gradient-to-br ' + card.gradient + ' aspect-[3/2] flex flex-col justify-between p-4'
+          'relative flex flex-col justify-between overflow-hidden bg-gradient-to-br ' +
+          (design.gradient || FALLBACK_GRADIENT) +
+          ' ' +
+          (compact ? 'aspect-[3/2] p-3' : 'aspect-[16/10] p-4')
         }
       >
-        <div className="flex justify-between items-start">
-          <span className="text-white text-[10px] uppercase tracking-wider font-bold drop-shadow">
-            Amazon Rebuild
+        {design.image_url && (
+          <img
+            src={design.image_url}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+        {/* Duotone wash — keeps every design on-brand regardless of the
+            underlying gradient's hue */}
+        <div className="absolute inset-0 bg-gradient-to-br from-charcoal-900/45 via-charcoal-900/10 to-charcoal-900/55" />
+        {/* Fine line pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.12]"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(135deg, rgba(255,255,255,.7) 0px, rgba(255,255,255,.7) 1px, transparent 1px, transparent 9px)',
+          }}
+          aria-hidden="true"
+        />
+        {/* Monogram watermark */}
+        <div
+          aria-hidden="true"
+          className={
+            'absolute font-display italic text-bone-50/[0.16] select-none pointer-events-none leading-none ' +
+            (compact ? '-right-2 -bottom-3 text-6xl' : '-right-3 -bottom-5 text-8xl')
+          }
+        >
+          A
+        </div>
+
+        <div className="relative flex items-start justify-between">
+          <span className={'font-display italic text-bone-50 tracking-wide ' + (compact ? 'text-xs' : 'text-sm')}>
+            Avenzo
           </span>
-          {card.badge && (
-            <span className="bg-[#febd69] text-gray-900 text-[10px] font-bold px-2 py-0.5 rounded">
-              {card.badge}
+          <Icon className={'text-bone-50/75 ' + (compact ? 'w-3.5 h-3.5' : 'w-4 h-4')} strokeWidth={1.75} />
+        </div>
+
+        <div className="relative flex items-end justify-between gap-2">
+          <div>
+            <div className={'font-display text-bone-50 font-medium ' + (compact ? 'text-base' : 'text-2xl')}>
+              $25–$500
+            </div>
+            <div className="text-[10px] uppercase tracking-wider text-bone-50/75 font-semibold mt-0.5">
+              Gift Card
+            </div>
+          </div>
+          {design.featured && (
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-bone-50/15 ring-1 ring-inset ring-bone-50/30 flex items-center justify-center">
+              <Star className="w-3 h-3 text-brass-300 fill-brass-300" />
             </span>
           )}
         </div>
-        <div className="text-white">
-          <div className={'font-bold ' + (compact ? 'text-xl' : 'text-3xl')}>
-            ${card.price}
-          </div>
-          <div className="text-[10px] uppercase tracking-wider opacity-90 mt-0.5">
-            Gift Card
-          </div>
-        </div>
       </div>
 
-      <div className={'p-3 flex flex-col flex-1 ' + (compact ? '' : 'p-4')}>
+      <div className={'flex flex-col flex-1 ' + (compact ? 'p-3' : 'p-4')}>
         <h3
           className={
-            'font-medium text-gray-900 leading-snug ' +
-            (compact ? 'text-xs line-clamp-2' : 'text-sm line-clamp-2')
+            'font-medium text-charcoal-900 leading-snug line-clamp-1 ' + (compact ? 'text-xs' : 'text-sm')
           }
         >
-          {card.name}
+          {name}
         </h3>
-        {card.tagline && !compact && (
-          <p className="text-xs text-gray-500 mt-0.5">{card.tagline}</p>
-        )}
+        {design.tagline && !compact && <p className="text-caption mt-0.5 line-clamp-1">{design.tagline}</p>}
 
-        {showRating && card.rating && (
-          <div className="flex items-center gap-1 mt-1">
-            <Star className="w-3 h-3 fill-[#ffa41c] text-[#ffa41c]" />
-            <span className="text-xs text-gray-700">
-              {card.rating.toFixed(1)} ({card.reviews.toLocaleString()})
-            </span>
-          </div>
-        )}
-
-        <div className="mt-auto pt-3">
-          <button
-            onClick={onAdd}
-            className={
-              'w-full font-medium rounded transition ' +
-              (compact
-                ? 'text-xs bg-[#febd69] hover:bg-[#f3a847] text-gray-900 py-1.5'
-                : 'text-sm bg-[#febd69] hover:bg-[#f3a847] text-gray-900 py-2')
-            }
-          >
-            Add to Cart
-          </button>
+        <div className="mt-auto pt-3 flex items-center justify-between gap-2">
+          <span className="text-av-caption text-charcoal-500 truncate">{delivery.caption}</span>
+          <Button onClick={() => onAdd(design)} size="sm" className="flex-shrink-0">
+            Add
+          </Button>
         </div>
       </div>
     </div>
-  )
-}
-
-function DigitalCard({ card, onAdd }) {
-  const Icon = card.icon
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
-      <div
-        className={
-          'aspect-[16/10] bg-gradient-to-br ' +
-          card.gradient +
-          ' flex items-center justify-center'
-        }
-      >
-        <Icon className="w-10 h-10 text-white" />
-      </div>
-      <div className="p-4">
-        <h3 className="font-medium text-gray-900 text-sm">{card.name}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{card.tagline}</p>
-        <div className="flex items-baseline justify-between mt-3 mb-3">
-          <span className="text-lg font-bold text-gray-900">
-            ${card.price}
-          </span>
-          <span className="text-xs text-green-700 font-medium">Instant</span>
-        </div>
-        <button
-          onClick={onAdd}
-          className="w-full text-sm bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium py-2 rounded transition"
-        >
-          Add to Cart
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function PhysicalCard({ card, onAdd }) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
-      <div
-        className={
-          'aspect-[16/10] bg-gradient-to-br ' +
-          card.gradient +
-          ' flex items-end justify-end p-4'
-        }
-      >
-        <div className="text-right text-white">
-          <div className="text-2xl font-bold">${card.price}</div>
-          <div className="text-[10px] uppercase tracking-wider opacity-90">
-            Gift Card
-          </div>
-        </div>
-      </div>
-      <div className="p-4">
-        <h3 className="font-medium text-gray-900 text-sm">{card.name}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{card.tagline}</p>
-        <div className="flex items-baseline justify-between mt-3 mb-3">
-          <span className="text-lg font-bold text-gray-900">
-            ${card.price}
-          </span>
-          <span className="text-xs text-amber-700 font-medium">+$2.99 ship</span>
-        </div>
-        <button
-          onClick={onAdd}
-          className="w-full text-sm bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium py-2 rounded transition"
-        >
-          Add to Cart
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function RecommendedCard({ card, onAdd }) {
-  const Icon = card.icon
-  return (
-    <button
-      onClick={onAdd}
-      className="text-left bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:border-gray-400 transition"
-    >
-      <div
-        className={
-          'aspect-square bg-gradient-to-br ' +
-          card.gradient +
-          ' flex items-center justify-center'
-        }
-      >
-        <Icon className="w-8 h-8 text-white" />
-      </div>
-      <div className="p-3">
-        <h3 className="text-xs font-medium text-gray-900 line-clamp-1">
-          {card.name}
-        </h3>
-        <div className="text-sm font-bold text-gray-900 mt-1">${card.price}</div>
-      </div>
-    </button>
   )
 }

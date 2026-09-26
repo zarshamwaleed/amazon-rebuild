@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Fragment, useEffect, useState } from 'react'
 import {
   Users,
   Plus,
@@ -11,7 +10,6 @@ import {
   AlertCircle,
   Edit,
   Save,
-  ArrowLeft,
   Mail,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
@@ -23,6 +21,11 @@ import {
   removeSellerUser,
   ROLE_TEMPLATES,
 } from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Button from '../../components/Button'
+import Input from '../../components/Input'
+import Badge from '../../components/Badge'
+import EmptyState from '../../components/EmptyState'
 
 const PERMISSION_KEYS = [
   { id: 'products', label: 'Products', desc: 'Create and edit listings' },
@@ -35,9 +38,16 @@ const PERMISSION_KEYS = [
 ]
 
 const STATUS_STYLES = {
-  active: { label: 'Active', cls: 'bg-green-100 text-green-800', icon: CheckCircle2 },
-  invited: { label: 'Invited', cls: 'bg-amber-100 text-amber-800', icon: Clock },
-  disabled: { label: 'Disabled', cls: 'bg-gray-100 text-gray-600', icon: AlertCircle },
+  active: { label: 'Active', color: 'green', icon: CheckCircle2 },
+  invited: { label: 'Invited', color: 'yellow', icon: Clock },
+  disabled: { label: 'Disabled', color: 'gray', icon: AlertCircle },
+}
+
+const ROLE_BADGE_COLORS = {
+  Administrator: 'blue',
+  Manager: 'green',
+  Employee: 'gray',
+  Analyst: 'gray',
 }
 
 export default function SellerUsers() {
@@ -95,7 +105,7 @@ export default function SellerUsers() {
   }
 
   function setRole(role) {
-    setEditDraft((d) => ({
+    setEditDraft(() => ({
       role,
       permissions: { ...ROLE_TEMPLATES[role] },
     }))
@@ -131,102 +141,84 @@ export default function SellerUsers() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <Link
-          to="/seller/settings"
-          className="p-2 hover:bg-white rounded border border-gray-200"
-          aria-label="Back to settings"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">User Permissions</h1>
-          <p className="text-sm text-gray-600">
-            Invite team members and control what they can access.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-4 py-2 rounded flex items-center gap-2 transition text-sm"
-        >
-          <Plus className="w-4 h-4" /> Invite user
-        </button>
-      </div>
+    <div className="space-y-6">
+      <SellerPageHeader
+        title="User Permissions"
+        description="Invite team members and control what they can access."
+        backTo="/seller/settings"
+        actions={
+          <Button onClick={() => setShowAdd(true)}>
+            <Plus className="w-4 h-4" /> Invite user
+          </Button>
+        }
+      />
 
       {/* Role template info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900">
-        <strong>Role templates:</strong> choosing a role applies a default
-        permission set which you can then customize per user. Roles:{' '}
-        <strong>Administrator</strong> · <strong>Manager</strong> ·{' '}
-        <strong>Employee</strong> · <strong>Analyst</strong>.
+      <div className="bg-info-50 border border-info-500/25 rounded-xl p-4 text-sm text-info-700">
+        <strong className="text-charcoal-800">Role templates:</strong> choosing a role applies a
+        default permission set which you can then customize per user. Roles:{' '}
+        <strong className="text-charcoal-800">Administrator</strong> ·{' '}
+        <strong className="text-charcoal-800">Manager</strong> ·{' '}
+        <strong className="text-charcoal-800">Employee</strong> ·{' '}
+        <strong className="text-charcoal-800">Analyst</strong>.
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-sm text-gray-600">
-            Loading team…
+          <div className="p-5 space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-12 rounded-lg skeleton-shimmer" />
+            ))}
           </div>
         ) : users.length === 0 ? (
-          <div className="p-12 text-center">
-            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              No team members yet
-            </h3>
-            <p className="text-sm text-gray-600 mb-5 max-w-md mx-auto">
-              Invite colleagues to help manage your store. Each user gets their
-              own login with scoped permissions.
-            </p>
-            <button
-              onClick={() => setShowAdd(true)}
-              className="inline-flex items-center gap-2 bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2.5 rounded"
-            >
-              <Plus className="w-4 h-4" /> Invite your first user
-            </button>
-          </div>
+          <EmptyState
+            icon={Users}
+            title="No team members yet"
+            message="Invite colleagues to help manage your store. Each user gets their own login with scoped permissions."
+            action={
+              <Button onClick={() => setShowAdd(true)}>
+                <Plus className="w-4 h-4" /> Invite your first user
+              </Button>
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="text-left px-5 py-3">User</th>
-                  <th className="text-left px-4 py-3">Email</th>
-                  <th className="text-left px-4 py-3">Role</th>
-                  <th className="text-center px-4 py-3">Status</th>
-                  <th className="text-right px-5 py-3">Actions</th>
+                  <th className="text-label text-left px-5 py-3">User</th>
+                  <th className="text-label text-left px-4 py-3">Email</th>
+                  <th className="text-label text-left px-4 py-3">Role</th>
+                  <th className="text-label text-center px-4 py-3">Status</th>
+                  <th className="text-label text-right px-5 py-3">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-stone-100">
                 {users.map((u) => {
                   const status = STATUS_STYLES[u.status] || STATUS_STYLES.active
                   const StatusIcon = status.icon
                   const editing = editingId === u.id
                   return (
-                    <>
+                    <Fragment key={u.id}>
                       <tr
-                        key={u.id}
-                        className={'border-t ' + (editing ? 'bg-orange-50/40' : 'hover:bg-gray-50')}
+                        className={'transition-avenzo ' + (editing ? 'bg-brass-50/50' : 'hover:bg-stone-50/60')}
                       >
-                        <td className="px-5 py-3">
+                        <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-[#232f3e] text-white flex items-center justify-center text-xs font-bold">
+                            <div className="w-9 h-9 rounded-full bg-charcoal-900 text-brass-300 flex items-center justify-center text-xs font-semibold flex-shrink-0">
                               {(u.full_name || u.email).charAt(0).toUpperCase()}
                             </div>
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {u.full_name || '—'}
-                              </div>
-                            </div>
+                            <div className="font-medium text-charcoal-900">{u.full_name || '—'}</div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-700">{u.email}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3.5 text-charcoal-600">{u.email}</td>
+                        <td className="px-4 py-3.5">
                           {editing ? (
                             <select
                               value={editDraft.role}
                               onChange={(e) => setRole(e.target.value)}
-                              className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                              className="border border-stone-300 bg-bone-50 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-brass-400 transition-avenzo"
                             >
                               <option>Administrator</option>
                               <option>Manager</option>
@@ -234,66 +226,64 @@ export default function SellerUsers() {
                               <option>Analyst</option>
                             </select>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 text-gray-900">
-                              <Shield className="w-3.5 h-3.5 text-gray-500" />
-                              {u.role}
-                            </span>
+                            <Badge color={ROLE_BADGE_COLORS[u.role] || 'gray'}>
+                              <Shield className="w-3 h-3" /> {u.role}
+                            </Badge>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3.5 text-center">
                           <button
                             onClick={() => toggleStatus(u)}
-                            className={
-                              'inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full transition hover:opacity-80 ' +
-                              status.cls
-                            }
+                            className="hover:opacity-80 transition-avenzo"
                             title="Click to toggle status"
                           >
-                            <StatusIcon className="w-3 h-3" /> {status.label}
+                            <Badge color={status.color}>
+                              <StatusIcon className="w-3 h-3" /> {status.label}
+                            </Badge>
                           </button>
                         </td>
-                        <td className="px-5 py-3 text-right">
+                        <td className="px-5 py-3.5 text-right">
                           {editing ? (
                             <div className="flex items-center justify-end gap-1">
                               <button
                                 onClick={() => saveEdit(u)}
-                                className="p-1.5 hover:bg-green-50 rounded"
+                                className="p-1.5 hover:bg-success-50 rounded-lg transition-avenzo"
                                 title="Save"
                               >
-                                <Save className="w-4 h-4 text-green-600" />
+                                <Save className="w-4 h-4 text-success-500" />
                               </button>
                               <button
                                 onClick={cancelEdit}
-                                className="p-1.5 hover:bg-gray-100 rounded"
+                                className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
                                 title="Cancel"
                               >
-                                <X className="w-4 h-4 text-gray-500" />
+                                <X className="w-4 h-4 text-charcoal-400" />
                               </button>
                             </div>
                           ) : (
                             <div className="flex items-center justify-end gap-1">
                               <button
                                 onClick={() => startEdit(u)}
-                                className="p-1.5 hover:bg-gray-100 rounded"
+                                className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
                                 title="Edit permissions"
                               >
-                                <Edit className="w-4 h-4 text-gray-600" />
+                                <Edit className="w-4 h-4 text-charcoal-500" />
                               </button>
                               <button
                                 onClick={() => handleRemove(u)}
-                                className="p-1.5 hover:bg-red-50 rounded"
+                                className="p-1.5 hover:bg-error-50 rounded-lg transition-avenzo"
                                 title="Remove"
                               >
-                                <Trash2 className="w-4 h-4 text-red-600" />
+                                <Trash2 className="w-4 h-4 text-error-500" />
                               </button>
                             </div>
                           )}
                         </td>
                       </tr>
                       {editing && (
-                        <tr key={u.id + '-edit'} className="bg-orange-50/40">
-                          <td colSpan={5} className="px-5 py-4 border-t">
-                            <div className="text-xs uppercase tracking-wider text-gray-500 mb-2">
+                        <tr className="bg-brass-50/50">
+                          <td colSpan={5} className="px-5 py-4 border-t border-stone-200">
+                            <div className="text-label mb-2">
                               Permissions for {u.full_name || u.email}
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -304,32 +294,24 @@ export default function SellerUsers() {
                                     key={p.id}
                                     onClick={() => togglePermission(p.id)}
                                     className={
-                                      'text-left p-3 rounded border transition ' +
+                                      'text-left p-3 rounded-lg border transition-avenzo ' +
                                       (checked
-                                        ? 'border-[#c7511f] bg-white'
-                                        : 'border-gray-200 bg-white hover:border-gray-400')
+                                        ? 'border-brass-400 bg-bone-50'
+                                        : 'border-stone-200 bg-bone-50 hover:border-stone-300')
                                     }
                                   >
                                     <div className="flex items-center gap-2 mb-0.5">
                                       <span
                                         className={
-                                          'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ' +
-                                          (checked
-                                            ? 'bg-[#c7511f] border-[#c7511f]'
-                                            : 'border-gray-300')
+                                          'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-avenzo ' +
+                                          (checked ? 'bg-brass-500 border-brass-500' : 'border-stone-300')
                                         }
                                       >
-                                        {checked && (
-                                          <CheckCircle2 className="w-3 h-3 text-white" />
-                                        )}
+                                        {checked && <CheckCircle2 className="w-3 h-3 text-bone-50" />}
                                       </span>
-                                      <span className="text-sm font-medium text-gray-900">
-                                        {p.label}
-                                      </span>
+                                      <span className="text-sm font-medium text-charcoal-900">{p.label}</span>
                                     </div>
-                                    <p className="text-xs text-gray-500 ml-6">
-                                      {p.desc}
-                                    </p>
+                                    <p className="text-xs text-charcoal-500 ml-6">{p.desc}</p>
                                   </button>
                                 )
                               })}
@@ -337,7 +319,7 @@ export default function SellerUsers() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   )
                 })}
               </tbody>
@@ -403,51 +385,36 @@ function AddUserModal({ onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-5 py-3 flex items-center justify-between">
-          <h2 className="font-bold text-gray-900">Invite team member</h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 rounded"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
+      <div className="absolute inset-0 bg-charcoal-900/50 backdrop-blur-[1px] animate-fade-in" onClick={onClose} />
+      <div className="relative bg-bone-50 rounded-xl shadow-lifted border border-stone-200 w-full max-w-xl max-h-[90vh] overflow-y-auto animate-scale-in">
+        <div className="sticky top-0 bg-bone-50 border-b border-stone-200 px-5 py-4 flex items-center justify-between">
+          <h2 className="heading-sub flex items-center gap-2">
+            <Mail className="w-4 h-4 text-charcoal-400" /> Invite team member
+          </h2>
+          <button onClick={onClose} className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo" aria-label="Close">
+            <X className="w-4 h-4 text-charcoal-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
           <div className="grid sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@company.com"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-1">
-                Full name
-              </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="e.g. Ali Khan"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              />
-            </div>
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@company.com"
+            />
+            <Input
+              label="Full name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="e.g. Ali Khan"
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              Role
-            </label>
+            <label className="block text-label mb-2">Role</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {Object.keys(ROLE_TEMPLATES).map((r) => (
                 <button
@@ -455,26 +422,23 @@ function AddUserModal({ onClose, onCreated }) {
                   type="button"
                   onClick={() => setRoleAndPerms(r)}
                   className={
-                    'text-sm px-3 py-2 rounded border text-center transition ' +
+                    'text-sm px-3 py-2 rounded-lg border text-center transition-avenzo ' +
                     (role === r
-                      ? 'border-[#c7511f] bg-orange-50 text-[#c7511f] font-medium'
-                      : 'border-gray-300 hover:border-gray-400')
+                      ? 'border-brass-400 bg-brass-50 text-brass-700 font-medium'
+                      : 'border-stone-300 hover:border-stone-400')
                   }
                 >
                   {r}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Choosing a role applies its default permissions. You can customize
-              them below.
+            <p className="text-caption mt-2">
+              Choosing a role applies its default permissions. You can customize them below.
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              Permissions
-            </label>
+            <label className="block text-label mb-2">Permissions</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PERMISSION_KEYS.map((p) => {
                 const checked = !!permissions[p.id]
@@ -484,28 +448,22 @@ function AddUserModal({ onClose, onCreated }) {
                     type="button"
                     onClick={() => togglePermission(p.id)}
                     className={
-                      'text-left p-3 rounded border transition ' +
-                      (checked
-                        ? 'border-[#c7511f] bg-orange-50'
-                        : 'border-gray-200 hover:border-gray-400 bg-white')
+                      'text-left p-3 rounded-lg border transition-avenzo ' +
+                      (checked ? 'border-brass-400 bg-brass-50' : 'border-stone-200 hover:border-stone-300 bg-bone-50')
                     }
                   >
                     <div className="flex items-center gap-2">
                       <span
                         className={
-                          'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ' +
-                          (checked
-                            ? 'bg-[#c7511f] border-[#c7511f]'
-                            : 'border-gray-300')
+                          'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-avenzo ' +
+                          (checked ? 'bg-brass-500 border-brass-500' : 'border-stone-300')
                         }
                       >
-                        {checked && <CheckCircle2 className="w-3 h-3 text-white" />}
+                        {checked && <CheckCircle2 className="w-3 h-3 text-bone-50" />}
                       </span>
-                      <span className="text-sm font-medium text-gray-900">
-                        {p.label}
-                      </span>
+                      <span className="text-sm font-medium text-charcoal-900">{p.label}</span>
                     </div>
-                    <p className="text-xs text-gray-500 ml-6 mt-0.5">{p.desc}</p>
+                    <p className="text-xs text-charcoal-500 ml-6 mt-0.5">{p.desc}</p>
                   </button>
                 )
               })}
@@ -513,26 +471,18 @@ function AddUserModal({ onClose, onCreated }) {
           </div>
 
           {error && (
-            <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            <div className="text-sm text-error-700 bg-error-50 border border-error-500/25 rounded-lg p-3">
               {error}
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-3 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
-            >
+          <div className="flex justify-end gap-3 pt-3 border-t border-stone-200">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded disabled:opacity-60 transition"
-            >
+            </Button>
+            <Button type="submit" loading={saving}>
               {saving ? 'Sending…' : 'Send invite'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

@@ -8,8 +8,6 @@ import {
   Truck,
   Package,
   DollarSign,
-  XCircle,
-  CheckCircle2,
   ArrowRight,
   Download,
   Settings as SettingsIcon,
@@ -18,6 +16,11 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { getSellerReturns, computeReturnsSummary } from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import SellerStatCard from '../../components/seller/SellerStatCard'
+import Button from '../../components/Button'
+import Badge from '../../components/Badge'
+import EmptyState from '../../components/EmptyState'
 
 const TABS = [
   { id: 'all', label: 'All Returns' },
@@ -32,15 +35,15 @@ const TABS = [
 ]
 
 const STATUS_META = {
-  requested: { label: 'Requested', cls: 'bg-blue-100 text-blue-800' },
-  pending_authorization: { label: 'Pending Authorization', cls: 'bg-amber-100 text-amber-800' },
-  authorized: { label: 'Authorized', cls: 'bg-blue-100 text-blue-800' },
-  return_in_transit: { label: 'In Transit', cls: 'bg-indigo-100 text-indigo-800' },
-  return_received: { label: 'Received', cls: 'bg-cyan-100 text-cyan-800' },
-  refund_pending: { label: 'Refund Pending', cls: 'bg-amber-100 text-amber-800' },
-  refunded: { label: 'Refunded', cls: 'bg-green-100 text-green-800' },
-  declined: { label: 'Declined', cls: 'bg-red-100 text-red-800' },
-  completed: { label: 'Completed', cls: 'bg-green-100 text-green-800' },
+  requested: { label: 'Requested', color: 'blue' },
+  pending_authorization: { label: 'Pending Authorization', color: 'yellow' },
+  authorized: { label: 'Authorized', color: 'blue' },
+  return_in_transit: { label: 'In Transit', color: 'blue' },
+  return_received: { label: 'Received', color: 'blue' },
+  refund_pending: { label: 'Refund Pending', color: 'yellow' },
+  refunded: { label: 'Refunded', color: 'green' },
+  declined: { label: 'Declined', color: 'red' },
+  completed: { label: 'Completed', color: 'green' },
 }
 
 function matchesTab(r, tab) {
@@ -73,7 +76,7 @@ export default function SellerReturns() {
       setLoading(true)
       const list = await getSellerReturns(user.id)
       setReturns(list)
-    } catch (err) {
+    } catch {
       pushToast('Could not load returns', { type: 'error' })
     } finally {
       setLoading(false)
@@ -136,75 +139,44 @@ export default function SellerReturns() {
   }
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Manage Seller-Fulfilled Returns
-          </h1>
-          <p className="text-sm text-gray-600">
-            Manage customer returns, refunds, and return requests.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleDownload}
-            className="border border-gray-300 bg-white hover:bg-gray-50 px-3 py-2 rounded text-sm flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" /> Report
-          </button>
-          <button
-            onClick={load}
-            className="border border-gray-300 bg-white hover:bg-gray-50 px-3 py-2 rounded text-sm flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <SellerPageHeader
+        title="Manage Seller-Fulfilled Returns"
+        description="Manage customer returns, refunds, and return requests."
+        actions={
+          <>
+            <Button variant="outline" size="md" onClick={handleDownload}>
+              <Download className="w-4 h-4" /> Report
+            </Button>
+            <Button variant="outline" size="md" onClick={load}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </>
+        }
+      />
 
       {/* Summary tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryTile
-          label="Pending Actions"
-          value={summary.pendingActions}
-          icon={Clock}
-          tone="amber"
-        />
-        <SummaryTile
-          label="In Transit"
-          value={summary.inTransit}
-          icon={Truck}
-          tone="blue"
-        />
-        <SummaryTile
-          label="Returns Received"
-          value={summary.received}
-          icon={Package}
-          tone="cyan"
-        />
-        <SummaryTile
-          label="Refunds Pending"
-          value={summary.refundPending}
-          icon={DollarSign}
-          tone="amber"
-        />
+        <SellerStatCard label="Pending Actions" value={summary.pendingActions} icon={Clock} />
+        <SellerStatCard label="In Transit" value={summary.inTransit} icon={Truck} />
+        <SellerStatCard label="Returns Received" value={summary.received} icon={Package} />
+        <SellerStatCard label="Refunds Pending" value={summary.refundPending} icon={DollarSign} />
       </div>
 
       {/* Search */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
-        <Search className="w-4 h-4 text-gray-400" />
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle p-4 flex flex-wrap items-center gap-3">
+        <Search className="w-4 h-4 text-charcoal-400 flex-shrink-0" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by RMA, Order ID, product, SKU, customer, or tracking..."
-          className="flex-1 text-sm focus:outline-none"
+          className="flex-1 min-w-[200px] text-sm bg-transparent text-charcoal-800 placeholder:text-charcoal-400 focus:outline-none"
         />
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b overflow-x-auto no-scrollbar">
+      <div className="flex gap-1 border-b border-stone-200 overflow-x-auto no-scrollbar">
         {TABS.map((t) => {
           const count = returns.filter((r) => matchesTab(r, t.id)).length
           return (
@@ -212,10 +184,10 @@ export default function SellerReturns() {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={
-                'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition flex items-center gap-2 ' +
+                'px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-avenzo flex items-center gap-2 ' +
                 (tab === t.id
-                  ? 'border-[#c7511f] text-[#c7511f]'
-                  : 'border-transparent text-gray-600 hover:text-gray-900')
+                  ? 'border-brass-500 text-charcoal-900'
+                  : 'border-transparent text-charcoal-500 hover:text-charcoal-800')
               }
             >
               {t.label}
@@ -223,9 +195,7 @@ export default function SellerReturns() {
                 <span
                   className={
                     'text-xs px-1.5 py-0.5 rounded-full ' +
-                    (tab === t.id
-                      ? 'bg-orange-100 text-[#c7511f]'
-                      : 'bg-gray-100 text-gray-600')
+                    (tab === t.id ? 'bg-brass-100 text-brass-700' : 'bg-stone-100 text-charcoal-600')
                   }
                 >
                   {count}
@@ -237,99 +207,91 @@ export default function SellerReturns() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-sm text-gray-600">
-            Loading returns…
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-14 rounded-lg skeleton-shimmer" />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
-          <EmptyState tab={tab} hasQuery={query.length > 0} />
+          <SellerReturnsEmpty tab={tab} hasQuery={query.length > 0} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="text-left px-5 py-3">Return ID</th>
-                  <th className="text-left px-4 py-3">Product</th>
-                  <th className="text-left px-4 py-3">Customer</th>
-                  <th className="text-left px-4 py-3">Reason</th>
-                  <th className="text-center px-4 py-3">Status</th>
-                  <th className="text-right px-4 py-3">Refund</th>
-                  <th className="text-right px-5 py-3"></th>
+                  <th className="text-label text-left px-5 py-3">Return ID</th>
+                  <th className="text-label text-left px-4 py-3">Product</th>
+                  <th className="text-label text-left px-4 py-3">Customer</th>
+                  <th className="text-label text-left px-4 py-3">Reason</th>
+                  <th className="text-label text-center px-4 py-3">Status</th>
+                  <th className="text-label text-right px-4 py-3">Refund</th>
+                  <th className="text-label text-right px-5 py-3"></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-stone-100">
                 {filtered.map((r) => {
-                  const status = STATUS_META[r.status] || {
-                    label: r.status,
-                    cls: 'bg-gray-100 text-gray-700',
-                  }
+                  const status = STATUS_META[r.status] || { label: r.status, color: 'gray' }
                   return (
                     <tr
                       key={r.id}
-                      className="border-t hover:bg-gray-50 cursor-pointer"
+                      className="hover:bg-stone-50/60 transition-avenzo cursor-pointer"
                       onClick={() => navigate(`/seller/orders/returns/${r.id}`)}
                     >
-                      <td className="px-5 py-3">
-                        <div className="font-mono text-xs text-gray-700">
+                      <td className="px-5 py-3.5">
+                        <div className="font-mono text-xs text-charcoal-700">
                           {r.rma || r.id.slice(0, 8)}
                         </div>
-                        <div className="text-xs text-gray-400 mt-0.5">
+                        <div className="text-xs text-charcoal-400 mt-0.5">
                           {new Date(r.requested_at).toLocaleDateString()}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
                           {r.product_image ? (
                             <img
                               src={r.product_image}
                               alt=""
-                              className="w-9 h-9 rounded object-cover border flex-shrink-0"
+                              className="w-9 h-9 rounded-lg object-cover border border-stone-200 flex-shrink-0"
                             />
                           ) : (
-                            <div className="w-9 h-9 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
-                              <Package className="w-4 h-4 text-gray-400" />
+                            <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center flex-shrink-0">
+                              <Package className="w-4 h-4 text-charcoal-400" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <div className="font-medium text-gray-900 truncate max-w-[220px]">
+                            <div className="font-medium text-charcoal-900 truncate max-w-[220px]">
                               {r.product_title}
                             </div>
                             {r.product_sku && (
-                              <div className="text-xs text-gray-500 font-mono">
+                              <div className="text-xs text-charcoal-500 font-mono">
                                 {r.product_sku}
                               </div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-700 text-sm">
+                      <td className="px-4 py-3.5 text-charcoal-700 text-sm">
                         {r.customer_name || '—'}
                       </td>
-                      <td className="px-4 py-3 text-gray-700 text-sm max-w-[180px] truncate">
+                      <td className="px-4 py-3.5 text-charcoal-700 text-sm max-w-[180px] truncate">
                         {r.return_reason || '—'}
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={
-                            'inline-block text-xs font-medium px-2 py-0.5 rounded-full ' +
-                            status.cls
-                          }
-                        >
-                          {status.label}
-                        </span>
+                      <td className="px-4 py-3.5 text-center">
+                        <Badge color={status.color}>{status.label}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3.5 text-right">
                         {Number(r.refund_amount) > 0 ? (
-                          <span className="font-medium text-green-700">
+                          <span className="font-medium text-success-700">
                             -${Number(r.refund_amount).toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400">—</span>
+                          <span className="text-xs text-charcoal-400">—</span>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-right">
-                        <span className="inline-flex items-center gap-1 text-[#007185] hover:text-[#c7511f] text-sm">
+                      <td className="px-5 py-3.5 text-right">
+                        <span className="inline-flex items-center gap-1 text-brass-600 hover:text-brass-700 text-sm font-medium">
                           View <ArrowRight className="w-3.5 h-3.5" />
                         </span>
                       </td>
@@ -343,16 +305,16 @@ export default function SellerReturns() {
       </div>
 
       {/* Footer links */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-4">
         <Link
           to="/seller/orders/returns/analytics"
-          className="text-sm text-[#007185] hover:text-[#c7511f] hover:underline flex items-center gap-1"
+          className="text-sm text-brass-600 hover:text-brass-700 font-medium flex items-center gap-1.5 transition-avenzo"
         >
           <BarChart3 className="w-4 h-4" /> Return Analytics
         </Link>
         <Link
           to="/seller/orders/returns/settings"
-          className="text-sm text-[#007185] hover:text-[#c7511f] hover:underline flex items-center gap-1"
+          className="text-sm text-brass-600 hover:text-brass-700 font-medium flex items-center gap-1.5 transition-avenzo"
         >
           <SettingsIcon className="w-4 h-4" /> Return Settings
         </Link>
@@ -361,24 +323,7 @@ export default function SellerReturns() {
   )
 }
 
-function SummaryTile({ label, value, icon: Icon, tone }) {
-  const toneCls = {
-    amber: 'border-amber-200 bg-amber-50 text-amber-900',
-    blue: 'border-blue-200 bg-blue-50 text-blue-900',
-    cyan: 'border-cyan-200 bg-cyan-50 text-cyan-900',
-  }[tone] || 'border-gray-200 bg-white text-gray-900'
-  return (
-    <div className={'border rounded-lg p-4 ' + toneCls}>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs uppercase tracking-wider opacity-70">{label}</span>
-        <Icon className="w-4 h-4 opacity-60" />
-      </div>
-      <div className="text-2xl font-bold">{value}</div>
-    </div>
-  )
-}
-
-function EmptyState({ tab, hasQuery }) {
+function SellerReturnsEmpty({ tab, hasQuery }) {
   const messages = {
     all: 'No returns yet. Returns will appear here when customers request them.',
     pending: 'No returns awaiting your action.',
@@ -391,14 +336,11 @@ function EmptyState({ tab, hasQuery }) {
     declined: 'No declined returns.',
   }
   return (
-    <div className="p-12 text-center">
-      <RotateCcw className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-      <h3 className="font-semibold text-gray-900 mb-1">
-        {hasQuery ? 'No returns match your search' : messages[tab]}
-      </h3>
-      {hasQuery && (
-        <p className="text-sm text-gray-600">Try a different keyword.</p>
-      )}
-    </div>
+    <EmptyState
+      icon={RotateCcw}
+      title={hasQuery ? 'No returns match your search' : messages[tab]}
+      message={hasQuery ? 'Try a different keyword.' : undefined}
+      className="border-0 rounded-none"
+    />
   )
 }

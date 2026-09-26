@@ -44,26 +44,26 @@ export default function PVSimple() {
   const Icon = cfg.icon
 
   return (
-    <div className="max-w-[1500px] mx-auto px-4 py-10">
+    <div className="max-w-[1500px] mx-auto px-4 py-10 animate-fade-in">
       <div className="flex items-center gap-4 mb-4">
-        <span className="w-14 h-14 rounded-full bg-[#00A8E1]/20 flex items-center justify-center">
-          <Icon className="w-7 h-7 text-[#00A8E1]" />
+        <span className="w-14 h-14 rounded-full bg-[var(--brass)]/15 flex items-center justify-center">
+          <Icon className="w-7 h-7 text-[var(--brass)]" />
         </span>
         <div>
-          <h1 className="text-3xl font-bold text-white">{cfg.title}</h1>
-          <p className="text-gray-400 text-sm">{cfg.description}</p>
+          <h1 className="font-display text-3xl font-medium text-[var(--bone)]">{cfg.title}</h1>
+          <p className="text-[var(--muted)] text-sm">{cfg.description}</p>
         </div>
       </div>
 
-      <p className="text-gray-300 text-sm mb-8 max-w-2xl">{cfg.blurb}</p>
+      <p className="text-[var(--bone)]/70 text-sm mb-8 max-w-2xl">{cfg.blurb}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {cfg.sections.map((s) => (
           <div
             key={s}
-            className="bg-[#1B2733] border border-white/5 rounded-md p-5 aspect-video flex items-center justify-center"
+            className="bg-[var(--surface)] border border-[var(--border)] rounded-md p-5 aspect-video flex items-center justify-center transition-avenzo hover:shadow-lifted hover:-translate-y-0.5 hover:border-[var(--brass)]/40"
           >
-            <span className="text-sm text-gray-400">{s}</span>
+            <span className="text-sm text-[var(--muted)]">{s}</span>
           </div>
         ))}
       </div>

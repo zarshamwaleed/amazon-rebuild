@@ -1,5 +1,6 @@
-﻿import { Link } from 'react-router-dom'
-import { Package, RefreshCw, CreditCard, MessageCircle, MapPin, Lock } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Package, RefreshCw, CreditCard, MessageCircle, MapPin, Lock, ChevronRight } from 'lucide-react'
+import Card from '../components/Card'
 
 const TOPICS = [
   { icon: Package, title: 'Track your package', text: 'View order status and delivery progress.', to: '/orders' },
@@ -10,68 +11,81 @@ const TOPICS = [
   { icon: MessageCircle, title: 'Contact us', text: 'Chat with a support agent (demo).', to: '/customer-service' },
 ]
 
+const FAQS = [
+  {
+    q: 'Where is my order?',
+    a: (
+      <>
+        Track your order from <Link to="/orders" className="text-brass-700 hover:underline">Your Orders</Link>.
+      </>
+    ),
+  },
+  {
+    q: 'How do I return an item?',
+    a: 'Open the order, choose the item, and select "Return or replace". Returns are free within 30 days.',
+  },
+  {
+    q: 'How do I change my shipping address?',
+    a: (
+      <>
+        Go to <Link to="/account" className="text-brass-700 hover:underline">Your Account</Link> or add a new
+        address during checkout.
+      </>
+    ),
+  },
+  {
+    q: 'Is my payment information secure?',
+    a: 'Yes. Payments in Amazon Rebuild are simulated; no real card data is collected or stored.',
+  },
+]
+
 export default function CustomerService() {
   return (
-    <div className="max-w-5xl mx-auto py-6">
-      <nav className="text-xs text-gray-600 mb-4">
-        <Link to="/" className="hover:underline">Home</Link>
-        <span className="mx-1">/</span>
-        <span className="text-gray-900">Customer Service</span>
+    <div>
+      <nav className="text-caption mb-4">
+        <Link to="/" className="hover:text-charcoal-700 hover:underline">Home</Link>
+        <span className="mx-1.5">/</span>
+        <span className="text-charcoal-700">Customer Service</span>
       </nav>
 
-      <div className="bg-[#232f3e] text-white rounded-lg p-6 md:p-10 mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">Hello, how can we help?</h1>
-        <p className="text-gray-200">
+      <div className="bg-charcoal-900 text-bone-50 rounded-xl p-6 md:p-10 mb-8 md:mb-10">
+        <h1 className="font-display text-display-sm md:text-display text-bone-50 mb-2">
+          Hello, how can we help?
+        </h1>
+        <p className="text-body-lg text-stone-300">
           Find answers to common questions or get in touch with our support team.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {TOPICS.map((t) => {
           const Icon = t.icon
           return (
-            <Link
-              key={t.title}
-              to={t.to}
-              className="bg-white border border-gray-200 rounded-md p-5 hover:shadow-md transition"
-            >
-              <Icon className="w-6 h-6 text-[#c7511f] mb-3" />
-              <h2 className="font-semibold text-gray-900 mb-1">{t.title}</h2>
-              <p className="text-sm text-gray-600">{t.text}</p>
+            <Link key={t.title} to={t.to} className="block">
+              <Card hoverable className="h-full">
+                <Icon className="w-6 h-6 text-brass-600 mb-3" strokeWidth={1.75} />
+                <h2 className="heading-sub mb-1">{t.title}</h2>
+                <p className="text-body-sm">{t.text}</p>
+              </Card>
             </Link>
           )
         })}
       </div>
 
-      <div className="mt-8 bg-white border border-gray-200 rounded-md p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-2">Frequently asked questions</h2>
-        <dl className="divide-y">
-          <div className="py-3">
-            <dt className="font-medium text-gray-900">Where is my order?</dt>
-            <dd className="text-sm text-gray-600 mt-1">
-              Track your order from <Link to="/orders" className="text-blue-600 hover:underline">Your Orders</Link>.
-            </dd>
-          </div>
-          <div className="py-3">
-            <dt className="font-medium text-gray-900">How do I return an item?</dt>
-            <dd className="text-sm text-gray-600 mt-1">
-              Open the order, choose the item, and select "Return or replace". Returns are free within 30 days.
-            </dd>
-          </div>
-          <div className="py-3">
-            <dt className="font-medium text-gray-900">How do I change my shipping address?</dt>
-            <dd className="text-sm text-gray-600 mt-1">
-              Go to <Link to="/account" className="text-blue-600 hover:underline">Your Account</Link> or add a new
-              address during checkout.
-            </dd>
-          </div>
-          <div className="py-3">
-            <dt className="font-medium text-gray-900">Is my payment information secure?</dt>
-            <dd className="text-sm text-gray-600 mt-1">
-              Yes. Payments in Amazon Rebuild are simulated; no real card data is collected or stored.
-            </dd>
-          </div>
-        </dl>
+      <div className="mt-8 md:mt-10">
+        <Card title="Frequently asked questions">
+          <dl className="divide-y divide-stone-200">
+            {FAQS.map((f) => (
+              <div key={f.q} className="py-4 first:pt-0 last:pb-0">
+                <dt className="flex items-center gap-1.5 font-medium text-charcoal-900">
+                  <ChevronRight className="w-3.5 h-3.5 text-brass-500 shrink-0" />
+                  {f.q}
+                </dt>
+                <dd className="text-body-sm mt-1.5 pl-5">{f.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
       </div>
     </div>
   )

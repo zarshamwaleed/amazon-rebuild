@@ -11,7 +11,9 @@ export function useRecentlyViewed(currentId) {
     try {
       const raw = localStorage.getItem(KEY)
       if (raw) setIds(JSON.parse(raw))
-    } catch {}
+    } catch {
+      /* ignore malformed/unavailable localStorage */
+    }
   }, [])
 
   // Track the current product
@@ -21,7 +23,9 @@ export function useRecentlyViewed(currentId) {
       const next = [currentId, ...prev.filter((id) => id !== currentId)].slice(0, MAX)
       try {
         localStorage.setItem(KEY, JSON.stringify(next))
-      } catch {}
+      } catch {
+        /* ignore unavailable localStorage */
+      }
       return next
     })
   }, [currentId])

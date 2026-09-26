@@ -1,4 +1,4 @@
-﻿import { CheckCircle, Circle } from 'lucide-react'
+import { Check } from 'lucide-react'
 
 const STEPS = [
   { id: 'order_placed', label: 'Order Placed', description: 'We received your order' },
@@ -9,47 +9,65 @@ const STEPS = [
 ]
 
 export default function OrderStatusTimeline({ status }) {
+  const cancelled = status === 'cancelled'
   const activeIndex = Math.max(0, STEPS.findIndex((s) => s.id === status))
 
   return (
     <ol className="relative">
       {STEPS.map((step, i) => {
-        const done = i <= activeIndex
-        const current = i === activeIndex
+        const done = !cancelled && i <= activeIndex
+        const current = !cancelled && i === activeIndex
         return (
-          <li key={step.id} className="flex gap-3 pb-6 last:pb-0 relative">
-            {/* Vertical line */}
+          <li key={step.id} className="flex gap-3.5 pb-7 last:pb-0 relative">
             {i < STEPS.length - 1 && (
               <span
                 className={
-                  'absolute left-[11px] top-6 bottom-0 w-0.5 ' +
-                  (i < activeIndex ? 'bg-green-600' : 'bg-gray-300')
+                  'absolute left-[13px] top-7 bottom-0 w-px ' +
+                  (i < activeIndex && !cancelled ? 'bg-brass-400' : 'bg-stone-200')
                 }
               />
             )}
-            {/* Icon */}
-            <span className="relative z-10 flex-shrink-0">
+            <span
+              className={
+                'relative z-10 flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-avenzo ' +
+                (done
+                  ? current
+                    ? 'bg-brass-400 border-brass-400 text-charcoal-900'
+                    : 'bg-charcoal-900 border-charcoal-900 text-bone-50'
+                  : 'bg-bone-50 border-stone-300 text-stone-300')
+              }
+            >
               {done ? (
-                <CheckCircle className={'w-6 h-6 ' + (current ? 'text-[#c7511f]' : 'text-green-600')} />
+                <Check className="w-3.5 h-3.5" strokeWidth={3} />
               ) : (
-                <Circle className="w-6 h-6 text-gray-300" />
+                <span className="w-1.5 h-1.5 rounded-full bg-current" />
               )}
             </span>
-            {/* Text */}
             <div className="pt-0.5">
               <div
                 className={
                   'text-sm font-medium ' +
-                  (current ? 'text-[#c7511f]' : done ? 'text-gray-900' : 'text-gray-500')
+                  (current ? 'text-charcoal-900' : done ? 'text-charcoal-800' : 'text-charcoal-400')
                 }
               >
                 {step.label}
               </div>
-              <div className="text-xs text-gray-500">{step.description}</div>
+              <div className="text-caption">{step.description}</div>
             </div>
           </li>
         )
       })}
+      {cancelled && (
+        <li className="flex gap-3.5 relative pt-1">
+          <span className="relative z-10 flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-error-50 border-2 border-error-500 text-error-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+          </span>
+          <div className="pt-0.5">
+            <div className="text-sm font-medium text-error-700">Cancelled</div>
+            <div className="text-caption">This order was cancelled</div>
+          </div>
+        </li>
+      )}
     </ol>
   )
 }

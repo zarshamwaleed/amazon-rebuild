@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   User,
@@ -11,22 +11,18 @@ import {
   PackageCheck,
   CreditCard,
   Receipt,
-  Plus,
-  Trash2,
   Save,
-  X,
   Shield,
+  Check,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import {
-  getSellerProfile,
-  updateSellerSettings,
-  getSellerUsers,
-  inviteSellerUser,
-  removeSellerUser,
-} from '../../services/sellerService'
+import { getSellerProfile, updateSellerSettings } from '../../services/sellerService'
 import { supabase } from '../../services/supabase'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Card from '../../components/Card'
+import Button from '../../components/Button'
+import Input from '../../components/Input'
 
 const SECTIONS = [
   { id: 'account', label: 'Account Information', icon: User },
@@ -42,11 +38,11 @@ const SECTIONS = [
 ]
 
 export default function SellerSettings() {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const { pushToast } = useToast()
 
   const [section, setSection] = useState('account')
-  const [seller, setSeller] = useState(null)
+  const [, setSeller] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({})
@@ -87,73 +83,77 @@ export default function SellerSettings() {
   }
 
   if (loading) {
-    return <div className="text-sm text-gray-600">Loading settings…</div>
+    return (
+      <div className="space-y-5">
+        <div className="h-10 w-48 rounded-lg skeleton-shimmer" />
+        <div className="grid lg:grid-cols-[220px_1fr] gap-6">
+          <div className="h-80 rounded-xl skeleton-shimmer" />
+          <div className="h-96 rounded-xl skeleton-shimmer" />
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-600">
-          Manage your seller account, preferences, and store options.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <SellerPageHeader
+        title="Settings"
+        description="Manage your seller account, preferences, and store options."
+      />
 
-      <div className="grid lg:grid-cols-[260px_1fr] gap-5">
+      <div className="grid lg:grid-cols-[220px_1fr] gap-6">
         {/* Sidebar nav */}
-        <aside className="bg-white border border-gray-200 rounded-lg overflow-hidden self-start">
-          <ul>
+        <Card padding="sm" className="self-start" hoverable={false}>
+          <nav className="space-y-1">
             {SECTIONS.map((s) => {
               const Icon = s.icon
               const active = section === s.id
               return (
-                <li key={s.id}>
-                  <button
-                    onClick={() => setSection(s.id)}
-                    className={
-                      'w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition border-l-4 ' +
-                      (active
-                        ? 'border-[#febd69] bg-orange-50 text-[#c7511f] font-medium'
-                        : 'border-transparent text-gray-700 hover:bg-gray-50')
-                    }
-                  >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    {s.label}
-                  </button>
-                </li>
+                <button
+                  key={s.id}
+                  onClick={() => setSection(s.id)}
+                  className={
+                    'w-full flex items-center gap-3 text-left px-3 py-2 rounded-lg text-sm font-medium transition-avenzo ' +
+                    (active
+                      ? 'bg-stone-100 text-charcoal-900'
+                      : 'text-charcoal-600 hover:bg-stone-50 hover:text-charcoal-900')
+                  }
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  {s.label}
+                </button>
               )
             })}
-          </ul>
-        </aside>
+          </nav>
+        </Card>
 
         {/* Right pane */}
-        <section className="bg-white border border-gray-200 rounded-lg p-6">
+        <div>
           {section === 'account' && (
             <AccountSection form={form} update={update} save={save} saving={saving} />
           )}
-          {section === 'security' && (
-            <SecuritySection user={user} pushToast={pushToast} />
-          )}
+          {section === 'security' && <SecuritySection user={user} pushToast={pushToast} />}
           {section === 'users' && (
-  <div>
-    <SectionHeader
-      title="User Permissions"
-      description="Manage who can access your seller account."
-    />
-    <div className="border rounded-lg p-6 text-center">
-      <Users className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-      <p className="text-sm text-gray-600 mb-4">
-        Full permission management is on a dedicated page.
-      </p>
-      <Link
-        to="/seller/settings/users"
-        className="inline-flex items-center gap-2 bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2.5 rounded"
-      >
-        Manage Users
-      </Link>
-    </div>
-  </div>
-)}
+            <Card
+              title="User Permissions"
+              subtitle="Manage who can access your seller account."
+            >
+              <div className="text-center py-6">
+                <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-charcoal-400" strokeWidth={1.5} />
+                </div>
+                <p className="text-body-sm mb-4">
+                  Full permission management is on a dedicated page.
+                </p>
+                <Link
+                  to="/seller/settings/users"
+                  className="inline-flex items-center justify-center h-10 px-4 rounded-lg text-sm font-medium bg-charcoal-900 text-bone-50 hover:bg-charcoal-800 transition-avenzo"
+                >
+                  Manage Users
+                </Link>
+              </div>
+            </Card>
+          )}
           {section === 'notifications' && (
             <NotificationsSection form={form} update={update} save={save} saving={saving} />
           )}
@@ -163,19 +163,15 @@ export default function SellerSettings() {
           {section === 'returns' && (
             <ReturnsSection form={form} update={update} save={save} saving={saving} />
           )}
-          {section === 'tax' && (
-            <TaxSection form={form} update={update} save={save} saving={saving} />
-          )}
+          {section === 'tax' && <TaxSection form={form} update={update} save={save} saving={saving} />}
           {section === 'fulfillment' && (
             <FulfillmentSection form={form} update={update} save={save} saving={saving} />
           )}
           {section === 'payments' && (
             <PaymentsSection form={form} update={update} save={save} saving={saving} />
           )}
-          {section === 'plan' && (
-            <PlanSection form={form} save={save} saving={saving} />
-          )}
-        </section>
+          {section === 'plan' && <PlanSection form={form} save={save} saving={saving} />}
+        </div>
       </div>
     </div>
   )
@@ -185,97 +181,81 @@ export default function SellerSettings() {
    Sections
    ============================================================ */
 
-function SectionHeader({ title, description }) {
+function SectionCard({ title, description, children, onSave, saving, saveLabel = 'Save changes' }) {
   return (
-    <div className="pb-4 border-b mb-5">
-      <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-      {description && (
-        <p className="text-sm text-gray-600 mt-1">{description}</p>
-      )}
-    </div>
-  )
-}
-
-function Field({ label, children, hint }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-800 mb-1">
-        {label}
-      </label>
+    <Card
+      title={title}
+      subtitle={description}
+      footer={
+        onSave ? (
+          <div className="flex justify-end">
+            <Button onClick={onSave} loading={saving}>
+              <Save className="w-4 h-4" /> {saving ? 'Saving…' : saveLabel}
+            </Button>
+          </div>
+        ) : undefined
+      }
+    >
       {children}
-      {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
-    </div>
+    </Card>
   )
 }
 
-function SaveRow({ onClick, saving, label = 'Save changes' }) {
+function SelectField({ label, hint, className = '', ...props }) {
   return (
-    <div className="flex justify-end pt-5 border-t mt-6">
-      <button
-        onClick={onClick}
-        disabled={saving}
-        className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded flex items-center gap-2 disabled:opacity-60 transition"
-      >
-        <Save className="w-4 h-4" />
-        {saving ? 'Saving…' : label}
-      </button>
+    <div className="w-full">
+      {label && <label className="block text-label mb-1.5">{label}</label>}
+      <select
+        className={
+          'w-full rounded-lg border border-stone-300 bg-bone-50 px-3.5 py-2.5 text-sm text-charcoal-900 ' +
+          'transition-avenzo focus:outline-none focus:border-brass-400 ' +
+          className
+        }
+        {...props}
+      />
+      {hint && <p className="text-caption mt-1.5">{hint}</p>}
     </div>
   )
 }
 
 function AccountSection({ form, update, save, saving }) {
   return (
-    <>
-      <SectionHeader
-        title="Account Information"
-        description="Your business details and contact information."
-      />
+    <SectionCard
+      title="Account Information"
+      description="Your business details and contact information."
+      onSave={() => save()}
+      saving={saving}
+    >
       <div className="space-y-4">
-        <Field label="Store name">
-          <input
-            type="text"
-            value={form.store_name || ''}
-            onChange={(e) => update('store_name', e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          />
-        </Field>
-        <Field label="Full name">
-          <input
-            type="text"
-            value={form.full_name || ''}
-            onChange={(e) => update('full_name', e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          />
-        </Field>
+        <Input
+          label="Store name"
+          value={form.store_name || ''}
+          onChange={(e) => update('store_name', e.target.value)}
+        />
+        <Input
+          label="Full name"
+          value={form.full_name || ''}
+          onChange={(e) => update('full_name', e.target.value)}
+        />
         <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Business name">
-            <input
-              type="text"
-              value={form.business_name || ''}
-              onChange={(e) => update('business_name', e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
-          </Field>
-          <Field label="Business phone">
-            <input
-              type="text"
-              value={form.business_phone || ''}
-              onChange={(e) => update('business_phone', e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
-          </Field>
-        </div>
-        <Field label="Business address">
-          <input
-            type="text"
-            value={form.business_address || ''}
-            onChange={(e) => update('business_address', e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+          <Input
+            label="Business name"
+            value={form.business_name || ''}
+            onChange={(e) => update('business_name', e.target.value)}
           />
-        </Field>
+          <Input
+            label="Business phone"
+            value={form.business_phone || ''}
+            onChange={(e) => update('business_phone', e.target.value)}
+          />
+        </div>
+        <Input
+          label="Business address"
+          value={form.business_address || ''}
+          onChange={(e) => update('business_address', e.target.value)}
+        />
       </div>
-      <SaveRow onClick={() => save()} saving={saving} />
-    </>
+    </SectionCard>
   )
 }
 
@@ -287,8 +267,7 @@ function SecuritySection({ user, pushToast }) {
   async function changePassword() {
     if (newPassword.length < 6)
       return pushToast('Password must be at least 6 characters', { type: 'error' })
-    if (newPassword !== confirm)
-      return pushToast('Passwords do not match', { type: 'error' })
+    if (newPassword !== confirm) return pushToast('Passwords do not match', { type: 'error' })
 
     setBusy(true)
     try {
@@ -305,275 +284,42 @@ function SecuritySection({ user, pushToast }) {
   }
 
   return (
-    <>
-      <SectionHeader
-        title="Login & Security"
-        description="Manage your login credentials and account security."
-      />
+    <Card title="Login & Security" subtitle="Manage your login credentials and account security.">
+      <div className="space-y-5">
+        <Input label="Email" type="email" value={user?.email || ''} disabled hint="Email cannot be changed here." />
 
-      <div className="space-y-4">
-        <Field label="Email">
-          <input
-            type="email"
-            value={user?.email || ''}
-            disabled
-            className="w-full border border-gray-200 rounded px-3 py-2 text-sm bg-gray-50 text-gray-600"
-          />
-          <p className="text-xs text-gray-500 mt-1">Email cannot be changed here.</p>
-        </Field>
-
-        <div className="border-t pt-5">
-          <h3 className="font-medium text-gray-900 mb-3">Change password</h3>
+        <div className="border-t border-stone-200 pt-5">
+          <h3 className="heading-sub mb-3">Change password</h3>
           <div className="space-y-3 max-w-md">
-            <Field label="New password">
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              />
-            </Field>
-            <Field label="Confirm new password">
-              <input
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              />
-            </Field>
-            <button
-              onClick={changePassword}
-              disabled={busy || !newPassword}
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-4 py-2 rounded text-sm disabled:opacity-60 transition"
-            >
+            <Input
+              label="New password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+            <Input
+              label="Confirm new password"
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
+            <Button size="sm" onClick={changePassword} loading={busy} disabled={!newPassword}>
               {busy ? 'Updating…' : 'Update password'}
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="border-t pt-5">
-          <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-green-600" /> Two-step verification
+        <div className="border-t border-stone-200 pt-5">
+          <h3 className="heading-sub mb-2 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-success-500" /> Two-step verification
           </h3>
-          <p className="text-sm text-gray-600">
-            Not available in this demo. In production this would enable SMS or
-            authenticator-app verification.
+          <p className="text-body-sm">
+            Not available in this demo. In production this would enable SMS or authenticator-app
+            verification.
           </p>
         </div>
       </div>
-    </>
-  )
-}
-
-function UsersSection({ userId, pushToast }) {
-  const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showAdd, setShowAdd] = useState(false)
-
-  async function load() {
-    try {
-      setLoading(true)
-      const u = await getSellerUsers(userId)
-      setUsers(u)
-    } catch {
-      pushToast('Could not load team', { type: 'error' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    load()
-  }, [userId])
-
-  async function handleRemove(id, email) {
-    if (!confirm('Remove ' + email + ' from your team?')) return
-    try {
-      await removeSellerUser(userId, id)
-      pushToast('Member removed', { type: 'info' })
-      load()
-    } catch {
-      pushToast('Could not remove member', { type: 'error' })
-    }
-  }
-
-  return (
-    <>
-      <SectionHeader
-        title="User Permissions"
-        description="Invite team members and manage their access."
-      />
-
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setShowAdd(true)}
-          className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-4 py-2 rounded flex items-center gap-2 text-sm transition"
-        >
-          <Plus className="w-4 h-4" /> Invite user
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="text-sm text-gray-600">Loading team…</div>
-      ) : users.length === 0 ? (
-        <div className="text-sm text-gray-600 border border-dashed rounded p-6 text-center">
-          No team members yet. Invite someone to get started.
-        </div>
-      ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-              <tr>
-                <th className="text-left px-4 py-3">Name</th>
-                <th className="text-left px-4 py-3">Email</th>
-                <th className="text-left px-4 py-3">Role</th>
-                <th className="text-center px-4 py-3">Status</th>
-                <th className="text-right px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-t">
-                  <td className="px-4 py-3 text-gray-900">
-                    {u.full_name || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700">{u.email}</td>
-                  <td className="px-4 py-3 text-gray-700">{u.role}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span
-                      className={
-                        'text-xs font-medium px-2 py-0.5 rounded-full ' +
-                        (u.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : u.status === 'invited'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-gray-100 text-gray-600')
-                      }
-                    >
-                      {u.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleRemove(u.id, u.email)}
-                      className="p-1.5 hover:bg-red-50 rounded"
-                      title="Remove"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {showAdd && (
-        <AddUserModal
-          userId={userId}
-          onClose={() => setShowAdd(false)}
-          onCreated={() => {
-            setShowAdd(false)
-            load()
-          }}
-        />
-      )}
-    </>
-  )
-}
-
-function AddUserModal({ userId, onClose, onCreated }) {
-  const { pushToast } = useToast()
-  const [email, setEmail] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [role, setRole] = useState('Employee')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    if (!email.trim()) return setError('Email is required')
-    setSaving(true)
-    setError(null)
-    try {
-      await inviteSellerUser(userId, { email: email.trim(), full_name: fullName.trim(), role })
-      pushToast('Invitation sent', { type: 'success' })
-      onCreated()
-    } catch (err) {
-      setError(err.message || 'Could not invite user')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="border-b px-5 py-3 flex items-center justify-between">
-          <h2 className="font-bold text-gray-900">Invite user</h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 rounded"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <Field label="Email">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
-          </Field>
-          <Field label="Full name">
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
-          </Field>
-          <Field label="Role">
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-            >
-              <option>Administrator</option>
-              <option>Manager</option>
-              <option>Employee</option>
-              <option>Analyst</option>
-            </select>
-          </Field>
-          {error && (
-            <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-              {error}
-            </div>
-          )}
-          <div className="flex justify-end gap-3 pt-3 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded disabled:opacity-60 transition"
-            >
-              {saving ? 'Sending…' : 'Send invite'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    </Card>
   )
 }
 
@@ -595,36 +341,33 @@ function NotificationsSection({ form, update, save, saving }) {
   }
 
   return (
-    <>
-      <SectionHeader
-        title="Notification Preferences"
-        description="Choose which alerts you want to receive."
-      />
-
-      <ul className="divide-y">
+    <SectionCard
+      title="Notification Preferences"
+      description="Choose which alerts you want to receive."
+      onSave={() => save()}
+      saving={saving}
+    >
+      <ul className="divide-y divide-stone-100">
         {TOGGLES.map((t) => {
           const checked = prefs[t.id] !== false
           return (
-            <li
-              key={t.id}
-              className="flex items-center justify-between gap-4 py-3"
-            >
+            <li key={t.id} className="flex items-center justify-between gap-4 py-3.5 first:pt-0 last:pb-0">
               <div>
-                <div className="font-medium text-gray-900 text-sm">{t.label}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{t.desc}</div>
+                <div className="text-sm font-medium text-charcoal-900">{t.label}</div>
+                <div className="text-xs text-charcoal-500 mt-0.5">{t.desc}</div>
               </div>
               <button
                 type="button"
                 onClick={() => toggle(t.id)}
                 className={
-                  'relative inline-flex h-6 w-11 rounded-full transition-colors flex-shrink-0 ' +
-                  (checked ? 'bg-[#c7511f]' : 'bg-gray-300')
+                  'relative inline-flex h-6 w-11 rounded-full transition-avenzo flex-shrink-0 ' +
+                  (checked ? 'bg-brass-500' : 'bg-stone-300')
                 }
                 aria-pressed={checked}
               >
                 <span
                   className={
-                    'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ' +
+                    'absolute top-0.5 left-0.5 w-5 h-5 bg-bone-50 rounded-full shadow-subtle transition-avenzo ' +
                     (checked ? 'translate-x-5' : '')
                   }
                 />
@@ -633,151 +376,129 @@ function NotificationsSection({ form, update, save, saving }) {
           )
         })}
       </ul>
-
-      <SaveRow onClick={() => save()} saving={saving} />
-    </>
+    </SectionCard>
   )
 }
 
 function ShippingSection({ form, update, save, saving }) {
   return (
-    <>
-      <SectionHeader
-        title="Shipping Settings"
-        description="Defaults for order handling and carrier selection."
-      />
+    <SectionCard
+      title="Shipping Settings"
+      description="Defaults for order handling and carrier selection."
+      onSave={() => save()}
+      saving={saving}
+    >
       <div className="space-y-4 max-w-lg">
-        <Field
+        <SelectField
           label="Default carrier"
           hint="Used when you print labels from Seller Central."
+          value={form.default_carrier || 'Amazon Logistics'}
+          onChange={(e) => update('default_carrier', e.target.value)}
         >
-          <select
-            value={form.default_carrier || 'Amazon Logistics'}
-            onChange={(e) => update('default_carrier', e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          >
-            <option>Amazon Logistics</option>
-            <option>USPS</option>
-            <option>UPS</option>
-            <option>FedEx</option>
-            <option>DHL</option>
-          </select>
-        </Field>
-        <Field
+          <option>Amazon Logistics</option>
+          <option>USPS</option>
+          <option>UPS</option>
+          <option>FedEx</option>
+          <option>DHL</option>
+        </SelectField>
+        <Input
           label="Default handling time (days)"
           hint="Business days between order receipt and shipment."
-        >
-          <input
-            type="number"
-            value={form.handling_time ?? 2}
-            onChange={(e) => update('handling_time', Number(e.target.value))}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          />
-        </Field>
+          type="number"
+          value={form.handling_time ?? 2}
+          onChange={(e) => update('handling_time', Number(e.target.value))}
+        />
       </div>
-      <SaveRow onClick={() => save()} saving={saving} />
-    </>
+    </SectionCard>
   )
 }
 
 function ReturnsSection({ form, update, save, saving }) {
   return (
-    <>
-      <SectionHeader
-        title="Return Settings"
-        description="How and when you accept returns."
-      />
+    <SectionCard
+      title="Return Settings"
+      description="How and when you accept returns."
+      onSave={() => save()}
+      saving={saving}
+    >
       <div className="space-y-4 max-w-lg">
-        <Field
+        <Input
           label="Return window (days)"
           hint="Number of days customers have to return an item."
+          type="number"
+          value={form.return_window_days ?? 30}
+          onChange={(e) => update('return_window_days', Number(e.target.value))}
+        />
+        <SelectField
+          label="Who pays return shipping"
+          value={form.return_shipping_paid_by || 'seller'}
+          onChange={(e) => update('return_shipping_paid_by', e.target.value)}
         >
-          <input
-            type="number"
-            value={form.return_window_days ?? 30}
-            onChange={(e) => update('return_window_days', Number(e.target.value))}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          />
-        </Field>
-        <Field label="Who pays return shipping">
-          <select
-            value={form.return_shipping_paid_by || 'seller'}
-            onChange={(e) => update('return_shipping_paid_by', e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          >
-            <option value="seller">Seller pays</option>
-            <option value="customer">Customer pays</option>
-            <option value="split">Split / case-by-case</option>
-          </select>
-        </Field>
+          <option value="seller">Seller pays</option>
+          <option value="customer">Customer pays</option>
+          <option value="split">Split / case-by-case</option>
+        </SelectField>
       </div>
-      <SaveRow onClick={() => save()} saving={saving} />
-    </>
+    </SectionCard>
   )
 }
 
 function TaxSection({ form, update, save, saving }) {
   return (
-    <>
-      <SectionHeader
-        title="Tax Settings"
-        description="Tax IDs and default sales tax rate (demo)."
-      />
+    <SectionCard
+      title="Tax Settings"
+      description="Tax IDs and default sales tax rate (demo)."
+      onSave={() => save()}
+      saving={saving}
+    >
       <div className="space-y-4 max-w-lg">
-        <Field label="Tax ID" hint="Your business tax identification number.">
-          <input
-            type="text"
-            value={form.tax_id || ''}
-            onChange={(e) => update('tax_id', e.target.value)}
-            placeholder="e.g. 123-45-6789"
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          />
-        </Field>
-        <Field
+        <Input
+          label="Tax ID"
+          hint="Your business tax identification number."
+          value={form.tax_id || ''}
+          onChange={(e) => update('tax_id', e.target.value)}
+          placeholder="e.g. 123-45-6789"
+        />
+        <Input
           label="Default tax rate (%)"
           hint="Applied to customer orders by default. Simulated in this demo."
-        >
-          <input
-            type="number"
-            step="0.01"
-            value={form.tax_rate ?? 0}
-            onChange={(e) => update('tax_rate', Number(e.target.value))}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          />
-        </Field>
-        <div className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded p-3">
-          Tax filing, remittance, and jurisdictional calculations are <strong>simulated</strong> in this demo.
+          type="number"
+          step="0.01"
+          value={form.tax_rate ?? 0}
+          onChange={(e) => update('tax_rate', Number(e.target.value))}
+        />
+        <div className="text-xs text-charcoal-500 bg-stone-50 border border-stone-200 rounded-lg p-3">
+          Tax filing, remittance, and jurisdictional calculations are{' '}
+          <strong className="text-charcoal-700">simulated</strong> in this demo.
         </div>
       </div>
-      <SaveRow onClick={() => save()} saving={saving} />
-    </>
+    </SectionCard>
   )
 }
 
 function FulfillmentSection({ form, update, save, saving }) {
   const value = form.default_fulfillment || 'FBM'
   return (
-    <>
-      <SectionHeader
-        title="Fulfillment Settings"
-        description="Default fulfillment method for new products."
-      />
+    <SectionCard
+      title="Fulfillment Settings"
+      description="Default fulfillment method for new products."
+      onSave={() => save()}
+      saving={saving}
+    >
       <div className="grid sm:grid-cols-2 gap-3 max-w-2xl">
         {['FBM', 'FBA'].map((m) => (
           <button
             key={m}
             onClick={() => update('default_fulfillment', m)}
             className={
-              'text-left border-2 rounded-lg p-4 transition ' +
-              (value === m
-                ? 'border-[#c7511f] bg-orange-50'
-                : 'border-gray-200 hover:border-gray-400')
+              'text-left border-2 rounded-xl p-4 transition-avenzo ' +
+              (value === m ? 'border-brass-400 bg-brass-50' : 'border-stone-200 hover:border-stone-300')
             }
           >
-            <div className="font-bold text-gray-900">
+            <div className="font-medium text-charcoal-900">
               {m === 'FBA' ? 'Fulfillment by Amazon (FBA)' : 'Fulfilled by Merchant (FBM)'}
             </div>
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-charcoal-500 mt-1">
               {m === 'FBA'
                 ? 'Amazon stores, packs, and ships your products.'
                 : 'You handle storage, packing, and shipping.'}
@@ -785,66 +506,53 @@ function FulfillmentSection({ form, update, save, saving }) {
           </button>
         ))}
       </div>
-      <SaveRow onClick={() => save()} saving={saving} />
-    </>
+    </SectionCard>
   )
 }
 
 function PaymentsSection({ form, update, save, saving }) {
   return (
-    <>
-      <SectionHeader
-        title="Payment Settings"
-        description="Payout schedule and deposit account."
-      />
+    <SectionCard
+      title="Payment Settings"
+      description="Payout schedule and deposit account."
+      onSave={() => save()}
+      saving={saving}
+    >
       <div className="space-y-4 max-w-lg">
-        <Field label="Payout schedule">
-          <select
-            value={form.payout_schedule || 'biweekly'}
-            onChange={(e) => update('payout_schedule', e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="biweekly">Every 14 days</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </Field>
+        <SelectField
+          label="Payout schedule"
+          value={form.payout_schedule || 'biweekly'}
+          onChange={(e) => update('payout_schedule', e.target.value)}
+        >
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every 14 days</option>
+          <option value="monthly">Monthly</option>
+        </SelectField>
 
-        <Field
+        <Input
           label="Bank account (last 4 digits)"
           hint="Full account numbers are never stored in this demo."
-        >
-          <input
-            type="text"
-            maxLength={4}
-            value={form.bank_last4 || ''}
-            onChange={(e) =>
-              update('bank_last4', e.target.value.replace(/\D/g, ''))
-            }
-            placeholder="••••"
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          />
-        </Field>
+          maxLength={4}
+          value={form.bank_last4 || ''}
+          onChange={(e) => update('bank_last4', e.target.value.replace(/\D/g, ''))}
+          placeholder="••••"
+        />
 
-        <div className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded p-3">
-          All payouts and deposits are <strong>simulated</strong>. No real funds move.
+        <div className="text-xs text-charcoal-500 bg-stone-50 border border-stone-200 rounded-lg p-3">
+          All payouts and deposits are <strong className="text-charcoal-700">simulated</strong>. No real
+          funds move.
         </div>
       </div>
-      <SaveRow onClick={() => save()} saving={saving} />
-    </>
+    </SectionCard>
   )
 }
 
 function PlanSection({ form, save, saving }) {
   const current = form.plan || 'individual'
   return (
-    <>
-      <SectionHeader
-        title="Selling Plan"
-        description="Choose the plan that fits your business."
-      />
-      <div className="grid sm:grid-cols-2 gap-4 max-w-3xl">
+    <Card title="Selling Plan" subtitle="Choose the plan that fits your business.">
+      <div className="grid sm:grid-cols-2 gap-4">
         {[
           {
             id: 'individual',
@@ -858,7 +566,13 @@ function PlanSection({ form, save, saving }) {
             label: 'Professional',
             price: '$39.99',
             unit: 'per month',
-            features: ['Bulk listing', 'Advanced reports', 'Advertising', 'Automate Pricing', 'Advanced tools'],
+            features: [
+              'Bulk listing',
+              'Advanced reports',
+              'Advertising',
+              'Automate Pricing',
+              'Advanced tools',
+            ],
           },
         ].map((p) => {
           const active = current === p.id
@@ -866,46 +580,41 @@ function PlanSection({ form, save, saving }) {
             <div
               key={p.id}
               className={
-                'border-2 rounded-lg p-6 flex flex-col ' +
-                (active ? 'border-[#c7511f] bg-orange-50' : 'border-gray-200')
+                'border-2 rounded-xl p-6 flex flex-col transition-avenzo ' +
+                (active ? 'border-brass-400 bg-brass-50' : 'border-stone-200')
               }
             >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-gray-900 text-lg">{p.label}</h3>
+                <h3 className="heading-sub text-lg">{p.label}</h3>
                 {active && (
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#c7511f] text-white">
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-charcoal-900 text-bone-50">
                     CURRENT
                   </span>
                 )}
               </div>
               <div className="my-3">
-                <span className="text-3xl font-bold text-gray-900">{p.price}</span>
-                <span className="text-gray-600 ml-2 text-sm">{p.unit}</span>
+                <span className="font-display text-3xl text-charcoal-900">{p.price}</span>
+                <span className="text-charcoal-500 ml-2 text-sm">{p.unit}</span>
               </div>
-              <ul className="space-y-1.5 text-sm text-gray-700 mb-5 flex-1">
+              <ul className="space-y-1.5 text-sm text-charcoal-700 mb-5 flex-1">
                 {p.features.map((f) => (
                   <li key={f} className="flex gap-2">
-                    <span className="text-green-600">✓</span>
+                    <Check className="w-4 h-4 text-success-500 flex-shrink-0 mt-0.5" />
                     {f}
                   </li>
                 ))}
               </ul>
-              <button
+              <Button
+                variant={active ? 'outline' : 'primary'}
                 disabled={active || saving}
                 onClick={() => save({ plan: p.id })}
-                className={
-                  'font-medium py-2 rounded transition ' +
-                  (active
-                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                    : 'bg-[#febd69] hover:bg-[#f3a847] text-gray-900')
-                }
               >
                 {active ? 'Current plan' : 'Switch to ' + p.label}
-              </button>
+              </Button>
             </div>
           )
         })}
       </div>
-    </>
+    </Card>
   )
 }

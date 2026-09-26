@@ -53,7 +53,9 @@ export function CouponsProvider({ children }) {
     if (!ready || user || authLoading) return
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(clippedIds))
-    } catch {}
+    } catch {
+      /* ignore unavailable localStorage */
+    }
   }, [clippedIds, ready, user, authLoading])
 
   function isClipped(couponId) {

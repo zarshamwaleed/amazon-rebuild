@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import {
-  ArrowLeft,
   Bot,
   TrendingUp,
   Calculator,
@@ -17,6 +16,10 @@ import {
   Users,
 } from 'lucide-react'
 import { useToast } from '../../../context/ToastContext'
+import SellerPageHeader from '../../../components/seller/SellerPageHeader'
+import Card from '../../../components/Card'
+import Badge from '../../../components/Badge'
+import Button from '../../../components/Button'
 
 const TOOLS = [
   {
@@ -144,8 +147,7 @@ const TOOLS = [
     id: 'coupon-manager',
     name: 'Coupon Manager',
     category: 'Marketing',
-    description:
-      'Create and manage discount coupons. Set budgets, dates, and eligibility rules.',
+    description: 'Create and manage discount coupons. Set budgets, dates, and eligibility rules.',
     icon: Zap,
     color: 'from-orange-500 to-red-500',
     to: '/seller/coupons',
@@ -155,8 +157,7 @@ const TOOLS = [
     id: 'business-reports',
     name: 'Business Reports',
     category: 'Analytics',
-    description:
-      'Detailed sales, traffic, and conversion reports with custom date ranges and CSV export.',
+    description: 'Detailed sales, traffic, and conversion reports with custom date ranges and CSV export.',
     icon: FileText,
     color: 'from-indigo-500 to-purple-600',
     to: '/seller/reports',
@@ -166,8 +167,7 @@ const TOOLS = [
     id: 'team-management',
     name: 'Team Management',
     category: 'Account',
-    description:
-      'Invite team members, assign roles, and control permissions across your seller account.',
+    description: 'Invite team members, assign roles, and control permissions across your seller account.',
     icon: Users,
     color: 'from-blue-600 to-cyan-500',
     to: '/seller/settings/users',
@@ -188,31 +188,17 @@ export default function AmazonTools() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <Link
-          to="/seller/apps-services"
-          className="p-2 hover:bg-white rounded border border-gray-200"
-          aria-label="Back"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">Amazon Tools</h1>
-          <p className="text-sm text-gray-600">
-            Free tools provided by Amazon to help you run and grow your business.
-          </p>
-        </div>
-      </div>
+      <SellerPageHeader
+        title="Amazon Tools"
+        description="Free tools provided by Amazon to help you run and grow your business."
+        backTo="/seller/apps-services"
+      />
 
       {/* Info banner */}
-      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-sm text-orange-900">
-        These tools are included with your seller account — no additional cost.
-        They complement the third-party apps available in the{' '}
-        <Link
-          to="/seller/apps-services/appstore"
-          className="font-medium underline hover:no-underline"
-        >
+      <div className="bg-brass-50 border border-brass-200 rounded-xl p-4 text-sm text-brass-800">
+        These tools are included with your seller account — no additional cost. They complement the third-party
+        apps available in the{' '}
+        <Link to="/seller/apps-services/appstore" className="font-medium underline hover:no-underline">
           Selling Partner Appstore
         </Link>
         .
@@ -224,68 +210,41 @@ export default function AmazonTools() {
           const Icon = tool.icon
           const isLive = Boolean(tool.to)
           return (
-            <button
-              key={tool.id}
-              onClick={() => openTool(tool)}
-              className={
-                'text-left bg-white border border-gray-200 rounded-lg p-5 flex flex-col hover:shadow-md hover:border-gray-400 transition ' +
-                (isLive ? '' : 'opacity-90')
-              }
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div
-                  className={
-                    'w-11 h-11 rounded-lg bg-gradient-to-br ' +
-                    tool.color +
-                    ' flex items-center justify-center flex-shrink-0'
-                  }
-                >
-                  <Icon className="w-5 h-5 text-white" />
+            <button key={tool.id} onClick={() => openTool(tool)} className="text-left">
+              <Card hoverable className={'h-full flex flex-col ' + (isLive ? '' : 'opacity-90')}>
+                <div className="flex items-start justify-between mb-3">
+                  <div
+                    className={
+                      'w-11 h-11 rounded-lg bg-gradient-to-br ' + tool.color + ' flex items-center justify-center flex-shrink-0'
+                    }
+                  >
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <Badge color="gray">{tool.category}</Badge>
                 </div>
-                <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                  {tool.category}
+
+                <h3 className="font-semibold text-charcoal-900 text-sm mb-1">{tool.name}</h3>
+                <p className="text-xs text-charcoal-500 line-clamp-3 mb-4 flex-1">{tool.description}</p>
+
+                <span className={'text-sm font-medium text-left ' + (isLive ? 'text-brass-600' : 'text-charcoal-400')}>
+                  {tool.cta} →
                 </span>
-              </div>
-
-              <h3 className="font-bold text-gray-900 text-sm mb-1">{tool.name}</h3>
-              <p className="text-xs text-gray-600 line-clamp-3 mb-4 flex-1">
-                {tool.description}
-              </p>
-
-              <span
-                className={
-                  'text-sm font-medium text-left ' +
-                  (isLive
-                    ? 'text-[#007185] group-hover:underline'
-                    : 'text-gray-500')
-                }
-              >
-                {tool.cta} →
-              </span>
+              </Card>
             </button>
           )
         })}
       </div>
 
       {/* Help footer */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5 flex flex-wrap items-center justify-between gap-3">
+      <Card className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="font-bold text-gray-900 mb-0.5">
-            Need help getting started?
-          </div>
-          <p className="text-sm text-gray-600">
-            Visit Seller University for free training or open a support case.
-          </p>
+          <div className="font-semibold text-charcoal-900 mb-0.5">Need help getting started?</div>
+          <p className="text-body-sm">Visit Seller University for free training or open a support case.</p>
         </div>
-        <div className="flex gap-2">
-          <Link
-            to="/seller/help"
-            className="text-sm px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded"
-          >
-            Visit Help Center
-          </Link>
-        </div>
-      </div>
+        <Link to="/seller/help">
+          <Button variant="outline">Visit Help Center</Button>
+        </Link>
+      </Card>
     </div>
   )
 }

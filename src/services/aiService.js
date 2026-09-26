@@ -216,7 +216,7 @@ function templateKeywords({ title, description, category }) {
  *
  * Returns { summary, recommendations: [{ productTitle, action, why, priority, actionLink }] }
  */
-export async function askGrowthAssistant({ question, snapshot, history = [] }) {
+export async function askGrowthAssistant({ question, snapshot }) {
   const system =
     'You are an expert Amazon seller coach. You analyze a seller\'s business ' +
     'data and tell them exactly what to focus on. You are direct, specific, and ' +
@@ -263,14 +263,14 @@ export async function askGrowthAssistant({ question, snapshot, history = [] }) {
     }
   } catch (err) {
     console.warn('[growth AI] falling back:', err.message)
-    return localGrowthFallback(snapshot, question)
+    return localGrowthFallback(snapshot)
   }
 }
 
 /**
  * Deterministic fallback — reuses the top opportunities from the snapshot.
  */
-function localGrowthFallback(snapshot, question) {
+function localGrowthFallback(snapshot) {
   const opps = snapshot.topOpportunities || []
   const recs = opps.slice(0, 4).map((o) => ({
     productTitle: o.productTitle || 'Your catalog',

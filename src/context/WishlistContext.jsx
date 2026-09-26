@@ -45,7 +45,9 @@ export function WishlistProvider({ children }) {
     if (!ready || user || authLoading) return
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-    } catch {}
+    } catch {
+      /* ignore unavailable localStorage */
+    }
   }, [items, ready, user, authLoading])
 
   function isWishlisted(productId) {
@@ -69,7 +71,7 @@ export function WishlistProvider({ children }) {
       pushToast(exists ? 'Removed from wishlist' : 'Added to wishlist', {
         type: exists ? 'info' : 'success',
       })
-    } catch (err) {
+    } catch {
       pushToast('Could not update wishlist', { type: 'error' })
     }
   }
@@ -83,7 +85,7 @@ export function WishlistProvider({ children }) {
         setItems((prev) => prev.filter((i) => i.product.id !== productId))
       }
       pushToast('Removed from wishlist', { type: 'info' })
-    } catch (err) {
+    } catch {
       pushToast('Could not remove item', { type: 'error' })
     }
   }

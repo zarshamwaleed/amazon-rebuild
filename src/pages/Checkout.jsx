@@ -1,10 +1,11 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Gift } from 'lucide-react'
+import { CreditCard, Gift, Loader2, MapPin, Package, Truck } from 'lucide-react'
 import Button from '../components/Button'
 import AddressForm from '../components/AddressForm'
-import PaymentSelector from '../components/PaymentSelector'
+import PaymentSelector, { PAYMENT_OPTIONS } from '../components/PaymentSelector'
 import CartSummary from '../components/CartSummary'
+import CheckoutSteps from '../components/CheckoutSteps'
 import EmptyState from '../components/EmptyState'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -16,16 +17,26 @@ import {
   applyGiftCardBalanceToOrder,
 } from '../services/giftCardService'
 import { supabase } from '../services/supabase'
+import { formatPrice } from '../lib/utils'
 
 const DELIVERY_OPTIONS = [
   { id: 'standard', label: 'Standard Delivery', description: '3-5 business days', fee: 0 },
   { id: 'express', label: 'Express Delivery', description: '1-2 business days', fee: 7.99 },
 ]
 
+const STEPS = [
+  { id: 'address', label: 'Shipping', icon: MapPin },
+  { id: 'delivery', label: 'Delivery', icon: Truck },
+  { id: 'payment', label: 'Payment', icon: CreditCard },
+  { id: 'review', label: 'Review', icon: Package },
+]
+
 export default function Checkout() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { items, subtotal, shipping, tax, count, clearCart, ready } = useCart()
+
+  const [step, setStep] = useState(1)
 
   const [addresses, setAddresses] = useState([])
   const [selectedAddressId, setSelectedAddressId] = useState(null)
@@ -44,13 +55,10 @@ export default function Checkout() {
 
   // If all cart items belong to the same registry, we tag the order
   const registryId = useMemo(() => {
-    const ids = items
-      .map((i) => i.registryId)
-      .filter(Boolean)
+    const ids = items.map((i) => i.registryId).filter(Boolean)
     if (ids.length === 0) return null
-    // If they're all the same, return it. Otherwise pick the first.
     const unique = [...new Set(ids)]
-    return unique.length === 1 ? unique[0] : unique[0]
+    return unique.length === 1 ? unique[0] : null
   }, [items])
 
   // Redirect to /cart if empty — BUT ONLY if we have not just placed an order
@@ -91,7 +99,7 @@ export default function Checkout() {
     getUserGiftCardBalance(user.id)
       .then((b) => {
         setGiftCardBalance(b)
-        setApplyBalance(b > 0) // auto-enable if user has balance
+        setApplyBalance(b > 0)
       })
       .catch(() => {})
   }, [user])
@@ -106,10 +114,25 @@ export default function Checkout() {
   const deliveryFee = delivery === 'express' ? 7.99 : subtotal >= 50 ? 0 : shipping || 0
   const finalTotal = +(subtotal + deliveryFee + tax).toFixed(2)
 
-  const appliedGiftCard = applyBalance
-    ? Math.min(giftCardBalance, finalTotal)
-    : 0
+  const appliedGiftCard = applyBalance ? Math.min(giftCardBalance, finalTotal) : 0
   const amountDue = Math.max(0, finalTotal - appliedGiftCard)
+
+  const selectedAddress = addresses.find((a) => a.id === selectedAddressId)
+  const selectedDelivery = DELIVERY_OPTIONS.find((d) => d.id === delivery)
+
+  function goToStep(n) {
+    setError(null)
+    setStep(n)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function handleContinue() {
+    if (step === 1) {
+      if (!selectedAddressId) return setError('Please select or add a shipping address')
+    }
+    setError(null)
+    goToStep(Math.min(STEPS.length, step + 1))
+  }
 
   async function handlePlaceOrder() {
     setError(null)
@@ -130,7 +153,6 @@ export default function Checkout() {
         registryId,
       })
 
-      // Issue gift cards (if any) — fetch the created order_items so we can link them
       if (items.some((i) => i.giftCard)) {
         const { data: orderItems } = await supabase
           .from('order_items')
@@ -139,21 +161,16 @@ export default function Checkout() {
         await issueGiftCardsForOrder(user.id, order.id, orderItems || [], items)
       }
 
-      // Apply gift card balance to order (deduct from user's balance)
       if (appliedGiftCard > 0) {
         try {
           await applyGiftCardBalanceToOrder(user.id, appliedGiftCard)
         } catch (err) {
           console.warn('Failed to deduct balance:', err)
-          // Non-fatal — the order is placed; log for admin
         }
       }
 
-      // Mark as placed BEFORE clearing so the guard effect does not fire
       setOrderPlaced(true)
-
       await clearCart()
-
       navigate('/order-confirmation/' + order.id, { replace: true })
     } catch (err) {
       setError(err.message || 'Could not place order')
@@ -162,7 +179,12 @@ export default function Checkout() {
   }
 
   if (!ready || loadingAddresses) {
-    return <div className="py-20 text-center text-sm text-gray-600">Preparing checkout…</div>
+    return (
+      <div className="py-24 flex flex-col items-center justify-center gap-3 text-charcoal-500">
+        <Loader2 className="w-6 h-6 animate-spin" />
+        <span className="text-body-sm">Preparing checkout…</span>
+      </div>
+    )
   }
 
   if (items.length === 0 && !orderPlaced) {
@@ -170,136 +192,212 @@ export default function Checkout() {
       <EmptyState
         title="Your cart is empty"
         message="Add items to your cart before checking out."
+        action={
+          <Button variant="secondary" size="lg" onClick={() => navigate('/products')}>
+            Continue shopping
+          </Button>
+        }
       />
     )
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Checkout</h1>
+    <div className="animate-fade-in">
+      <h1 className="heading-page mb-6">Checkout</h1>
+
+      <div className="mb-8 max-w-2xl">
+        <CheckoutSteps steps={STEPS} currentStep={step} onStepClick={goToStep} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <section className="bg-white border border-gray-200 rounded-md p-5">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">1. Shipping address</h2>
-
-            {showAddressForm ? (
-              <AddressForm onSubmit={handleAddAddress} onCancel={() => setShowAddressForm(false)} />
-            ) : (
-              <div className="space-y-2">
-                {addresses.map((a) => (
-                  <label
-                    key={a.id}
-                    className={
-                      'flex items-start gap-3 p-3 rounded border cursor-pointer ' +
-                      (selectedAddressId === a.id
-                        ? 'border-[#c7511f] bg-orange-50'
-                        : 'border-gray-300 hover:border-gray-400')
-                    }
-                  >
-                    <input
-                      type="radio"
-                      name="address"
-                      checked={selectedAddressId === a.id}
-                      onChange={() => setSelectedAddressId(a.id)}
-                      className="mt-1"
-                    />
-                    <div className="text-sm">
-                      <div className="font-medium text-gray-900">{a.full_name}</div>
-                      <div className="text-gray-700">{a.address_line}</div>
-                      <div className="text-gray-700">
-                        {a.city}
-                        {a.postal_code ? ', ' + a.postal_code : ''}
-                      </div>
-                      <div className="text-gray-700">{a.country}</div>
-                      {a.phone && <div className="text-gray-500 text-xs mt-1">{a.phone}</div>}
-                    </div>
-                  </label>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setShowAddressForm(true)}
-                  className="text-sm text-blue-600 hover:text-[#c7511f] hover:underline"
-                >
-                  + Add new address
-                </button>
-              </div>
+        <div className="lg:col-span-2">
+          <div key={step} className="bg-bone-50 border border-stone-200 rounded-xl p-5 sm:p-6 shadow-subtle animate-fade-in-up">
+            {step === 1 && (
+              <>
+                <h2 className="heading-sub mb-4">Shipping address</h2>
+                {showAddressForm ? (
+                  <AddressForm onSubmit={handleAddAddress} onCancel={addresses.length ? () => setShowAddressForm(false) : undefined} />
+                ) : (
+                  <div className="space-y-2.5">
+                    {addresses.map((a) => (
+                      <label
+                        key={a.id}
+                        className={
+                          'flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-avenzo ' +
+                          (selectedAddressId === a.id
+                            ? 'border-brass-400 bg-brass-50'
+                            : 'border-stone-200 hover:border-stone-400')
+                        }
+                      >
+                        <input
+                          type="radio"
+                          name="address"
+                          checked={selectedAddressId === a.id}
+                          onChange={() => setSelectedAddressId(a.id)}
+                          className="mt-1 accent-brass-500"
+                        />
+                        <div className="text-sm">
+                          <div className="font-medium text-charcoal-900">{a.full_name}</div>
+                          <div className="text-charcoal-600">{a.address_line}</div>
+                          <div className="text-charcoal-600">
+                            {a.city}
+                            {a.postal_code ? ', ' + a.postal_code : ''}
+                          </div>
+                          <div className="text-charcoal-600">{a.country}</div>
+                          {a.phone && <div className="text-caption mt-1">{a.phone}</div>}
+                        </div>
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setShowAddressForm(true)}
+                      className="text-sm font-medium text-brass-700 hover:text-brass-800 transition-avenzo"
+                    >
+                      + Add new address
+                    </button>
+                  </div>
+                )}
+              </>
             )}
-          </section>
 
-          <section className="bg-white border border-gray-200 rounded-md p-5">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">2. Delivery method</h2>
-            <div className="space-y-2">
-              {DELIVERY_OPTIONS.map((d) => {
-                // Standard is only free when subtotal ≥ 50
-                const realFee =
-                  d.id === 'standard' ? (subtotal >= 50 ? 0 : 5.99) : d.fee
-                return (
-                  <label
-                    key={d.id}
-                    className={
-                      'flex items-center justify-between gap-3 p-3 rounded border cursor-pointer ' +
-                      (delivery === d.id
-                        ? 'border-[#c7511f] bg-orange-50'
-                        : 'border-gray-300 hover:border-gray-400')
-                    }
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="delivery"
-                        checked={delivery === d.id}
-                        onChange={() => setDelivery(d.id)}
-                      />
+            {step === 2 && (
+              <>
+                <h2 className="heading-sub mb-4">Delivery method</h2>
+                <div className="space-y-2.5">
+                  {DELIVERY_OPTIONS.map((d) => {
+                    const realFee = d.id === 'standard' ? (subtotal >= 50 ? 0 : 5.99) : d.fee
+                    return (
+                      <label
+                        key={d.id}
+                        className={
+                          'flex items-center justify-between gap-3 p-4 rounded-xl border cursor-pointer transition-avenzo ' +
+                          (delivery === d.id
+                            ? 'border-brass-400 bg-brass-50'
+                            : 'border-stone-200 hover:border-stone-400')
+                        }
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="delivery"
+                            checked={delivery === d.id}
+                            onChange={() => setDelivery(d.id)}
+                            className="accent-brass-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-charcoal-900">{d.label}</div>
+                            <div className="text-caption">{d.description}</div>
+                          </div>
+                        </div>
+                        <span className="text-sm font-medium text-charcoal-900">
+                          {realFee === 0 ? 'FREE' : formatPrice(realFee)}
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+                {subtotal < 50 && (
+                  <p className="text-caption mt-3">
+                    Add {formatPrice(50 - subtotal)} more to qualify for free Standard Delivery.
+                  </p>
+                )}
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <h2 className="heading-sub mb-4">Payment method</h2>
+                <PaymentSelector value={payment} onChange={setPayment} />
+                <p className="text-caption mt-4">
+                  This is a mock payment system — no real money is charged.
+                </p>
+              </>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="heading-sub mb-4">Review your order</h2>
+                  {registryId && (
+                    <div className="bg-brass-50 border border-brass-200 rounded-xl p-3.5 text-sm text-brass-800 flex items-center gap-2 mb-4">
+                      <Gift className="w-4 h-4 flex-shrink-0" />
+                      This order includes items from a registry. The registry owner will be notified
+                      of your purchase.
+                    </div>
+                  )}
+                </div>
+
+                <ReviewRow label="Shipping to" onEdit={() => goToStep(1)}>
+                  {selectedAddress ? (
+                    <>
+                      <div className="font-medium text-charcoal-900">{selectedAddress.full_name}</div>
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{d.label}</div>
-                        <div className="text-xs text-gray-600">{d.description}</div>
+                        {selectedAddress.address_line}, {selectedAddress.city}
+                        {selectedAddress.postal_code ? ', ' + selectedAddress.postal_code : ''}
                       </div>
-                    </div>
-                    <span className="text-sm font-medium text-gray-900">
-                      {realFee === 0 ? 'FREE' : '$' + realFee.toFixed(2)}
-                    </span>
-                  </label>
-                )
-              })}
-            </div>
-            {subtotal < 50 && (
-              <p className="text-xs text-gray-500 mt-3">
-                Add ${(50 - subtotal).toFixed(2)} more to qualify for free Standard Delivery.
-              </p>
-            )}
-          </section>
+                      <div>{selectedAddress.country}</div>
+                    </>
+                  ) : (
+                    <span className="text-error-700">No address selected</span>
+                  )}
+                </ReviewRow>
 
-          <section className="bg-white border border-gray-200 rounded-md p-5">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">3. Payment method</h2>
-            <PaymentSelector value={payment} onChange={setPayment} />
-            <p className="text-xs text-gray-500 mt-3">
-              This is a mock payment system — no real money is charged.
-            </p>
-          </section>
+                <ReviewRow label="Delivery" onEdit={() => goToStep(2)}>
+                  <div className="font-medium text-charcoal-900">{selectedDelivery?.label}</div>
+                  <div>{selectedDelivery?.description}</div>
+                </ReviewRow>
 
-          <section className="bg-white border border-gray-200 rounded-md p-5">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">4. Review items</h2>
-            {registryId && (
-              <div className="bg-orange-50 border border-orange-200 rounded p-3 text-sm text-orange-900 flex items-center gap-2 mb-3">
-                <Gift className="w-4 h-4" />
-                This order includes items from a registry. The registry owner will be
-                notified of your purchase.
+                <ReviewRow label="Payment" onEdit={() => goToStep(3)}>
+                  <div className="font-medium text-charcoal-900">
+                    {PAYMENT_OPTIONS.find((o) => o.id === payment)?.label || payment.replace(/_/g, ' ')}
+                  </div>
+                </ReviewRow>
+
+                <div className="border-t border-stone-200 pt-5">
+                  <div className="text-label mb-3">Items ({count})</div>
+                  <ul className="text-sm divide-y divide-stone-200">
+                    {items.map((i) => (
+                      <li key={i.product.id} className="py-2.5 flex justify-between gap-3">
+                        <span className="line-clamp-1 text-charcoal-700">
+                          {i.product.title} × {i.quantity}
+                        </span>
+                        <span className="font-medium text-charcoal-900">
+                          {formatPrice(Number(i.product.price) * i.quantity)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
-            <ul className="text-sm divide-y">
-              {items.map((i) => (
-                <li key={i.product.id} className="py-2 flex justify-between gap-3">
-                  <span className="line-clamp-1 text-gray-700">
-                    {i.product.title} × {i.quantity}
-                  </span>
-                  <span className="font-medium text-gray-900">
-                    ${(Number(i.product.price) * i.quantity).toFixed(2)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
+
+            {error && (
+              <div className="text-sm text-error-700 bg-error-50 border border-error-500/20 rounded-lg p-3 mt-4 animate-fade-in">
+                {error}
+              </div>
+            )}
+
+            {!showAddressForm && (
+              <div className="flex items-center justify-between mt-6 pt-5 border-t border-stone-200">
+                {step > 1 ? (
+                  <Button variant="ghost" onClick={() => goToStep(step - 1)}>
+                    Back
+                  </Button>
+                ) : (
+                  <span />
+                )}
+                {step < 4 ? (
+                  <Button variant="secondary" onClick={handleContinue}>
+                    Continue
+                  </Button>
+                ) : (
+                  <Button variant="secondary" onClick={handlePlaceOrder} loading={placing}>
+                    {placing ? 'Placing order…' : `Place your order · ${formatPrice(amountDue)}`}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="lg:col-span-1">
@@ -316,44 +414,48 @@ export default function Checkout() {
             />
 
             {giftCardBalance > 0 && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="bg-success-50 border border-success-500/20 rounded-xl p-4">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={applyBalance}
                     onChange={(e) => setApplyBalance(e.target.checked)}
-                    className="mt-1"
+                    className="mt-1 accent-brass-500"
                   />
                   <div className="flex-1 text-sm">
-                    <div className="font-medium text-green-900">
-                      Apply gift card balance (${giftCardBalance.toFixed(2)} available)
+                    <div className="font-medium text-success-700">
+                      Apply gift card balance ({formatPrice(giftCardBalance)} available)
                     </div>
                     {applyBalance && appliedGiftCard > 0 && (
-                      <div className="text-xs text-green-800 mt-1">
-                        -${appliedGiftCard.toFixed(2)} will be applied to this order
+                      <div className="text-caption mt-1">
+                        -{formatPrice(appliedGiftCard)} will be applied to this order
                       </div>
                     )}
                   </div>
                 </label>
               </div>
             )}
-
-            <Button
-              variant="secondary"
-              onClick={handlePlaceOrder}
-              disabled={placing}
-              className="w-full"
-            >
-              {placing ? 'Placing order…' : `Place your order · $${amountDue.toFixed(2)}`}
-            </Button>
-            {error && (
-              <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
-                {error}
-              </div>
-            )}
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function ReviewRow({ label, onEdit, children }) {
+  return (
+    <div className="flex items-start justify-between gap-3 text-sm text-charcoal-600">
+      <div>
+        <div className="text-label mb-1">{label}</div>
+        {children}
+      </div>
+      <button
+        type="button"
+        onClick={onEdit}
+        className="text-av-label uppercase tracking-wide text-brass-700 hover:text-brass-800 transition-avenzo flex-shrink-0"
+      >
+        Edit
+      </button>
     </div>
   )
 }

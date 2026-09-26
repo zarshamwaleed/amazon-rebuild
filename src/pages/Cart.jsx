@@ -1,5 +1,6 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { ShoppingBag } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import CartItem from '../components/CartItem'
@@ -7,6 +8,7 @@ import CartSummary from '../components/CartSummary'
 import EmptyState from '../components/EmptyState'
 import Button from '../components/Button'
 import { getUserGiftCardBalance } from '../services/giftCardService'
+import { formatPrice } from '../lib/utils'
 
 export default function Cart() {
   const navigate = useNavigate()
@@ -33,26 +35,34 @@ export default function Cart() {
 
   if (!ready) {
     return (
-      <div className="py-20 text-center text-sm text-gray-600">Loading your cart…</div>
+      <div className="max-w-4xl mx-auto space-y-4 py-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex gap-5 bg-bone-50 border border-stone-200 rounded-xl p-5">
+            <div className="skeleton-shimmer w-28 h-28 rounded-xl flex-shrink-0" />
+            <div className="flex-1 space-y-3 py-1">
+              <div className="skeleton-shimmer h-4 rounded w-2/3" />
+              <div className="skeleton-shimmer h-3 rounded w-1/3" />
+              <div className="skeleton-shimmer h-8 rounded w-32" />
+            </div>
+          </div>
+        ))}
+      </div>
     )
   }
 
   if (items.length === 0) {
     return (
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Cart</h1>
+      <div className="max-w-xl mx-auto py-10">
         <EmptyState
-          title="Your Amazon Rebuild Cart is empty"
-          message="Browse products and add items to your cart."
+          icon={ShoppingBag}
+          title="Your cart is empty"
+          message="Browse our collections and add something you'll love."
+          action={
+            <Button variant="secondary" size="lg" onClick={() => navigate('/products')}>
+              Continue shopping
+            </Button>
+          }
         />
-        <div className="text-center mt-6">
-          <Link
-            to="/products"
-            className="inline-block bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-6 py-2.5 rounded transition"
-          >
-            Continue shopping
-          </Link>
-        </div>
       </div>
     )
   }
@@ -66,21 +76,25 @@ export default function Cart() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Shopping Cart</h1>
+    <div className="animate-fade-in">
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-2">
+        <div>
+          <h1 className="heading-page">Shopping Cart</h1>
+          <p className="text-body-sm mt-1">
+            {count} item{count !== 1 ? 's' : ''} in your cart
+          </p>
+        </div>
+        <button
+          onClick={clearCart}
+          className="text-av-label uppercase tracking-wide text-charcoal-500 hover:text-error-700 transition-avenzo"
+        >
+          Clear cart
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <div className="bg-white border border-gray-200 rounded-md px-5">
-            <div className="flex items-center justify-between py-4 border-b">
-              <span className="text-sm text-gray-600">Price</span>
-              <button
-                onClick={clearCart}
-                className="text-xs text-blue-600 hover:text-[#c7511f] hover:underline"
-              >
-                Clear cart
-              </button>
-            </div>
+          <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle px-5">
             {items.map((item) => (
               <CartItem
                 key={item.product.id}
@@ -89,18 +103,21 @@ export default function Cart() {
                 onRemove={removeItem}
               />
             ))}
-            <div className="text-right py-4 text-base">
-              Subtotal ({count} item{count !== 1 ? 's' : ''}):{' '}
-              <span className="font-bold">${subtotal.toFixed(2)}</span>
-            </div>
           </div>
+
+          <Link
+            to="/products"
+            className="inline-block mt-5 text-sm font-medium text-brass-700 hover:text-brass-800 transition-avenzo"
+          >
+            ← Continue shopping
+          </Link>
         </div>
 
         <div className="lg:col-span-1">
-          <div className="lg:sticky lg:top-40">
+          <div className="lg:sticky lg:top-40 space-y-3">
             {giftCardBalance > 0 && (
-              <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2 mb-2">
-                You have <strong>${giftCardBalance.toFixed(2)}</strong> in gift card balance. It
+              <div className="text-sm text-success-700 bg-success-50 border border-success-500/20 rounded-xl p-3.5">
+                You have <strong>{formatPrice(giftCardBalance)}</strong> in gift card balance. It
                 will be applied at checkout.
               </div>
             )}
@@ -115,7 +132,7 @@ export default function Cart() {
               onCheckout={handleCheckout}
             >
               {!user && (
-                <p className="text-xs text-gray-600 text-center pt-2">
+                <p className="text-caption text-center pt-1">
                   You'll be asked to sign in to complete checkout.
                 </p>
               )}

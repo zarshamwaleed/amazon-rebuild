@@ -117,3 +117,60 @@ export async function markCustomerThreadRead(threadId) {
     .eq('direction', 'outbound')
   if (error) throw error
 }
+
+/**
+ * Fetch every message (both directions) tied to one order, for one seller.
+ * Used by the seller-side "Contact Customer" thread on an order.
+ */
+export async function getOrderMessages(sellerId, orderId) {
+  if (!sellerId || !orderId) return []
+  const { data, error } = await supabase
+    .from('seller_messages')
+    .select('*')
+    .eq('seller_id', sellerId)
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Send a seller-initiated outbound message tied to an order, reusing the
+ * order's existing thread_id (and customer name/email) if one already exists,
+ * otherwise starting a new thread.
+ */
+export async function sendSellerOrderMessage({
+  sellerId,
+  orderId,
+  customerName,
+  customerEmail,
+  subject,
+  body,
+}) {
+  const existing = await getOrderMessages(sellerId, orderId)
+  const threadId = existing[0]?.thread_id || crypto.randomUUID()
+  const resolvedName =
+    customerName || existing.find((m) => m.customer_name)?.customer_name || null
+  const resolvedEmail =
+    customerEmail || existing.find((m) => m.customer_email)?.customer_email || null
+  const resolvedSubject =
+    subject || existing[0]?.subject || 'Regarding your order'
+
+  const { data, error } = await supabase
+    .from('seller_messages')
+    .insert({
+      seller_id: sellerId,
+      order_id: orderId,
+      thread_id: threadId,
+      customer_name: resolvedName,
+      customer_email: resolvedEmail,
+      subject: resolvedSubject,
+      body,
+      direction: 'outbound',
+      status: 'replied',
+    })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}

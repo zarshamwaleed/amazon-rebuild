@@ -1,6 +1,7 @@
-﻿import PVHero from '../../components/prime-video/PVHero'
+import PVHero from '../../components/prime-video/PVHero'
 import VideoRow from '../../components/prime-video/VideoRow'
 import {
+  TITLES,
   getFeatured,
   getPopularMovies,
   getOriginals,
@@ -27,8 +28,12 @@ export default function PVHome() {
     Object.entries(progress).map(([id, p]) => [id, p.pct])
   )
 
+  const editorsPicks = TITLES.filter(
+    (t) => t.id !== featured.id && ['Drama', 'Mystery', 'Thriller'].some((g) => t.genres.includes(g))
+  ).slice(0, 8)
+
   return (
-    <div>
+    <div className="animate-fade-in">
       <PVHero title={featured} />
 
       {continueWatching.length > 0 && (
@@ -40,9 +45,10 @@ export default function PVHome() {
         />
       )}
 
-      <VideoRow heading="Popular Movies" titles={popular} seeMoreTo="/prime-video/movies" />
-      <VideoRow heading="Amazon Originals" titles={originals} />
-      <VideoRow heading="Free Movies & TV" titles={free} seeMoreTo="/prime-video/movies" />
+      <VideoRow heading="Editor's Picks" titles={editorsPicks} />
+      <VideoRow heading="Avenzo Originals" titles={originals} />
+      <VideoRow heading="Popular on Avenzo Studio" titles={popular} seeMoreTo="/prime-video/movies" />
+      <VideoRow heading="Free to Watch" titles={free} seeMoreTo="/prime-video/movies" />
     </div>
   )
 }

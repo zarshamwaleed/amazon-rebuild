@@ -8,8 +8,6 @@ import {
   X,
   Zap,
   Package,
-  TrendingDown,
-  TrendingUp,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -18,6 +16,15 @@ import {
   updateProductPricing,
   deactivatePricingRule,
 } from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Button from '../../components/Button'
+import Badge from '../../components/Badge'
+import EmptyState from '../../components/EmptyState'
+
+const cellInputBase =
+  'text-right border border-stone-300 rounded-lg px-2 py-1 text-sm bg-bone-50 text-charcoal-900 focus:outline-none focus:border-brass-400 transition-avenzo'
+const cellInput = 'w-24 ' + cellInputBase
+const cellInputSm = 'w-20 ' + cellInputBase
 
 export default function SellerPricing() {
   const { user } = useAuth()
@@ -34,7 +41,7 @@ export default function SellerPricing() {
       setLoading(true)
       const data = await getSellerPricing(user.id)
       setRows(data)
-    } catch (err) {
+    } catch {
       pushToast('Could not load pricing', { type: 'error' })
     } finally {
       setLoading(false)
@@ -82,7 +89,7 @@ export default function SellerPricing() {
       pushToast('Pricing updated', { type: 'success' })
       setEditing(null)
       load()
-    } catch (err) {
+    } catch {
       pushToast('Could not save', { type: 'error' })
     }
   }
@@ -109,104 +116,98 @@ export default function SellerPricing() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Manage Pricing</h1>
-          <p className="text-sm text-gray-600">
-            Set prices, minimum and maximum bounds, and featured offer status.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            to="/seller/pricing/automate"
-            className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-4 py-2 rounded flex items-center gap-2 transition text-sm"
-          >
-            <Zap className="w-4 h-4" /> Automate Pricing
-          </Link>
-          <button
-            onClick={load}
-            className="border border-gray-300 bg-white hover:bg-gray-50 px-3 py-2 rounded text-sm flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <SellerPageHeader
+        title="Manage Pricing"
+        description="Set prices, minimum and maximum bounds, and featured offer status."
+        actions={
+          <>
+            <Link to="/seller/pricing/automate">
+              <Button variant="secondary" size="md">
+                <Zap className="w-4 h-4" /> Automate Pricing
+              </Button>
+            </Link>
+            <Button variant="outline" size="md" onClick={load} aria-label="Refresh">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </>
+        }
+      />
 
-      <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
-        <Search className="w-4 h-4 text-gray-400" />
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle p-4 flex items-center gap-3">
+        <Search className="w-4 h-4 text-charcoal-400 flex-shrink-0" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search pricing by product or SKU..."
-          className="flex-1 text-sm focus:outline-none"
+          placeholder="Search pricing by product or SKU…"
+          className="flex-1 text-sm bg-transparent text-charcoal-800 placeholder:text-charcoal-400 focus:outline-none"
         />
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-sm text-gray-600">Loading pricing…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-1">No products to price</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Add products first to manage pricing.
-            </p>
-            <Link
-              to="/seller/products/new"
-              className="inline-block bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded"
-            >
-              Add a product
-            </Link>
+          <div className="p-5 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-12 rounded-lg skeleton-shimmer" />
+            ))}
           </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={Package}
+            title="No products to price"
+            message="Add products first to manage pricing."
+            action={
+              <Link to="/seller/products/new">
+                <Button variant="secondary">Add a product</Button>
+              </Link>
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="text-left px-5 py-3">Product</th>
-                  <th className="text-left px-4 py-3">SKU</th>
-                  <th className="text-right px-4 py-3">Current</th>
-                  <th className="text-right px-4 py-3">Min</th>
-                  <th className="text-right px-4 py-3">Max</th>
-                  <th className="text-center px-4 py-3">Featured</th>
-                  <th className="text-left px-4 py-3">Automation</th>
-                  <th className="text-right px-5 py-3">Actions</th>
+                  <th className="text-label text-left px-5 py-3">Product</th>
+                  <th className="text-label text-left px-4 py-3">SKU</th>
+                  <th className="text-label text-right px-4 py-3">Current</th>
+                  <th className="text-label text-right px-4 py-3">Min</th>
+                  <th className="text-label text-right px-4 py-3">Max</th>
+                  <th className="text-label text-center px-4 py-3">Featured</th>
+                  <th className="text-label text-left px-4 py-3">Automation</th>
+                  <th className="text-label text-right px-5 py-3">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-stone-100">
                 {filtered.map((p) => {
                   const isEditing = editing?.id === p.id
                   const rule = p.rule && p.rule.status === 'active' ? p.rule : null
                   return (
-                    <tr key={p.id} className="border-t hover:bg-gray-50">
-                      <td className="px-5 py-3">
+                    <tr key={p.id} className="hover:bg-stone-50/60 transition-avenzo">
+                      <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
                           {p.image_url ? (
                             <img
                               src={p.image_url}
                               alt=""
-                              className="w-10 h-10 rounded object-cover border"
+                              className="w-10 h-10 rounded-lg object-cover border border-stone-200"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
-                              <Package className="w-4 h-4 text-gray-400" />
+                            <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center">
+                              <Package className="w-4 h-4 text-charcoal-400" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <div className="font-medium text-gray-900 truncate max-w-xs">
+                            <div className="font-medium text-charcoal-900 truncate max-w-xs">
                               {p.title}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                      <td className="px-4 py-3.5 font-mono text-xs text-charcoal-500">
                         {p.sku || '—'}
                       </td>
 
-                      {/* Current price */}
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3.5 text-right">
                         {isEditing ? (
                           <input
                             type="number"
@@ -215,17 +216,16 @@ export default function SellerPricing() {
                             onChange={(e) =>
                               setEditing((s) => ({ ...s, price: e.target.value }))
                             }
-                            className="w-24 text-right border border-gray-300 rounded px-2 py-1 text-sm"
+                            className={cellInput}
                           />
                         ) : (
-                          <span className="font-medium text-gray-900">
+                          <span className="font-medium text-charcoal-900">
                             ${Number(p.price || 0).toFixed(2)}
                           </span>
                         )}
                       </td>
 
-                      {/* Min */}
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3.5 text-right">
                         {isEditing ? (
                           <input
                             type="number"
@@ -235,17 +235,16 @@ export default function SellerPricing() {
                               setEditing((s) => ({ ...s, min_price: e.target.value }))
                             }
                             placeholder="—"
-                            className="w-20 text-right border border-gray-300 rounded px-2 py-1 text-sm"
+                            className={cellInputSm}
                           />
                         ) : (
-                          <span className="text-gray-700">
+                          <span className="text-charcoal-700">
                             {p.min_price ? '$' + Number(p.min_price).toFixed(2) : '—'}
                           </span>
                         )}
                       </td>
 
-                      {/* Max */}
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3.5 text-right">
                         {isEditing ? (
                           <input
                             type="number"
@@ -255,70 +254,67 @@ export default function SellerPricing() {
                               setEditing((s) => ({ ...s, max_price: e.target.value }))
                             }
                             placeholder="—"
-                            className="w-20 text-right border border-gray-300 rounded px-2 py-1 text-sm"
+                            className={cellInputSm}
                           />
                         ) : (
-                          <span className="text-gray-700">
+                          <span className="text-charcoal-700">
                             {p.max_price ? '$' + Number(p.max_price).toFixed(2) : '—'}
                           </span>
                         )}
                       </td>
 
-                      {/* Featured */}
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3.5 text-center">
                         <input
                           type="checkbox"
                           checked={!!p.featured_offer}
                           onChange={() => toggleFeatured(p)}
-                          className="cursor-pointer"
+                          className="cursor-pointer accent-brass-500 w-4 h-4"
                         />
                       </td>
 
-                      {/* Automation */}
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         {rule ? (
                           <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-800">
+                            <Badge color="green">
                               <Zap className="w-3 h-3" /> Active
-                            </span>
+                            </Badge>
                             <button
                               onClick={() => removeRule(rule.id)}
-                              className="text-xs text-red-600 hover:underline"
+                              className="text-xs font-medium text-error-700 hover:text-error-500 transition-avenzo"
                             >
                               Deactivate
                             </button>
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-500">None</span>
+                          <span className="text-xs text-charcoal-400">None</span>
                         )}
                       </td>
 
-                      {/* Actions */}
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-5 py-3.5 text-right">
                         {isEditing ? (
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={saveEdit}
-                              className="p-1.5 hover:bg-green-50 rounded"
+                              className="p-1.5 hover:bg-success-50 rounded-lg transition-avenzo"
                               title="Save"
                             >
-                              <Save className="w-4 h-4 text-green-600" />
+                              <Save className="w-4 h-4 text-success-700" />
                             </button>
                             <button
                               onClick={cancelEdit}
-                              className="p-1.5 hover:bg-gray-100 rounded"
+                              className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
                               title="Cancel"
                             >
-                              <X className="w-4 h-4 text-gray-500" />
+                              <X className="w-4 h-4 text-charcoal-500" />
                             </button>
                           </div>
                         ) : (
                           <button
                             onClick={() => startEdit(p)}
-                            className="p-1.5 hover:bg-gray-100 rounded"
+                            className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
                             title="Edit pricing"
                           >
-                            <Edit3 className="w-4 h-4 text-gray-600" />
+                            <Edit3 className="w-4 h-4 text-charcoal-500" />
                           </button>
                         )}
                       </td>
@@ -331,8 +327,8 @@ export default function SellerPricing() {
         )}
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900">
-        <strong>Note on bounds:</strong> Min and max define the range automated pricing
+      <div className="bg-info-50 border border-info-500/25 rounded-xl p-4 text-body-sm text-info-700">
+        <strong className="text-charcoal-900">Note on bounds:</strong> Min and max define the range automated pricing
         is allowed to adjust within. Amazon will never sell below min or above max.
       </div>
     </div>

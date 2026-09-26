@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Mail, ChevronLeft, Send, Package } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Mail, MessageCircle, ChevronLeft, Send, Package } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import Button from '../components/Button'
+import EmptyState from '../components/EmptyState'
 import {
   getCustomerThreads,
   sendCustomerReply,
@@ -12,7 +14,6 @@ import {
 export default function CustomerMessages() {
   const { user, profile } = useAuth()
   const { pushToast } = useToast()
-  const navigate = useNavigate()
 
   const [threads, setThreads] = useState([])
   const [loading, setLoading] = useState(true)
@@ -28,7 +29,7 @@ export default function CustomerMessages() {
       const t = await getCustomerThreads(user.email)
       setThreads(t)
       if (!selectedId && t.length) setSelectedId(t[0].thread_id)
-    } catch (err) {
+    } catch {
       pushToast('Could not load messages', { type: 'error' })
     } finally {
       setLoading(false)
@@ -52,7 +53,9 @@ export default function CustomerMessages() {
             t.thread_id === thread.thread_id ? { ...t, has_unread_reply: false } : t
           )
         )
-      } catch {}
+      } catch {
+        // best-effort read receipt; thread list already updated optimistically
+      }
     }
   }
 
@@ -84,16 +87,19 @@ export default function CustomerMessages() {
 
   if (!user) {
     return (
-      <div className="py-20 text-center">
-        <p className="text-sm text-gray-600 mb-4">
-          Sign in to view your messages.
-        </p>
-        <Link
-          to="/login"
-          className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded"
-        >
-          Sign in
-        </Link>
+      <div className="max-w-md mx-auto py-16">
+        <EmptyState
+          icon={Mail}
+          title="Sign in to view your messages"
+          message="Your conversations with sellers live here once you're signed in."
+          action={
+            <Link to="/login">
+              <Button variant="primary" size="md">
+                Sign in
+              </Button>
+            </Link>
+          }
+        />
       </div>
     )
   }
@@ -101,38 +107,34 @@ export default function CustomerMessages() {
   return (
     <div className="space-y-5 h-[calc(100vh-140px)] flex flex-col">
       <div className="flex-shrink-0">
-        <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-        <p className="text-sm text-gray-600">
-          Your conversations with sellers.
-        </p>
+        <h1 className="heading-page">Messages</h1>
+        <p className="text-body-sm mt-1">Your conversations with sellers.</p>
       </div>
 
-      <div className="grid lg:grid-cols-[340px_1fr] gap-5 flex-1 min-h-0">
+      <div className="grid lg:grid-cols-[360px_1fr] gap-5 flex-1 min-h-0">
         {/* Thread list */}
         <aside
           className={
-            'bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col ' +
+            'bg-bone-50 border border-stone-200 rounded-xl shadow-soft overflow-hidden flex flex-col ' +
             (mobileView === 'detail' ? 'hidden lg:flex' : '')
           }
         >
-          <div className="border-b px-4 py-3 text-xs uppercase tracking-wider text-gray-500">
+          <div className="border-b border-stone-200 px-4 py-3.5 text-label flex-shrink-0">
             {threads.length} conversation{threads.length !== 1 ? 's' : ''}
           </div>
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <div className="p-6 text-center text-sm text-gray-500">Loading…</div>
+              <ThreadListSkeleton />
             ) : threads.length === 0 ? (
-              <div className="p-6 text-center">
-                <Mail className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">
-                  No messages yet
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Contact a seller from your order history.
-                </p>
+              <div className="p-4">
+                <EmptyState
+                  icon={Mail}
+                  title="No messages yet"
+                  message="Contact a seller from your order history to start a conversation."
+                />
               </div>
             ) : (
-              <ul className="divide-y">
+              <ul className="divide-y divide-stone-100">
                 {threads.map((t) => {
                   const active = t.thread_id === selectedId
                   return (
@@ -140,40 +142,48 @@ export default function CustomerMessages() {
                       <button
                         onClick={() => handleSelect(t)}
                         className={
-                          'w-full text-left p-3 transition ' +
-                          (active ? 'bg-orange-50' : 'hover:bg-gray-50')
+                          'relative w-full text-left px-4 py-3.5 flex items-start gap-3 transition-avenzo ' +
+                          (active ? 'bg-brass-50' : 'hover:bg-stone-50')
                         }
                       >
-                        <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-full bg-[#232f3e] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                            S
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div
+                        {active && (
+                          <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-brass-400" />
+                        )}
+                        <div
+                          className={
+                            'w-9 h-9 rounded-full flex items-center justify-center font-display text-xs font-semibold flex-shrink-0 ' +
+                            (t.has_unread_reply
+                              ? 'bg-brass-400 text-charcoal-900'
+                              : 'bg-charcoal-900 text-bone-50')
+                          }
+                        >
+                          S
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span
                               className={
                                 'text-sm truncate ' +
                                 (t.has_unread_reply
-                                  ? 'font-bold text-gray-900'
-                                  : 'font-medium text-gray-800')
+                                  ? 'font-semibold text-charcoal-900'
+                                  : 'font-medium text-charcoal-700')
                               }
                             >
                               {t.subject}
-                            </div>
-                            <div className="text-xs text-gray-500 truncate mt-0.5">
-                              {t.last_preview}
-                            </div>
-                            <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-2">
-                              <span>{new Date(t.last_message_at).toLocaleString()}</span>
-                              {t.has_reply && (
-                                <span className="text-green-700 font-medium">
-                                  Seller replied
-                                </span>
-                              )}
-                            </div>
+                            </span>
+                            {t.has_unread_reply && (
+                              <span className="w-2 h-2 rounded-full bg-brass-500 flex-shrink-0" />
+                            )}
                           </div>
-                          {t.has_unread_reply && (
-                            <span className="w-2 h-2 rounded-full bg-[#c7511f] mt-1" />
-                          )}
+                          <p className="text-body-sm truncate mt-0.5">{t.last_preview}</p>
+                          <div className="text-metadata mt-1 flex items-center gap-2">
+                            <span>{new Date(t.last_message_at).toLocaleString()}</span>
+                            {t.has_reply && (
+                              <span className="text-success-700 font-medium">
+                                Seller replied
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </button>
                     </li>
@@ -187,35 +197,34 @@ export default function CustomerMessages() {
         {/* Detail */}
         <section
           className={
-            'bg-white border border-gray-200 rounded-lg flex flex-col overflow-hidden ' +
+            'bg-bone-50 border border-stone-200 rounded-xl shadow-soft flex flex-col overflow-hidden ' +
             (mobileView === 'list' ? 'hidden lg:flex' : '')
           }
         >
           {!selected ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <Mail className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-gray-600">Select a conversation</p>
-              </div>
+            <div className="flex-1 flex items-center justify-center p-6">
+              <EmptyState
+                icon={MessageCircle}
+                title="Select a conversation"
+                message="Choose a thread from the list to see the full message history."
+              />
             </div>
           ) : (
             <>
-              <div className="border-b px-5 py-4 flex items-start gap-3">
+              <div className="border-b border-stone-200 px-5 py-4 flex items-start gap-3 flex-shrink-0">
                 <button
                   onClick={() => setMobileView('list')}
-                  className="lg:hidden p-1.5 hover:bg-gray-100 rounded -ml-1"
+                  className="lg:hidden p-1.5 hover:bg-stone-100 rounded-lg -ml-1 transition-avenzo"
                   aria-label="Back"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-4 h-4 text-charcoal-600" />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-bold text-gray-900 truncate">
-                    {selected.subject}
-                  </h2>
+                  <h2 className="heading-sub truncate">{selected.subject}</h2>
                   {selected.order_id && (
                     <Link
                       to={`/orders/${selected.order_id}`}
-                      className="text-xs text-[#007185] hover:underline flex items-center gap-1 mt-1"
+                      className="text-caption text-info-700 hover:underline inline-flex items-center gap-1 mt-1"
                     >
                       <Package className="w-3 h-3" />
                       Order #{selected.order_id.slice(0, 8)}
@@ -224,34 +233,38 @@ export default function CustomerMessages() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50">
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-stone-50">
                 {selected.messages.map((m) => {
                   const fromSeller = m.direction === 'outbound'
                   return (
                     <div
                       key={m.id}
-                      className={'flex ' + (fromSeller ? 'justify-start' : 'justify-end')}
+                      className={'flex animate-fade-in-up ' + (fromSeller ? 'justify-start' : 'justify-end')}
                     >
                       <div
                         className={
-                          'max-w-[75%] rounded-lg px-4 py-3 shadow-sm ' +
+                          'max-w-[75%] px-4 py-3 shadow-soft ' +
                           (fromSeller
-                            ? 'bg-white text-gray-800 border border-gray-200'
-                            : 'bg-[#232f3e] text-white')
+                            ? 'bg-bone-50 text-charcoal-800 border border-stone-200 rounded-2xl rounded-bl-sm'
+                            : 'bg-charcoal-900 text-bone-50 rounded-2xl rounded-br-sm')
                         }
                       >
-                        <div className="text-xs opacity-80 mb-1">
-                          {fromSeller ? 'Seller' : 'You'} ·{' '}
-                          {new Date(m.created_at).toLocaleString()}
-                        </div>
                         <div className="text-sm whitespace-pre-wrap">{m.body}</div>
+                        <div
+                          className={
+                            'text-metadata mt-1.5 ' +
+                            (fromSeller ? '' : 'text-bone-300')
+                          }
+                        >
+                          {fromSeller ? 'Seller' : 'You'} · {new Date(m.created_at).toLocaleString()}
+                        </div>
                       </div>
                     </div>
                   )
                 })}
               </div>
 
-              <div className="border-t p-4 bg-white">
+              <div className="border-t border-stone-200 p-4 bg-bone-50 flex-shrink-0">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault()
@@ -270,22 +283,41 @@ export default function CustomerMessages() {
                       }
                     }}
                     placeholder="Reply to seller…"
-                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className="flex-1 rounded-lg border border-stone-300 bg-bone-50 px-3.5 py-2.5 text-sm text-charcoal-900 placeholder:text-charcoal-400 resize-none transition-avenzo focus:outline-none focus:border-brass-400"
                   />
-                  <button
+                  <Button
                     type="submit"
-                    disabled={sending || !reply.trim()}
-                    className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-4 py-2 rounded flex items-center gap-2 text-sm transition disabled:opacity-60"
+                    variant="secondary"
+                    size="md"
+                    loading={sending}
+                    disabled={!reply.trim()}
                   >
                     <Send className="w-4 h-4" />
                     {sending ? 'Sending…' : 'Send'}
-                  </button>
+                  </Button>
                 </form>
               </div>
             </>
           )}
         </section>
       </div>
+    </div>
+  )
+}
+
+function ThreadListSkeleton() {
+  return (
+    <div className="divide-y divide-stone-100">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="px-4 py-3.5 flex items-start gap-3">
+          <div className="skeleton-shimmer w-9 h-9 rounded-full flex-shrink-0" />
+          <div className="flex-1 min-w-0 space-y-2 pt-0.5">
+            <div className="skeleton-shimmer h-3 rounded w-2/3" />
+            <div className="skeleton-shimmer h-2.5 rounded w-full" />
+            <div className="skeleton-shimmer h-2.5 rounded w-1/3" />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

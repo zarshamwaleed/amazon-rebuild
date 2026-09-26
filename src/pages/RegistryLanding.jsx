@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   Gift,
   Search,
@@ -13,11 +13,18 @@ import { useAuth } from '../context/AuthContext'
 import {
   getMyRegistries,
   REGISTRY_TYPES,
+  REGISTRY_TYPE_ICONS as TYPE_ICONS,
 } from '../services/registryService'
+import Button from '../components/Button'
+import EmptyState from '../components/EmptyState'
+import SectionHeader from '../components/SectionHeader'
+import Reveal from '../components/home/Reveal'
+
+const HERO_IMAGE =
+  'https://images.unsplash.com/photo-1512389142860-9c449e58a543?auto=format&fit=crop&w=1800&q=80'
 
 export default function RegistryLanding() {
   const { user } = useAuth()
-  const navigate = useNavigate()
 
   const [myRegistries, setMyRegistries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -42,221 +49,224 @@ export default function RegistryLanding() {
   }, [user])
 
   return (
-    <div className="space-y-10">
+    <div>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-[#232f3e] to-[#131921] text-white rounded-lg p-8 md:p-12">
-        <div className="max-w-3xl">
-          <div className="flex items-center gap-3 mb-4">
-            <Gift className="w-8 h-8 text-[#febd69]" />
-            <span className="text-sm uppercase tracking-wider text-[#febd69] font-bold">
-              Amazon Rebuild Registry
-            </span>
-          </div>
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-4">
-            Create a registry for your special occasion
-          </h1>
-          <p className="text-gray-200 text-lg mb-8">
-            Build a wishlist for your wedding, baby, birthday, or any milestone —
-            and share it with the people you love.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              to="/registry/create"
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-semibold px-6 py-3 rounded flex items-center gap-2 transition"
-            >
-              <Plus className="w-4 h-4" /> Create a Registry
-            </Link>
-            <Link
-              to="/registry/search"
-              className="border border-white hover:bg-white hover:text-gray-900 text-white font-semibold px-6 py-3 rounded flex items-center gap-2 transition"
-            >
-              <Search className="w-4 h-4" /> Find a Registry
-            </Link>
-          </div>
-        </div>
-      </section>
+      <section className="relative left-1/2 -translate-x-1/2 w-screen overflow-hidden">
+        <div className="relative min-h-[56vh] md:min-h-[70vh] flex items-end md:items-center">
+          <Reveal variant="scale" className="absolute inset-0" delay={0}>
+            <img src={HERO_IMAGE} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/90 via-charcoal-900/45 to-charcoal-900/10 md:bg-gradient-to-r md:from-charcoal-900/85 md:via-charcoal-900/40 md:to-transparent" />
+          </Reveal>
 
-      {/* Your registries */}
-      {user && (
-        <section>
-          <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Your Registries</h2>
-            <Link
-              to="/registry/manage"
-              className="text-sm text-[#007185] hover:text-[#c7511f] hover:underline"
-            >
-              Manage all →
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-sm text-gray-500">
-              Loading your registries…
-            </div>
-          ) : myRegistries.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-lg p-10 text-center">
-              <Gift className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-1">
-                You haven't created a registry yet
-              </h3>
-              <p className="text-sm text-gray-600 mb-5 max-w-md mx-auto">
-                Create a registry to save products for your special occasion.
-              </p>
-              <Link
-                to="/registry/create"
-                className="inline-flex items-center gap-2 bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2.5 rounded"
-              >
-                <Plus className="w-4 h-4" /> Create a Registry
-              </Link>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {myRegistries.slice(0, 3).map((r) => (
-                <RegistryMiniCard key={r.id} registry={r} />
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Create a registry — type cards */}
-      <section>
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Create a Registry
-          </h2>
-          <p className="text-gray-600">
-            Choose the type of registry you'd like to create.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {REGISTRY_TYPES.map((t) => (
-            <Link
-              key={t.id}
-              to={`/registry/create?type=${t.id}`}
-              className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition group flex flex-col"
-            >
-              <div
-                className={
-                  'aspect-[4/3] bg-gradient-to-br ' +
-                  t.color +
-                  ' flex items-center justify-center text-6xl'
-                }
-              >
-                {t.emoji}
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <h3 className="font-bold text-gray-900 mb-1">{t.name}</h3>
-                <p className="text-sm text-gray-600 mb-4 flex-1">{t.tagline}</p>
-                <span className="inline-flex items-center gap-2 text-sm font-medium text-[#007185] group-hover:gap-3 transition-all">
-                  Create Registry <ArrowRight className="w-4 h-4" />
+          <div className="relative z-10 w-full max-w-[1500px] mx-auto px-6 sm:px-8 pb-12 md:pb-0">
+            <div className="max-w-xl">
+              <Reveal delay={80}>
+                <span className="text-av-label uppercase tracking-wide font-medium text-brass-200 inline-flex items-center gap-2">
+                  <Gift className="w-4 h-4" /> Amazon Rebuild Registry
                 </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+              </Reveal>
 
-      {/* Find a registry teaser */}
-      <section className="bg-gray-50 border border-gray-200 rounded-lg p-8 md:p-10">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-start gap-4">
-            <Search className="w-10 h-10 text-[#c7511f] flex-shrink-0" />
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">
-                Looking for someone's registry?
-              </h2>
-              <p className="text-sm text-gray-600">
-                Search by name, city, or state to find a registry shared by
-                friends or family.
-              </p>
+              <Reveal as="h1" delay={200} className="mt-4">
+                <span className="font-display font-medium text-bone-50 text-4xl sm:text-5xl lg:text-display leading-[1.06] tracking-tight">
+                  Gifts, gathered with intention.
+                </span>
+              </Reveal>
+
+              <Reveal delay={320} className="mt-5 max-w-md">
+                <p className="text-av-body-lg text-bone-100/90">
+                  Build a registry for your wedding, baby, birthday, or any
+                  milestone worth celebrating — and let the people who love
+                  you give exactly what you'll use.
+                </p>
+              </Reveal>
+
+              <Reveal delay={440} className="mt-9 flex flex-wrap gap-3">
+                <Link
+                  to="/registry/create"
+                  className="group inline-flex items-center gap-2 bg-brass-400 hover:bg-brass-300 text-charcoal-900 font-medium text-sm px-6 h-12 rounded-lg transition-avenzo active:scale-[0.98]"
+                >
+                  <Plus className="w-4 h-4" /> Create a Registry
+                </Link>
+                <Link
+                  to="/registry/search"
+                  className="inline-flex items-center gap-2 border border-bone-50/70 hover:bg-bone-50 hover:text-charcoal-900 text-bone-50 font-medium text-sm px-6 h-12 rounded-lg transition-avenzo active:scale-[0.98]"
+                >
+                  <Search className="w-4 h-4" /> Find a Registry
+                </Link>
+              </Reveal>
             </div>
           </div>
-          <Link
-            to="/registry/search"
-            className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-semibold px-6 py-3 rounded whitespace-nowrap transition"
-          >
-            Find a Registry
-          </Link>
         </div>
       </section>
 
-      {/* Why use registries */}
-      <section className="grid md:grid-cols-3 gap-5">
-        {[
-          {
-            icon: Sparkles,
-            title: 'Pick anything you love',
-            desc: 'Add products from across the Amazon Rebuild catalog to your registry.',
-          },
-          {
-            icon: Gift,
-            title: 'Easy to share',
-            desc: 'Share with a link so friends and family can buy directly from your list.',
-          },
-          {
-            icon: Calendar,
-            title: 'Track every gift',
-            desc: 'See what has been purchased and what remains as your big day approaches.',
-          },
-        ].map((f) => {
-          const Icon = f.icon
-          return (
-            <div
-              key={f.title}
-              className="bg-white border border-gray-200 rounded-lg p-6"
-            >
-              <Icon className="w-7 h-7 text-[#c7511f] mb-3" />
-              <h3 className="font-bold text-gray-900 mb-1">{f.title}</h3>
-              <p className="text-sm text-gray-600">{f.desc}</p>
+      <div className="pt-12 md:pt-16 space-y-16 md:space-y-20 pb-4">
+        {/* Your registries */}
+        {user && (
+          <section>
+            <SectionHeader
+              title="Your Registries"
+              subtitle="Pick up where you left off, or manage everything in one place."
+              seeMoreTo="/registry/manage"
+              ctaLabel="Manage all"
+            />
+
+            {loading ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="skeleton-shimmer h-40 rounded-xl" />
+                ))}
+              </div>
+            ) : myRegistries.length === 0 ? (
+              <EmptyState
+                icon={Gift}
+                title="You haven't created a registry yet"
+                message="Create a registry to start saving products for your special occasion."
+                action={
+                  <Link to="/registry/create">
+                    <Button>
+                      <Plus className="w-4 h-4" /> Create a Registry
+                    </Button>
+                  </Link>
+                }
+              />
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {myRegistries.slice(0, 3).map((r, i) => (
+                  <Reveal key={r.id} delay={i * 80}>
+                    <RegistryMiniCard registry={r} />
+                  </Reveal>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Create a registry — type cards */}
+        <section>
+          <SectionHeader
+            title="Create a Registry"
+            subtitle="Choose the type of registry you'd like to create."
+          />
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {REGISTRY_TYPES.map((t, i) => {
+              const Icon = TYPE_ICONS[t.id] || Gift
+              return (
+                <Reveal key={t.id} delay={i * 80}>
+                  <Link
+                    to={`/registry/create?type=${t.id}`}
+                    className="group block h-full bg-bone-50 border border-stone-200 rounded-xl p-6 shadow-subtle hover:shadow-soft hover:border-stone-300 transition-avenzo"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-brass-50 flex items-center justify-center mb-5 transition-avenzo group-hover:bg-brass-100">
+                      <Icon className="w-5 h-5 text-brass-600" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="heading-sub mb-1.5">{t.name}</h3>
+                    <p className="text-body-sm mb-5">{t.tagline}</p>
+                    <span className="inline-flex items-center gap-1.5 text-av-label uppercase tracking-wide text-brass-700 group-hover:gap-2.5 transition-all">
+                      Create Registry <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </Link>
+                </Reveal>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* Find a registry teaser */}
+        <Reveal as="section" className="bg-stone-100 border border-stone-200 rounded-2xl p-8 md:p-10">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-bone-50 border border-stone-200 flex items-center justify-center flex-shrink-0">
+                <Search className="w-5 h-5 text-charcoal-700" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h2 className="heading-section mb-1">
+                  Looking for someone's registry?
+                </h2>
+                <p className="text-body-sm">
+                  Search by name, city, or state to find a registry shared by
+                  friends or family.
+                </p>
+              </div>
             </div>
-          )
-        })}
-      </section>
+            <Link to="/registry/search" className="shrink-0">
+              <Button variant="secondary" size="lg">
+                Find a Registry
+              </Button>
+            </Link>
+          </div>
+        </Reveal>
+
+        {/* Why use registries */}
+        <section className="grid sm:grid-cols-3 gap-5">
+          {[
+            {
+              icon: Sparkles,
+              title: 'Pick anything you love',
+              desc: 'Add products from across the Amazon Rebuild catalog to your registry.',
+            },
+            {
+              icon: Gift,
+              title: 'Easy to share',
+              desc: 'Share with a link so friends and family can buy directly from your list.',
+            },
+            {
+              icon: Calendar,
+              title: 'Track every gift',
+              desc: 'See what has been purchased and what remains as your big day approaches.',
+            },
+          ].map((f, i) => {
+            const Icon = f.icon
+            return (
+              <Reveal key={f.title} delay={i * 80} className="bg-bone-50 border border-stone-200 rounded-xl p-6">
+                <Icon className="w-6 h-6 text-brass-600 mb-3" strokeWidth={1.5} />
+                <h3 className="heading-sub mb-1">{f.title}</h3>
+                <p className="text-body-sm">{f.desc}</p>
+              </Reveal>
+            )
+          })}
+        </section>
+      </div>
     </div>
   )
 }
 
 function RegistryMiniCard({ registry }) {
   const date = registry.expected_date || registry.event_date
+  const Icon = TYPE_ICONS[registry.type] || Gift
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5 flex flex-col">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-2xl">
-          {REGISTRY_TYPES.find((t) => t.id === registry.type)?.emoji || '🎁'}
-        </span>
-        <span className="text-xs uppercase tracking-wider text-gray-500">
+    <div className="h-full bg-bone-50 border border-stone-200 rounded-xl p-5 flex flex-col shadow-subtle transition-avenzo hover:shadow-soft hover:border-stone-300">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="w-9 h-9 rounded-full bg-brass-50 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-4 h-4 text-brass-600" strokeWidth={1.5} />
+        </div>
+        <span className="text-av-label uppercase tracking-wide text-charcoal-500">
           {registry.type}
         </span>
       </div>
-      <h3 className="font-bold text-gray-900 mb-1 line-clamp-1">
-        {registry.name}
-      </h3>
+      <h3 className="heading-sub mb-1 line-clamp-1">{registry.name}</h3>
       {date && (
-        <div className="text-xs text-gray-500 flex items-center gap-1">
-          <Calendar className="w-3 h-3" />{' '}
-          {new Date(date).toLocaleDateString()}
+        <div className="text-caption flex items-center gap-1">
+          <Calendar className="w-3 h-3" /> {new Date(date).toLocaleDateString()}
         </div>
       )}
       {registry.city && (
-        <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+        <div className="text-caption flex items-center gap-1 mt-0.5">
           <MapPin className="w-3 h-3" /> {registry.city}
           {registry.state ? ', ' + registry.state : ''}
         </div>
       )}
-      <div className="flex gap-2 mt-4 pt-4 border-t">
-        <Link
-          to={`/registry/${registry.id}`}
-          className="flex-1 text-center text-sm px-3 py-2 bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium rounded transition"
-        >
-          View
+      <div className="flex gap-2 mt-4 pt-4 border-t border-stone-200">
+        <Link to={`/registry/${registry.id}`} className="flex-1">
+          <Button size="sm" variant="secondary" className="w-full">
+            View
+          </Button>
         </Link>
-        <Link
-          to={`/registry/${registry.id}/edit`}
-          className="flex-1 text-center text-sm px-3 py-2 border border-gray-300 hover:bg-gray-50 rounded transition"
-        >
-          Edit
+        <Link to={`/registry/${registry.id}/edit`} className="flex-1">
+          <Button size="sm" variant="outline" className="w-full">
+            Edit
+          </Button>
         </Link>
       </div>
     </div>

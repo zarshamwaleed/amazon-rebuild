@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   Play,
@@ -15,7 +15,6 @@ import { getTitleById, getRecommendationsFor } from '../../data/prime-video/cata
 import VideoRow from '../../components/prime-video/VideoRow'
 import { usePVWatchlist } from '../../hooks/usePVWatchlist'
 import { usePVProgress } from '../../hooks/usePVProgress'
-import EmptyState from '../../components/EmptyState'
 
 function fmt(t) {
   if (!isFinite(t)) return '0:00'
@@ -75,7 +74,15 @@ export default function PVWatch() {
   }, [title, saveProgress])
 
   if (!title) {
-    return <EmptyState title="Title not found" message="This video does not exist." />
+    return (
+      <div className="text-center py-20">
+        <h2 className="font-display italic text-2xl text-[var(--bone)] mb-2">Title not found</h2>
+        <p className="text-sm text-[var(--muted)] mb-4">This video does not exist.</p>
+        <Link to="/prime-video" className="text-sm text-[var(--brass)] hover:underline underline-offset-4">
+          ← Back to Prime Video
+        </Link>
+      </div>
+    )
   }
 
   const inList = isInWatchlist(title.id)
@@ -115,9 +122,9 @@ export default function PVWatch() {
   const pct = duration > 0 ? (current / duration) * 100 : 0
 
   return (
-    <div>
+    <div className="animate-fade-in">
       {/* Player */}
-      <div className="relative bg-black rounded-lg overflow-hidden mb-6 aspect-video">
+      <div className="relative bg-[var(--surface)] rounded-lg overflow-hidden mb-8 aspect-video">
         <video
           ref={videoRef}
           src={title.videoUrl}
@@ -131,36 +138,57 @@ export default function PVWatch() {
         />
 
         {/* Overlay controls */}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-4">
-          <div className="h-1 bg-white/30 rounded mb-3 cursor-pointer"
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[var(--ink)]/90 to-transparent p-4">
+          <div
+            className="group/scrub h-1 hover:h-1.5 bg-[var(--bone)]/20 rounded mb-3 cursor-pointer transition-all duration-fast"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect()
-              const pct = (e.clientX - rect.left) / rect.width
+              const p = (e.clientX - rect.left) / rect.width
               if (videoRef.current && videoRef.current.duration) {
-                videoRef.current.currentTime = pct * videoRef.current.duration
+                videoRef.current.currentTime = p * videoRef.current.duration
               }
             }}
           >
-            <div className="h-full bg-[#00A8E1] rounded" style={{ width: pct + '%' }} />
+            <div className="h-full bg-[var(--brass)] rounded transition-[width] duration-fast" style={{ width: pct + '%' }} />
           </div>
 
-          <div className="flex items-center gap-3 text-white">
-            <button onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'}>
+          <div className="flex items-center gap-4 text-[var(--bone)]">
+            <button
+              onClick={togglePlay}
+              aria-label={playing ? 'Pause' : 'Play'}
+              className="transition-avenzo hover:text-[var(--brass)] hover:scale-110"
+            >
               {playing ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
             </button>
-            <button onClick={() => seek(-10)} aria-label="Rewind 10 seconds">
+            <button
+              onClick={() => seek(-10)}
+              aria-label="Rewind 10 seconds"
+              className="transition-avenzo hover:text-[var(--brass)] hover:scale-110"
+            >
               <RotateCcw className="w-5 h-5" />
             </button>
-            <button onClick={() => seek(10)} aria-label="Forward 10 seconds">
+            <button
+              onClick={() => seek(10)}
+              aria-label="Forward 10 seconds"
+              className="transition-avenzo hover:text-[var(--brass)] hover:scale-110"
+            >
               <RotateCw className="w-5 h-5" />
             </button>
-            <button onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
+            <button
+              onClick={toggleMute}
+              aria-label={muted ? 'Unmute' : 'Mute'}
+              className="transition-avenzo hover:text-[var(--brass)] hover:scale-110"
+            >
               {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </button>
-            <span className="text-xs text-gray-200">
+            <span className="text-xs text-[var(--muted)]">
               {fmt(current)} / {fmt(duration)}
             </span>
-            <button onClick={toggleFullscreen} className="ml-auto" aria-label="Fullscreen">
+            <button
+              onClick={toggleFullscreen}
+              className="ml-auto transition-avenzo hover:text-[var(--brass)] hover:scale-110"
+              aria-label="Fullscreen"
+            >
               <Maximize className="w-5 h-5" />
             </button>
           </div>
@@ -168,20 +196,26 @@ export default function PVWatch() {
       </div>
 
       {/* Title info */}
-      <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">{title.title}</h1>
-        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400 mb-4">
+      <div className="mb-10 max-w-3xl">
+        <h1 className="font-display text-4xl text-[var(--bone)] mb-3">{title.title}</h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[var(--muted)] mb-4">
           <span>{title.year}</span>
-          <span className="border border-gray-600 px-1.5 py-0.5 text-xs">{title.rating}</span>
+          <span className="opacity-40">·</span>
+          <span className="border border-[var(--border)] px-1.5 py-0.5 text-xs rounded">{title.rating}</span>
+          <span className="opacity-40">·</span>
           <span>{title.duration}</span>
-          {title.genres.map((g) => (
-            <span key={g}>{g}</span>
-          ))}
+          <span className="opacity-40">·</span>
+          <span>{title.genres.join(', ')}</span>
         </div>
-        <p className="text-gray-200 mb-4 max-w-3xl">{title.description}</p>
+        <p className="text-[15px] leading-relaxed text-[var(--bone)]/80 mb-6">{title.description}</p>
         <button
           onClick={() => toggleWatchlist(title.id)}
-          className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-5 py-2 rounded flex items-center gap-2 text-sm"
+          className={
+            'px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-medium border transition-avenzo ' +
+            (inList
+              ? 'bg-[var(--brass)]/10 border-[var(--brass)] text-[var(--brass)]'
+              : 'border-[var(--bone)]/20 text-[var(--bone)] hover:border-[var(--brass)] hover:text-[var(--brass)]')
+          }
         >
           {inList ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           {inList ? 'In Watchlist' : 'Add to Watchlist'}
@@ -189,12 +223,10 @@ export default function PVWatch() {
       </div>
 
       {/* Recommendations */}
-      {recs.length > 0 && (
-        <VideoRow heading={'Because you watched ' + title.title} titles={recs} />
-      )}
+      {recs.length > 0 && <VideoRow heading={'Because you watched ' + title.title} titles={recs} />}
 
-      <div className="mt-6">
-        <Link to="/prime-video" className="text-sm text-[#00A8E1] hover:underline">
+      <div className="mt-8">
+        <Link to="/prime-video" className="text-sm text-[var(--brass)] hover:underline underline-offset-4 transition-avenzo">
           ← Back to Prime Video
         </Link>
       </div>

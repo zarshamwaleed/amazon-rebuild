@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
+  CheckCircle2,
+  FileText,
   Gift,
   MapPin,
   Shield,
@@ -11,13 +12,27 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import Button from '../components/Button'
+import Input from '../components/Input'
+import Card from '../components/Card'
+import CheckoutSteps from '../components/CheckoutSteps'
 import {
   createRegistry,
   REGISTRY_TYPES,
+  REGISTRY_TYPE_ICONS,
   getRegistryTypeMeta,
 } from '../services/registryService'
 
-const STEPS = ['Type', 'Information', 'Privacy', 'Confirm']
+const STEPS = [
+  { id: 'type', label: 'Type', icon: Gift },
+  { id: 'information', label: 'Information', icon: FileText },
+  { id: 'privacy', label: 'Privacy', icon: Shield },
+  { id: 'confirm', label: 'Confirm', icon: CheckCircle2 },
+]
+
+const textareaClass =
+  'w-full rounded-lg border border-stone-300 bg-bone-50 px-3.5 py-2.5 text-sm text-charcoal-900 ' +
+  'placeholder:text-charcoal-400 transition-avenzo focus:outline-none focus:border-brass-400 resize-none'
 
 export default function CreateRegistry() {
   const navigate = useNavigate()
@@ -96,6 +111,12 @@ export default function CreateRegistry() {
     if (step > 0) setStep(step - 1)
   }
 
+  function goToStep(index1Based) {
+    // CheckoutSteps only allows navigating to already-completed steps
+    setError(null)
+    setStep(index1Based - 1)
+  }
+
   async function submit() {
     if (!user) {
       pushToast('Please sign in to create a registry.', { type: 'error' })
@@ -118,90 +139,49 @@ export default function CreateRegistry() {
   const typeMeta = getRegistryTypeMeta(form.type)
 
   return (
-    <div className="max-w-3xl mx-auto py-6">
-      {/* Breadcrumb */}
+    <div className="max-w-3xl mx-auto py-2 space-y-8">
       <Link
         to="/registry"
-        className="text-sm text-[#007185] hover:underline flex items-center gap-1 mb-5"
+        className="text-body-sm text-charcoal-600 hover:text-charcoal-900 inline-flex items-center gap-1.5 transition-avenzo"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Registry
       </Link>
 
-      {/* Stepper */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          {STEPS.map((label, i) => {
-            const done = i < step
-            const active = i === step
-            return (
-              <div key={label} className="flex-1 flex items-center">
-                <div className="flex flex-col items-center flex-1">
-                  <div
-                    className={
-                      'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition ' +
-                      (done
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : active
-                        ? 'bg-[#febd69] border-[#febd69] text-gray-900'
-                        : 'bg-white border-gray-300 text-gray-500')
-                    }
-                  >
-                    {done ? <Check className="w-4 h-4" /> : i + 1}
-                  </div>
-                  <span
-                    className={
-                      'text-xs mt-1 hidden sm:block ' +
-                      (active ? 'font-bold text-gray-900' : 'text-gray-500')
-                    }
-                  >
-                    {label}
-                  </span>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div
-                    className={
-                      'h-0.5 flex-1 mx-1 ' + (done ? 'bg-green-600' : 'bg-gray-200')
-                    }
-                  />
-                )}
-              </div>
-            )
-          })}
-        </div>
-        <p className="text-xs text-gray-500 text-center mt-3">
-          Step {step + 1} of {STEPS.length}
-        </p>
-      </div>
+      <CheckoutSteps steps={STEPS} currentStep={step + 1} onStepClick={goToStep} />
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6 md:p-8">
+      <Card padding="lg">
         {/* Step 0: Type */}
         {step === 0 && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
-              What type of registry?
-            </h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <h1 className="heading-page mb-1">What type of registry?</h1>
+            <p className="text-body-sm mb-6">
               Choose the occasion. You can change this later.
             </p>
             <div className="grid sm:grid-cols-2 gap-3">
-              {REGISTRY_TYPES.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => update('type', t.id)}
-                  className={
-                    'text-left p-4 rounded-lg border-2 transition flex items-start gap-3 ' +
-                    (form.type === t.id
-                      ? 'border-[#c7511f] bg-orange-50'
-                      : 'border-gray-200 hover:border-gray-400')
-                  }
-                >
-                  <span className="text-3xl flex-shrink-0">{t.emoji}</span>
-                  <div>
-                    <div className="font-bold text-gray-900">{t.name}</div>
-                    <div className="text-xs text-gray-600 mt-0.5">{t.tagline}</div>
-                  </div>
-                </button>
-              ))}
+              {REGISTRY_TYPES.map((t) => {
+                const Icon = REGISTRY_TYPE_ICONS[t.id] || Gift
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => update('type', t.id)}
+                    className={
+                      'text-left p-4 rounded-xl border-2 transition-avenzo flex items-start gap-3 ' +
+                      (form.type === t.id
+                        ? 'border-brass-500 bg-brass-50'
+                        : 'border-stone-200 hover:border-stone-400')
+                    }
+                  >
+                    <span className="flex-shrink-0 w-10 h-10 rounded-lg bg-brass-100 text-brass-700 flex items-center justify-center">
+                      <Icon className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <div className="font-semibold text-charcoal-900">{t.name}</div>
+                      <div className="text-caption mt-0.5">{t.tagline}</div>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </>
         )}
@@ -209,106 +189,91 @@ export default function CreateRegistry() {
         {/* Step 1: Information */}
         {step === 1 && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
-              Registry information
-            </h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <h1 className="heading-page mb-1">Registry information</h1>
+            <p className="text-body-sm mb-6">
               Tell us about your registry so guests can find it.
             </p>
             <div className="space-y-4">
-              <Field label="Registry name">
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => update('name', e.target.value)}
-                  placeholder={typeMeta.name}
-                  className="input"
-                />
-              </Field>
+              <Input
+                label="Registry name"
+                type="text"
+                value={form.name}
+                onChange={(e) => update('name', e.target.value)}
+                placeholder={typeMeta.name}
+              />
 
               <div className="grid md:grid-cols-2 gap-4">
-                <Field label="First name">
-                  <input
-                    type="text"
-                    value={form.owner_first_name}
-                    onChange={(e) => update('owner_first_name', e.target.value)}
-                    className="input"
-                  />
-                </Field>
-                <Field label="Last name">
-                  <input
-                    type="text"
-                    value={form.owner_last_name}
-                    onChange={(e) => update('owner_last_name', e.target.value)}
-                    className="input"
-                  />
-                </Field>
+                <Input
+                  label="First name"
+                  type="text"
+                  value={form.owner_first_name}
+                  onChange={(e) => update('owner_first_name', e.target.value)}
+                />
+                <Input
+                  label="Last name"
+                  type="text"
+                  value={form.owner_last_name}
+                  onChange={(e) => update('owner_last_name', e.target.value)}
+                />
               </div>
 
-              {(form.type === 'wedding') && (
-                <Field label="Partner / co-registrant name">
-                  <input
-                    type="text"
-                    value={form.co_registrant_name}
-                    onChange={(e) => update('co_registrant_name', e.target.value)}
-                    placeholder="e.g. Michael"
-                    className="input"
-                  />
-                </Field>
+              {form.type === 'wedding' && (
+                <Input
+                  label="Partner / co-registrant name"
+                  type="text"
+                  value={form.co_registrant_name}
+                  onChange={(e) => update('co_registrant_name', e.target.value)}
+                  placeholder="e.g. Michael"
+                />
               )}
 
               {form.type === 'baby' && (
-                <Field label="Expected arrival date">
-                  <input
-                    type="date"
-                    value={form.expected_date}
-                    onChange={(e) => update('expected_date', e.target.value)}
-                    className="input"
-                  />
-                </Field>
+                <Input
+                  label="Expected arrival date"
+                  type="date"
+                  value={form.expected_date}
+                  onChange={(e) => update('expected_date', e.target.value)}
+                />
               )}
 
               {form.type !== 'baby' && (
-                <Field label="Event date">
-                  <input
-                    type="date"
-                    value={form.event_date}
-                    onChange={(e) => update('event_date', e.target.value)}
-                    className="input"
-                  />
-                </Field>
+                <Input
+                  label="Event date"
+                  type="date"
+                  value={form.event_date}
+                  onChange={(e) => update('event_date', e.target.value)}
+                />
               )}
 
               <div className="grid md:grid-cols-2 gap-4">
-                <Field label="City">
-                  <input
-                    type="text"
-                    value={form.city}
-                    onChange={(e) => update('city', e.target.value)}
-                    placeholder="e.g. Austin"
-                    className="input"
-                  />
-                </Field>
-                <Field label="State / Region">
-                  <input
-                    type="text"
-                    value={form.state}
-                    onChange={(e) => update('state', e.target.value)}
-                    placeholder="e.g. TX"
-                    className="input"
-                  />
-                </Field>
+                <Input
+                  label="City"
+                  type="text"
+                  value={form.city}
+                  onChange={(e) => update('city', e.target.value)}
+                  placeholder="e.g. Austin"
+                />
+                <Input
+                  label="State / Region"
+                  type="text"
+                  value={form.state}
+                  onChange={(e) => update('state', e.target.value)}
+                  placeholder="e.g. TX"
+                />
               </div>
 
-              <Field label="Short description (optional)">
+              <div>
+                <label className="text-label block mb-1.5">
+                  Short description (optional)
+                </label>
                 <textarea
                   rows={2}
                   value={form.description}
                   onChange={(e) => update('description', e.target.value)}
                   placeholder="e.g. Help us prepare for our little one."
-                  className="input resize-none"
+                  className={textareaClass}
                 />
-              </Field>
+              </div>
             </div>
           </>
         )}
@@ -316,10 +281,8 @@ export default function CreateRegistry() {
         {/* Step 2: Privacy */}
         {step === 2 && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
-              Privacy settings
-            </h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <h1 className="heading-page mb-1">Privacy settings</h1>
+            <p className="text-body-sm mb-6">
               Control who can find and view your registry.
             </p>
 
@@ -348,25 +311,26 @@ export default function CreateRegistry() {
                 return (
                   <button
                     key={p.id}
+                    type="button"
                     onClick={() => update('privacy', p.id)}
                     className={
-                      'w-full text-left p-4 rounded-lg border-2 transition flex items-start gap-3 ' +
+                      'w-full text-left p-4 rounded-xl border-2 transition-avenzo flex items-start gap-3 ' +
                       (form.privacy === p.id
-                        ? 'border-[#c7511f] bg-orange-50'
-                        : 'border-gray-200 hover:border-gray-400')
+                        ? 'border-brass-500 bg-brass-50'
+                        : 'border-stone-200 hover:border-stone-400')
                     }
                   >
-                    <Icon className="w-5 h-5 text-gray-600 flex-shrink-0 mt-0.5" />
+                    <Icon className="w-5 h-5 text-charcoal-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-bold text-gray-900">{p.label}</div>
-                      <div className="text-xs text-gray-600 mt-0.5">{p.desc}</div>
+                      <div className="font-semibold text-charcoal-900">{p.label}</div>
+                      <div className="text-caption mt-0.5">{p.desc}</div>
                     </div>
                   </button>
                 )
               })}
             </div>
 
-            <div className="space-y-1 border-t pt-4">
+            <div className="space-y-1 border-t border-stone-200 pt-4">
               <Toggle
                 label="Allow search by name"
                 value={form.allow_name_search}
@@ -384,32 +348,40 @@ export default function CreateRegistry() {
         {/* Step 3: Confirm */}
         {step === 3 && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
-              Review and confirm
-            </h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <h1 className="heading-page mb-1">Review and confirm</h1>
+            <p className="text-body-sm mb-6">
               You can change any of these later.
             </p>
 
             <div
               className={
-                'rounded-lg p-6 bg-gradient-to-br ' + typeMeta.color + ' text-white mb-6'
+                'relative rounded-xl p-6 overflow-hidden bg-gradient-to-br ' + typeMeta.color + ' mb-6'
               }
             >
-              <div className="text-3xl mb-2">{typeMeta.emoji}</div>
-              <div className="text-xs uppercase tracking-wider text-white/80">
-                {typeMeta.name}
-              </div>
-              <h2 className="text-2xl font-bold mt-1">{form.name}</h2>
-              {form.city && (
-                <div className="text-sm mt-2 flex items-center gap-1 text-white/90">
-                  <MapPin className="w-3 h-3" /> {form.city}
-                  {form.state ? ', ' + form.state : ''}
+              <div className="absolute inset-0 bg-charcoal-900/25" />
+              <div className="relative text-white">
+                {(() => {
+                  const TypeIcon = REGISTRY_TYPE_ICONS[typeMeta.id] || Gift
+                  return (
+                    <span className="inline-flex w-10 h-10 rounded-lg bg-white/15 items-center justify-center mb-2">
+                      <TypeIcon className="w-5 h-5" />
+                    </span>
+                  )
+                })()}
+                <div className="text-xs uppercase tracking-[0.15em] font-medium text-white/80">
+                  {typeMeta.name}
                 </div>
-              )}
+                <h2 className="font-display text-2xl font-medium mt-1">{form.name}</h2>
+                {form.city && (
+                  <div className="text-sm mt-2 flex items-center gap-1.5 text-white/90">
+                    <MapPin className="w-3.5 h-3.5" /> {form.city}
+                    {form.state ? ', ' + form.state : ''}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <dl className="space-y-2 text-sm">
+            <dl className="space-y-2 text-body-sm">
               <Row
                 label="Owner"
                 value={`${form.owner_first_name} ${form.owner_last_name}`.trim()}
@@ -437,62 +409,37 @@ export default function CreateRegistry() {
 
         {/* Error */}
         {error && (
-          <div className="mt-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+          <div className="mt-4 text-body-sm text-error-700 bg-error-50 border border-error-500/20 rounded-lg p-3">
             {error}
           </div>
         )}
 
         {/* Nav */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t">
-          <button
-            onClick={back}
-            disabled={step === 0}
-            className={
-              'flex items-center gap-1 text-sm font-medium ' +
-              (step === 0
-                ? 'text-gray-300 cursor-not-allowed'
-                : 'text-gray-700 hover:text-gray-900')
-            }
-          >
+        <div className="flex items-center justify-between mt-8 pt-6 border-t border-stone-200">
+          <Button variant="ghost" onClick={back} disabled={step === 0}>
             <ArrowLeft className="w-4 h-4" /> Back
-          </button>
+          </Button>
 
           {step < STEPS.length - 1 ? (
-            <button
-              onClick={next}
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-6 py-2.5 rounded flex items-center gap-2 transition"
-            >
+            <Button variant="secondary" onClick={next}>
               Continue <ArrowRight className="w-4 h-4" />
-            </button>
+            </Button>
           ) : (
-            <button
-              onClick={submit}
-              disabled={saving}
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-6 py-2.5 rounded transition disabled:opacity-60"
-            >
+            <Button variant="secondary" onClick={submit} loading={saving}>
               {saving ? 'Creating…' : 'Create Registry'}
-            </button>
+            </Button>
           )}
         </div>
-      </div>
-    </div>
-  )
-}
-
-function Field({ label, children }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-800 mb-1">{label}</label>
-      {children}
+      </Card>
     </div>
   )
 }
 
 function Row({ label, value }) {
   return (
-    <div className="flex justify-between border-b pb-2 last:border-b-0">
-      <dt className="text-gray-500">{label}</dt>
-      <dd className="text-gray-900 capitalize">{value}</dd>
+    <div className="flex justify-between border-b border-stone-200 pb-2 last:border-b-0">
+      <dt className="text-charcoal-500">{label}</dt>
+      <dd className="text-charcoal-900 capitalize font-medium">{value}</dd>
     </div>
   )
 }
@@ -500,19 +447,19 @@ function Row({ label, value }) {
 function Toggle({ label, value, onChange }) {
   return (
     <div className="flex items-center justify-between gap-4 py-2">
-      <span className="text-sm text-gray-800">{label}</span>
+      <span className="text-body-sm">{label}</span>
       <button
         type="button"
         onClick={() => onChange(!value)}
         className={
-          'relative inline-flex h-6 w-11 rounded-full transition-colors ' +
-          (value ? 'bg-[#c7511f]' : 'bg-gray-300')
+          'relative inline-flex h-6 w-11 rounded-full transition-avenzo flex-shrink-0 ' +
+          (value ? 'bg-brass-500' : 'bg-stone-300')
         }
         aria-pressed={value}
       >
         <span
           className={
-            'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ' +
+            'absolute top-0.5 left-0.5 w-5 h-5 bg-bone-50 rounded-full shadow-subtle transition-avenzo ' +
             (value ? 'translate-x-5' : '')
           }
         />

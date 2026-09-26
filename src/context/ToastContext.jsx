@@ -1,27 +1,116 @@
-﻿import { createContext, useCallback, useContext, useState } from 'react'
-import { CheckCircle, AlertCircle, Info, X } from 'lucide-react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react'
 
 const ToastContext = createContext(null)
 
-let id = 0
+let uid = 0
+const EXIT_MS = 200
+
+const TOAST_STYLES = {
+  success: {
+    Icon: CheckCircle2,
+    iconBg: 'bg-success-50',
+    iconColor: 'text-success-500',
+    action: 'text-success-700',
+    bar: 'bg-success-500/70',
+  },
+  error: {
+    Icon: AlertCircle,
+    iconBg: 'bg-error-50',
+    iconColor: 'text-error-500',
+    action: 'text-error-700',
+    bar: 'bg-error-500/70',
+  },
+  warning: {
+    Icon: AlertTriangle,
+    iconBg: 'bg-warning-50',
+    iconColor: 'text-warning-500',
+    action: 'text-warning-700',
+    bar: 'bg-warning-500/70',
+  },
+  info: {
+    Icon: Info,
+    iconBg: 'bg-info-50',
+    iconColor: 'text-info-500',
+    action: 'text-info-700',
+    bar: 'bg-info-500/70',
+  },
+}
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
+  const timers = useRef(new Map())
 
-  const removeToast = useCallback((toastId) => {
-    setToasts((prev) => prev.filter((t) => t.id !== toastId))
+  const clearTimer = useCallback((toastId) => {
+    const timer = timers.current.get(toastId)
+    if (timer) {
+      clearTimeout(timer.timeoutId)
+      timers.current.delete(toastId)
+    }
   }, [])
 
-  const pushToast = useCallback(
-    (message, { type = 'success', duration = 3000 } = {}) => {
-      const toastId = ++id
-      setToasts((prev) => [...prev, { id: toastId, message, type }])
-      if (duration > 0) {
-        setTimeout(() => removeToast(toastId), duration)
-      }
+  const removeToast = useCallback((toastId) => {
+    clearTimer(toastId)
+    setToasts((prev) => prev.filter((t) => t.id !== toastId))
+  }, [clearTimer])
+
+  const dismissToast = useCallback(
+    (toastId) => {
+      clearTimer(toastId)
+      setToasts((prev) => prev.map((t) => (t.id === toastId ? { ...t, leaving: true } : t)))
+      setTimeout(() => removeToast(toastId), EXIT_MS)
     },
-    [removeToast]
+    [clearTimer, removeToast]
   )
+
+  const startTimer = useCallback(
+    (toastId, ms) => {
+      if (!(ms > 0)) return
+      const timeoutId = setTimeout(() => dismissToast(toastId), ms)
+      timers.current.set(toastId, { timeoutId, remaining: ms, start: Date.now() })
+    },
+    [dismissToast]
+  )
+
+  const pauseTimer = useCallback((toastId) => {
+    const timer = timers.current.get(toastId)
+    if (!timer) return
+    clearTimeout(timer.timeoutId)
+    timer.remaining -= Date.now() - timer.start
+    setToasts((prev) => prev.map((t) => (t.id === toastId ? { ...t, paused: true } : t)))
+  }, [])
+
+  const resumeTimer = useCallback(
+    (toastId) => {
+      const timer = timers.current.get(toastId)
+      if (!timer) return
+      timer.start = Date.now()
+      timer.timeoutId = setTimeout(() => dismissToast(toastId), Math.max(timer.remaining, 0))
+      setToasts((prev) => prev.map((t) => (t.id === toastId ? { ...t, paused: false } : t)))
+    },
+    [dismissToast]
+  )
+
+  const pushToast = useCallback(
+    (message, { type = 'success', duration = 3000, action } = {}) => {
+      const toastId = ++uid
+      setToasts((prev) => [
+        ...prev,
+        { id: toastId, message, type, duration, action, leaving: false, paused: false },
+      ])
+      startTimer(toastId, duration)
+      return toastId
+    },
+    [startTimer]
+  )
+
+  useEffect(() => {
+    const timersMap = timers.current
+    return () => {
+      timersMap.forEach((timer) => clearTimeout(timer.timeoutId))
+      timersMap.clear()
+    }
+  }, [])
 
   const value = { pushToast }
 
@@ -29,42 +118,64 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={value}>
       {children}
       <div
-        className="fixed bottom-6 right-6 z-[100] space-y-2 max-w-sm"
+        className="fixed z-[100] flex flex-col gap-3 bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-96 pointer-events-none"
         aria-live="polite"
-        aria-atomic="true"
       >
         {toasts.map((t) => {
-          const Icon =
-            t.type === 'success' ? CheckCircle : t.type === 'error' ? AlertCircle : Info
-          const colors =
-            t.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-900'
-              : t.type === 'error'
-              ? 'bg-red-50 border-red-200 text-red-900'
-              : 'bg-blue-50 border-blue-200 text-blue-900'
-          const iconColor =
-            t.type === 'success'
-              ? 'text-green-600'
-              : t.type === 'error'
-              ? 'text-red-600'
-              : 'text-blue-600'
+          const style = TOAST_STYLES[t.type] || TOAST_STYLES.info
+          const Icon = style.Icon
           return (
             <div
               key={t.id}
+              role={t.type === 'error' ? 'alert' : 'status'}
+              onMouseEnter={() => pauseTimer(t.id)}
+              onMouseLeave={() => resumeTimer(t.id)}
               className={
-                'flex items-start gap-3 border rounded-md shadow-lg px-4 py-3 text-sm ' + colors
+                'pointer-events-auto relative overflow-hidden rounded-xl border border-stone-200 bg-bone-50 shadow-lifted ' +
+                (t.leaving ? 'animate-toast-out' : 'animate-toast-in')
               }
-              role="status"
             >
-              <Icon className={'w-5 h-5 flex-shrink-0 mt-0.5 ' + iconColor} />
-              <div className="flex-1">{t.message}</div>
-              <button
-                onClick={() => removeToast(t.id)}
-                className="text-gray-500 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded"
-                aria-label="Dismiss notification"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <span
+                  className={
+                    'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center ' + style.iconBg
+                  }
+                >
+                  <Icon className={'w-[18px] h-[18px] ' + style.iconColor} strokeWidth={2} />
+                </span>
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <p className="text-sm font-medium text-charcoal-800 leading-snug">{t.message}</p>
+                  {t.action && (
+                    <button
+                      onClick={() => {
+                        t.action.onClick?.()
+                        dismissToast(t.id)
+                      }}
+                      className={'mt-1.5 text-xs font-semibold hover:underline focus:outline-none ' + style.action}
+                    >
+                      {t.action.label}
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => dismissToast(t.id)}
+                  className="flex-shrink-0 -mr-1 -mt-1 p-1 rounded-md text-charcoal-400 hover:text-charcoal-700 hover:bg-stone-100 transition-avenzo"
+                  aria-label="Dismiss notification"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {t.duration > 0 && (
+                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-stone-100">
+                  <div
+                    className={'h-full toast-progress-bar ' + style.bar}
+                    style={{
+                      animationDuration: t.duration + 'ms',
+                      animationPlayState: t.paused ? 'paused' : 'running',
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )
         })}

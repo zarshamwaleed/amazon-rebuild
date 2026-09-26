@@ -14,13 +14,13 @@ import {
   Megaphone,
   DollarSign,
   BarChart3,
-  Tag,
   Settings as SettingsIcon,
   ArrowRight,
-  Check,
 } from 'lucide-react'
 import { useAuth } from '../../../context/AuthContext'
 import { supabase } from '../../../services/supabase'
+import Card from '../../../components/Card'
+import Badge from '../../../components/Badge'
 
 const AMAZON_TOOLS = [
   {
@@ -74,7 +74,6 @@ const EXPLORE_SERVICES = [
     cta: 'Browse Appstore',
     icon: Store,
     to: '/seller/apps-services/appstore',
-    bg: 'from-[#232f3e] to-[#37475a]',
   },
   {
     id: 'providers',
@@ -84,7 +83,6 @@ const EXPLORE_SERVICES = [
     cta: 'Find providers',
     icon: Users,
     to: '/seller/apps-services/providers',
-    bg: 'from-[#131921] to-[#232f3e]',
   },
 ]
 
@@ -121,30 +119,30 @@ export default function AppsLanding() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <div className="bg-gradient-to-r from-[#232f3e] to-[#37475a] text-white rounded-lg p-6 md:p-10">
+      <div className="bg-charcoal-900 text-bone-50 rounded-xl p-6 md:p-10">
         <div className="flex items-center gap-3 mb-3">
-          <Grid3x3 className="w-7 h-7 text-[#febd69]" />
-          <h1 className="text-2xl md:text-3xl font-bold">Apps & Services</h1>
+          <Grid3x3 className="w-6 h-6 text-brass-300" />
+          <h1 className="font-display text-2xl md:text-3xl text-bone-50">Apps &amp; Services</h1>
         </div>
-        <p className="text-gray-200 mb-6 max-w-2xl">
+        <p className="text-charcoal-200 mb-6 max-w-2xl text-body-sm">
           Find tools and services to help grow your business — from Amazon-provided
           utilities to vetted third-party apps and providers.
         </p>
         <form
           onSubmit={(e) => e.preventDefault()}
-          className="flex items-stretch rounded overflow-hidden max-w-xl"
+          className="flex items-stretch rounded-lg overflow-hidden max-w-xl border border-white/10"
         >
           <input
             type="text"
             placeholder="Search apps and services..."
-            className="flex-1 px-3 py-2.5 text-sm text-gray-900 focus:outline-none"
+            className="flex-1 px-3.5 py-2.5 text-sm bg-bone-50 text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none"
           />
           <button
             type="submit"
-            className="bg-[#febd69] hover:bg-[#f3a847] px-4 flex items-center justify-center"
+            className="bg-brass-400 hover:bg-brass-300 px-4 flex items-center justify-center transition-avenzo"
             aria-label="Search"
           >
-            <Search className="w-5 h-5 text-gray-900" />
+            <Search className="w-5 h-5 text-charcoal-900" />
           </button>
         </form>
       </div>
@@ -152,10 +150,10 @@ export default function AppsLanding() {
       {/* Amazon Tools */}
       <section>
         <div className="flex items-baseline justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Amazon Tools</h2>
+          <h2 className="heading-section">Amazon Tools</h2>
           <Link
             to="/seller/apps-services/tools"
-            className="text-sm text-[#007185] hover:text-[#c7511f] hover:underline flex items-center gap-1"
+            className="text-body-sm font-medium text-brass-600 hover:text-brass-700 transition-avenzo flex items-center gap-1"
           >
             See all tools <ArrowRight className="w-3.5 h-3.5" />
           </Link>
@@ -164,24 +162,18 @@ export default function AppsLanding() {
           {AMAZON_TOOLS.map((tool) => {
             const Icon = tool.icon
             return (
-              <Link
-                key={tool.id}
-                to={tool.to}
-                className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md hover:border-gray-400 transition flex flex-col"
-              >
-                <div
-                  className={
-                    'w-11 h-11 rounded-lg bg-gradient-to-br ' +
-                    tool.color +
-                    ' flex items-center justify-center mb-3'
-                  }
-                >
-                  <Icon className="w-5 h-5 text-white" />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 mb-1 leading-snug">
-                  {tool.name}
-                </h3>
-                <p className="text-xs text-gray-600 line-clamp-3">{tool.description}</p>
+              <Link key={tool.id} to={tool.to}>
+                <Card hoverable className="h-full flex flex-col">
+                  <div
+                    className={
+                      'w-11 h-11 rounded-lg bg-gradient-to-br ' + tool.color + ' flex items-center justify-center mb-3'
+                    }
+                  >
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-charcoal-900 mb-1 leading-snug">{tool.name}</h3>
+                  <p className="text-xs text-charcoal-500 line-clamp-3">{tool.description}</p>
+                </Card>
               </Link>
             )
           })}
@@ -190,7 +182,7 @@ export default function AppsLanding() {
 
       {/* Explore Services */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Explore Services</h2>
+        <h2 className="heading-section mb-4">Explore Services</h2>
         <div className="grid md:grid-cols-2 gap-4">
           {EXPLORE_SERVICES.map((s) => {
             const Icon = s.icon
@@ -198,16 +190,12 @@ export default function AppsLanding() {
               <Link
                 key={s.id}
                 to={s.to}
-                className={
-                  'rounded-lg p-6 text-white bg-gradient-to-br ' +
-                  s.bg +
-                  ' hover:shadow-xl transition group relative overflow-hidden'
-                }
+                className="rounded-xl p-6 text-bone-50 bg-charcoal-900 hover:shadow-lifted transition-avenzo group relative overflow-hidden"
               >
-                <Icon className="w-9 h-9 text-[#febd69] mb-4" />
-                <h3 className="text-lg font-bold mb-2">{s.name}</h3>
-                <p className="text-sm text-gray-200 mb-5 pr-8">{s.description}</p>
-                <span className="inline-flex items-center gap-2 text-sm font-medium text-[#febd69] group-hover:gap-3 transition-all">
+                <Icon className="w-8 h-8 text-brass-300 mb-4" />
+                <h3 className="font-display text-lg mb-2">{s.name}</h3>
+                <p className="text-sm text-charcoal-300 mb-5 pr-8">{s.description}</p>
+                <span className="inline-flex items-center gap-2 text-sm font-medium text-brass-300 group-hover:gap-3 transition-all">
                   {s.cta} <ArrowRight className="w-4 h-4" />
                 </span>
                 <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/5 rounded-full" />
@@ -219,45 +207,40 @@ export default function AppsLanding() {
 
       {/* Your Apps */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Your Apps</h2>
-        <Link
-          to="/seller/apps-services/manage"
-          className="bg-white border border-gray-200 rounded-lg p-6 flex items-center gap-4 hover:shadow-md transition"
-        >
-          <div className="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
-            <SettingsIcon className="w-6 h-6 text-[#c7511f]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900">Manage Your Apps</h3>
-            <p className="text-sm text-gray-600 mt-0.5">
-              {connectedCount > 0
-                ? `${connectedCount} app${connectedCount > 1 ? 's' : ''} connected to your seller account`
-                : 'Review apps that have access to your seller account'}
-            </p>
-          </div>
-          {connectedCount > 0 && (
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-800">
-              {connectedCount} connected
-            </span>
-          )}
-          <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        <h2 className="heading-section mb-4">Your Apps</h2>
+        <Link to="/seller/apps-services/manage">
+          <Card hoverable>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-brass-50 flex items-center justify-center flex-shrink-0">
+                <SettingsIcon className="w-6 h-6 text-brass-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-charcoal-900">Manage Your Apps</h3>
+                <p className="text-body-sm mt-0.5">
+                  {connectedCount > 0
+                    ? `${connectedCount} app${connectedCount > 1 ? 's' : ''} connected to your seller account`
+                    : 'Review apps that have access to your seller account'}
+                </p>
+              </div>
+              {connectedCount > 0 && <Badge color="green">{connectedCount} connected</Badge>}
+              <ArrowRight className="w-5 h-5 text-charcoal-300 flex-shrink-0" />
+            </div>
+          </Card>
         </Link>
       </section>
 
       {/* Recommended for You */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Recommended for You</h2>
+        <h2 className="heading-section mb-4">Recommended for You</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {RECOMMENDED.map((r) => {
             const Icon = r.icon
             return (
-              <Link
-                key={r.name}
-                to={r.to}
-                className="bg-white border border-gray-200 rounded-lg p-4 text-center hover:shadow-md hover:border-gray-400 transition flex flex-col items-center"
-              >
-                <Icon className="w-6 h-6 text-[#c7511f] mb-2" />
-                <div className="text-xs font-medium text-gray-900">{r.name}</div>
+              <Link key={r.name} to={r.to}>
+                <Card hoverable padding="sm" className="text-center flex flex-col items-center">
+                  <Icon className="w-6 h-6 text-brass-600 mb-2" />
+                  <div className="text-xs font-medium text-charcoal-800">{r.name}</div>
+                </Card>
               </Link>
             )
           })}

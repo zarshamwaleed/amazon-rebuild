@@ -1,50 +1,113 @@
-﻿import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { ArrowUp } from 'lucide-react'
+import useCategories from '../hooks/useCategories'
+
+const GROUPS = [
+  {
+    title: 'Shop',
+    links: [
+      { label: 'All Products', to: '/products' },
+      { label: "Today's Deals", to: '/deals' },
+      { label: 'Gift Cards', to: '/gift-cards' },
+      { label: 'Registry', to: '/registry' },
+      { label: 'Coupons', to: '/coupons' },
+    ],
+  },
+  {
+    title: 'Your Account',
+    links: [
+      { label: 'Your Account', to: '/account' },
+      { label: 'Your Orders', to: '/orders' },
+      { label: 'Your Wishlist', to: '/wishlist' },
+      { label: 'Buy Again', to: '/buy-again' },
+      { label: 'Browsing History', to: '/browsing-history' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About', to: '/about' },
+      { label: 'Careers', to: '/careers' },
+      { label: 'Press', to: '/press' },
+      { label: 'Investor Relations', to: '/investor-relations' },
+      { label: 'Sustainability', to: '/sustainability' },
+    ],
+  },
+  {
+    title: 'Support',
+    links: [
+      { label: 'Customer Service', to: '/customer-service' },
+      { label: 'Alexa for Shopping', to: '/alexa-shopping' },
+      { label: 'Accessibility', to: '/accessibility' },
+      { label: 'Sell on Avenzo', to: '/sell' },
+    ],
+  },
+]
 
 export default function Footer() {
+  const { categories } = useCategories()
+
   return (
-    <footer className="bg-[#232f3e] text-white mt-10">
-      <Link
-        to="/"
-        className="block bg-[#37475a] hover:bg-[#485769] text-center py-3 text-sm transition"
+    <footer className="bg-bone-100 border-t border-stone-200 mt-16">
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="w-full flex items-center justify-center gap-2 py-3 text-av-label uppercase tracking-wide text-charcoal-600 hover:text-charcoal-900 hover:bg-stone-100 transition-avenzo"
       >
+        <ArrowUp className="w-3.5 h-3.5" />
         Back to top
-      </Link>
-      <div className="max-w-[1500px] mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 px-6 py-8 text-sm">
-        <div>
-          <h4 className="font-bold mb-3">Get to Know Us</h4>
-          <ul className="space-y-2 text-gray-300">
-            <li><Link to="/" className="hover:underline">About</Link></li>
-            <li><Link to="/" className="hover:underline">Careers</Link></li>
-            <li><Link to="/" className="hover:underline">Press</Link></li>
-          </ul>
+      </button>
+
+      <div className="max-w-[1500px] mx-auto px-6 sm:px-8 py-14">
+        <div className="mb-10">
+          <span className="font-display text-2xl font-medium text-charcoal-900">Avenzo</span>
+          <p className="text-body-sm mt-2 max-w-sm">
+            Thoughtfully curated goods for a considered life.
+          </p>
         </div>
-        <div>
-          <h4 className="font-bold mb-3">Shop With Us</h4>
-          <ul className="space-y-2 text-gray-300">
-            <li><Link to="/products" className="hover:underline">All Products</Link></li>
-            <li><Link to="/cart" className="hover:underline">Your Cart</Link></li>
-            <li><Link to="/orders" className="hover:underline">Your Orders</Link></li>
-          </ul>
-        </div>
-        <div>
-          <h4 className="font-bold mb-3">Let Us Help You</h4>
-          <ul className="space-y-2 text-gray-300">
-            <li><Link to="/account" className="hover:underline">Your Account</Link></li>
-            <li><Link to="/orders" className="hover:underline">Returns</Link></li>
-            <li><Link to="/" className="hover:underline">Help</Link></li>
-          </ul>
-        </div>
-        <div>
-          <h4 className="font-bold mb-3">Categories</h4>
-          <ul className="space-y-2 text-gray-300">
-            <li><Link to="/category/electronics" className="hover:underline">Electronics</Link></li>
-            <li><Link to="/category/books" className="hover:underline">Books</Link></li>
-            <li><Link to="/category/fashion" className="hover:underline">Fashion</Link></li>
-          </ul>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-x-8 gap-y-10">
+          {GROUPS.map((group) => (
+            <div key={group.title}>
+              <h4 className="text-label mb-4">{group.title}</h4>
+              <ul className="space-y-2.5">
+                {group.links.map((link) => (
+                  <li key={link.to}>
+                    <Link
+                      to={link.to}
+                      className="link-underline-brass inline-block text-body-sm hover:text-charcoal-900 transition-avenzo"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          {categories.length > 0 && (
+            <div>
+              <h4 className="text-label mb-4">Categories</h4>
+              <ul className="space-y-2.5">
+                {categories.slice(0, 6).map((cat) => (
+                  <li key={cat.id}>
+                    <Link
+                      to={'/category/' + cat.slug}
+                      className="link-underline-brass inline-block text-body-sm hover:text-charcoal-900 transition-avenzo"
+                    >
+                      {cat.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
-      <div className="border-t border-gray-700 py-4 text-center text-xs text-gray-400">
-        © {new Date().getFullYear()} Amazon Rebuild — a student project. Not affiliated with Amazon.
+
+      <div className="border-t border-stone-200 py-5">
+        <p className="text-center text-caption">
+          © {new Date().getFullYear()} Avenzo — a student project. Not affiliated with Amazon.
+        </p>
       </div>
     </footer>
   )

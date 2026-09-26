@@ -1,12 +1,13 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import CategoryHeader from '../components/CategoryHeader'
+import CategoryHeroBanner from '../components/CategoryHeroBanner'
 import FilterSidebar from '../components/FilterSidebar'
 import SortDropdown from '../components/SortDropdown'
 import ProductGrid from '../components/ProductGrid'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import EmptyState from '../components/EmptyState'
 import Pagination from '../components/Pagination'
+import Button from '../components/Button'
 import { getAllCategories } from '../services/categoryService'
 import { queryProducts } from '../services/productService'
 
@@ -88,43 +89,66 @@ export default function Products() {
     updateParams({ category: undefined, min: undefined, max: undefined })
   }
 
+  const hasFilters = Boolean(activeCategory) || minPrice !== undefined || maxPrice !== undefined
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const title = activeCategory ? activeCategory.name : 'All Products'
   const description = activeCategory?.description
 
   return (
     <div>
-      <CategoryHeader title={title} count={total} description={description} />
+      <CategoryHeroBanner
+        eyebrow={activeCategory ? 'Category' : 'Shop'}
+        title={title}
+        resultCount={total}
+        description={description}
+        image={activeCategory?.image_url}
+        categorySlug={activeCategory?.slug}
+        breadcrumb={
+          activeCategory
+            ? [{ label: 'Home', to: '/' }, { label: 'All Products', to: '/products' }, { label: activeCategory.name }]
+            : [{ label: 'Home', to: '/' }, { label: 'All Products' }]
+        }
+      />
 
-      <div className="flex gap-8">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
         <FilterSidebar
           categories={categories}
           activeCategoryId={activeCategory?.id}
-          activeCategorySlug={categorySlug}
           onCategoryChange={handleCategoryChange}
           minPrice={minPrice}
           maxPrice={maxPrice}
           onPriceChange={handlePriceChange}
           onClear={clearFilters}
+          resultCount={total}
         />
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex items-center justify-between mb-5 gap-3">
+            <p className="text-body-sm hidden sm:block">
+              {loading ? 'Loading products…' : `${total.toLocaleString()} item${total === 1 ? '' : 's'}`}
+            </p>
             <SortDropdown value={sort} onChange={(v) => updateParams({ sort: v })} />
           </div>
 
           {loading ? (
-            <LoadingSkeleton count={PAGE_SIZE} />
+            <LoadingSkeleton count={PAGE_SIZE} cols={3} />
           ) : error ? (
             <EmptyState title="Could not load products" message={error} />
           ) : products.length === 0 ? (
             <EmptyState
               title="No products found"
               message="Try adjusting your filters or browsing a different category."
+              action={
+                hasFilters ? (
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
+                ) : undefined
+              }
             />
           ) : (
             <>
-              <ProductGrid products={products} cols={3} />
+              <ProductGrid products={products} cols={4} />
               <Pagination
                 page={page}
                 totalPages={totalPages}

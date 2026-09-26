@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   Plus,
   RefreshCw,
-  Tag,
-  Trash2,
-  X,
-  Calendar,
-  DollarSign,
   TrendingDown,
-  Package,
   Clock,
   CheckCircle2,
+  Trash2,
+  X,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -21,6 +16,12 @@ import {
   cancelSellerDeal,
   getSellerProducts,
 } from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Button from '../../components/Button'
+import Input from '../../components/Input'
+import Card from '../../components/Card'
+import Badge from '../../components/Badge'
+import EmptyState from '../../components/EmptyState'
 
 const TABS = [
   { id: 'active', label: 'Active Deals', icon: TrendingDown },
@@ -48,7 +49,7 @@ export default function SellerDeals() {
       ])
       setBuckets(b)
       setProducts(p)
-    } catch (err) {
+    } catch {
       pushToast('Could not load deals', { type: 'error' })
     } finally {
       setLoading(false)
@@ -74,31 +75,23 @@ export default function SellerDeals() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Deals</h1>
-          <p className="text-sm text-gray-600">
-            Create time-limited deals that appear on the customer-facing Deals page.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowCreate(true)}
-            className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-4 py-2 rounded flex items-center gap-2 transition text-sm"
-          >
-            <Plus className="w-4 h-4" /> Create Deal
-          </button>
-          <button
-            onClick={load}
-            className="border border-gray-300 bg-white hover:bg-gray-50 px-3 py-2 rounded text-sm flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <SellerPageHeader
+        title="Deals"
+        description="Create time-limited deals that appear on the customer-facing Deals page."
+        actions={
+          <>
+            <Button variant="outline" size="md" onClick={load} aria-label="Refresh">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+            <Button variant="primary" size="md" onClick={() => setShowCreate(true)}>
+              <Plus className="w-4 h-4" /> Create Deal
+            </Button>
+          </>
+        }
+      />
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b">
+      <div className="flex gap-1 border-b border-stone-200">
         {TABS.map((t) => {
           const Icon = t.icon
           return (
@@ -106,10 +99,10 @@ export default function SellerDeals() {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={
-                'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition flex items-center gap-2 ' +
+                'px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-avenzo flex items-center gap-2 ' +
                 (tab === t.id
-                  ? 'border-[#c7511f] text-[#c7511f]'
-                  : 'border-transparent text-gray-600 hover:text-gray-900')
+                  ? 'border-brass-500 text-charcoal-900'
+                  : 'border-transparent text-charcoal-500 hover:text-charcoal-800')
               }
             >
               <Icon className="w-4 h-4" />
@@ -118,9 +111,7 @@ export default function SellerDeals() {
                 <span
                   className={
                     'text-xs px-1.5 py-0.5 rounded-full ' +
-                    (tab === t.id
-                      ? 'bg-orange-100 text-[#c7511f]'
-                      : 'bg-gray-100 text-gray-600')
+                    (tab === t.id ? 'bg-brass-50 text-brass-700' : 'bg-stone-100 text-charcoal-500')
                   }
                 >
                   {buckets[t.id].length}
@@ -133,20 +124,17 @@ export default function SellerDeals() {
 
       {/* List */}
       {loading ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-10 text-center text-sm text-gray-600">
-          Loading deals…
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-72 rounded-xl skeleton-shimmer" />
+          ))}
         </div>
       ) : list.length === 0 ? (
-        <EmptyState tab={tab} onCreate={() => setShowCreate(true)} />
+        <SellerDealsEmpty tab={tab} onCreate={() => setShowCreate(true)} />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {list.map((d) => (
-            <DealCard
-              key={d.id}
-              deal={d}
-              onCancel={() => handleCancel(d)}
-              tab={tab}
-            />
+            <DealCard key={d.id} deal={d} onCancel={() => handleCancel(d)} tab={tab} />
           ))}
         </div>
       )}
@@ -182,104 +170,92 @@ function DealCard({ deal, onCancel, tab }) {
 
   const statusBadge =
     tab === 'active'
-      ? { label: `${daysLeft}d left`, cls: 'bg-green-100 text-green-800' }
+      ? { label: `${daysLeft}d left`, color: 'green' }
       : tab === 'upcoming'
-      ? { label: 'Scheduled', cls: 'bg-amber-100 text-amber-800' }
-      : { label: 'Ended', cls: 'bg-gray-100 text-gray-600' }
+      ? { label: 'Scheduled', color: 'yellow' }
+      : { label: 'Ended', color: 'gray' }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
+    <Card padding="none" hoverable className="overflow-hidden flex flex-col">
       {deal.product?.image_url && (
-        <div className="relative aspect-[16/9] overflow-hidden bg-gray-50">
-          <img
-            src={deal.product.image_url}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-          <span className="absolute top-2 left-2 bg-[#cc0c39] text-white text-xs font-bold px-2 py-1 rounded">
+        <div className="relative aspect-[16/9] overflow-hidden bg-stone-50">
+          <img src={deal.product.image_url} alt="" className="w-full h-full object-cover" />
+          <span className="absolute top-2 left-2 bg-error-500 text-bone-50 text-xs font-bold px-2 py-1 rounded-md">
             -{discountPct}%
           </span>
-          <span
-            className={'absolute top-2 right-2 text-xs font-medium px-2 py-1 rounded-full ' + statusBadge.cls}
-          >
-            {statusBadge.label}
+          <span className="absolute top-2 right-2">
+            <Badge color={statusBadge.color}>{statusBadge.label}</Badge>
           </span>
         </div>
       )}
       <div className="p-4 flex flex-col flex-1">
-        <div className="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
+        <div className="text-sm font-medium text-charcoal-900 line-clamp-2 mb-2">
           {deal.product?.title || 'Product'}
         </div>
 
         <div className="flex items-baseline gap-2 mb-3">
-          <span className="text-xl font-bold text-[#b12704]">
-            ${Number(deal.deal_price).toFixed(2)}
-          </span>
-          <span className="text-xs text-gray-500 line-through">
+          <span className="text-price-lg">${Number(deal.deal_price).toFixed(2)}</span>
+          <span className="text-xs text-charcoal-400 line-through">
             ${Number(deal.original_price).toFixed(2)}
           </span>
         </div>
 
         {tab === 'active' && (
           <div className="mb-3">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <div className="flex justify-between text-xs text-charcoal-500 mb-1">
               <span>
                 {deal.quantity_sold} / {deal.quantity_limit} claimed
               </span>
               <span>{Math.round(progress)}%</span>
             </div>
-            <div className="h-1.5 bg-gray-100 rounded overflow-hidden">
+            <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#febd69] transition-all"
+                className="h-full bg-brass-400 transition-avenzo"
                 style={{ width: progress + '%' }}
               />
             </div>
           </div>
         )}
 
-        <dl className="text-xs space-y-1 pt-3 border-t mb-3">
+        <dl className="text-xs space-y-1.5 pt-3 border-t border-stone-200 mb-3">
           <div className="flex justify-between">
-            <dt className="text-gray-500">Start</dt>
-            <dd className="text-gray-900">{start.toLocaleDateString()}</dd>
+            <dt className="text-charcoal-500">Start</dt>
+            <dd className="text-charcoal-900">{start.toLocaleDateString()}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-gray-500">End</dt>
-            <dd className="text-gray-900">{end.toLocaleDateString()}</dd>
+            <dt className="text-charcoal-500">End</dt>
+            <dd className="text-charcoal-900">{end.toLocaleDateString()}</dd>
           </div>
         </dl>
 
         {(tab === 'active' || tab === 'upcoming') && (
-          <button
-            onClick={onCancel}
-            className="mt-auto text-xs border border-red-200 text-red-700 hover:bg-red-50 py-1.5 rounded flex items-center justify-center gap-1"
-          >
+          <Button variant="danger" size="sm" onClick={onCancel} className="mt-auto w-full">
             <Trash2 className="w-3.5 h-3.5" /> Cancel deal
-          </button>
+          </Button>
         )}
       </div>
-    </div>
+    </Card>
   )
 }
 
-function EmptyState({ tab, onCreate }) {
+function SellerDealsEmpty({ tab, onCreate }) {
   const messages = {
     active: 'No active deals. Create one to boost visibility.',
     upcoming: 'No upcoming deals scheduled.',
     completed: 'No completed deals yet.',
   }
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-      <TrendingDown className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-      <h3 className="font-semibold text-gray-900 mb-1">{messages[tab]}</h3>
-      {tab === 'active' && (
-        <button
-          onClick={onCreate}
-          className="mt-4 bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded inline-flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Create your first deal
-        </button>
-      )}
-    </div>
+    <EmptyState
+      icon={TrendingDown}
+      title={messages[tab]}
+      action={
+        tab === 'active' ? (
+          <Button variant="primary" onClick={onCreate}>
+            <Plus className="w-4 h-4" /> Create your first deal
+          </Button>
+        ) : undefined
+      }
+    />
   )
 }
 
@@ -335,28 +311,26 @@ function CreateDealModal({ products, onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-5 py-3 flex items-center justify-between">
-          <h2 className="font-bold text-gray-900">Create Deal</h2>
+      <div className="absolute inset-0 bg-charcoal-900/50 backdrop-blur-[1px]" onClick={onClose} />
+      <div className="relative bg-bone-50 rounded-xl shadow-lifted border border-stone-200 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scale-in">
+        <div className="sticky top-0 bg-bone-50/95 backdrop-blur border-b border-stone-200 px-5 py-4 flex items-center justify-between">
+          <h2 className="heading-sub">Create Deal</h2>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 rounded"
+            className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
-              Product
-            </label>
+            <label className="block text-label mb-1.5">Product</label>
             <select
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+              className="w-full rounded-lg border border-stone-300 bg-bone-50 px-3.5 py-2.5 text-sm text-charcoal-900 transition-avenzo focus:outline-none focus:border-brass-400"
             >
               <option value="">Select a product</option>
               {products.map((p) => (
@@ -368,100 +342,65 @@ function CreateDealModal({ products, onClose, onCreated }) {
           </div>
 
           {product && (
-            <div className="bg-gray-50 border border-gray-200 rounded p-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Current price</span>
-                <span className="font-medium text-gray-900">
-                  ${originalPrice.toFixed(2)}
-                </span>
-              </div>
+            <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 text-sm flex justify-between">
+              <span className="text-charcoal-500">Current price</span>
+              <span className="font-medium text-charcoal-900">${originalPrice.toFixed(2)}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
-              Deal price
-            </label>
-            <div className="flex items-center gap-1 border border-gray-300 rounded px-3 py-2 bg-white">
-              <DollarSign className="w-4 h-4 text-gray-500" />
-              <input
-                type="number"
-                step="0.01"
-                value={dealPrice}
-                onChange={(e) => setDealPrice(e.target.value)}
-                placeholder="39.99"
-                className="flex-1 text-sm focus:outline-none"
-              />
-            </div>
+            <Input
+              label="Deal price"
+              type="number"
+              step="0.01"
+              value={dealPrice}
+              onChange={(e) => setDealPrice(e.target.value)}
+              placeholder="39.99"
+            />
             {discountPct > 0 && (
-              <p className="text-xs text-green-700 mt-1">
+              <p className="text-caption text-success-700 mt-1.5">
                 That's <strong>{discountPct}% off</strong> the original price.
               </p>
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
-              Quantity limit
-            </label>
-            <input
-              type="number"
-              value={quantityLimit}
-              onChange={(e) => setQuantityLimit(e.target.value)}
-              placeholder="100"
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Maximum units sold at the deal price.
-            </p>
-          </div>
+          <Input
+            label="Quantity limit"
+            type="number"
+            value={quantityLimit}
+            onChange={(e) => setQuantityLimit(e.target.value)}
+            placeholder="100"
+            hint="Maximum units sold at the deal price."
+          />
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-1">
-                Start date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-1">
-                End date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              />
-            </div>
+            <Input
+              label="Start date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <Input
+              label="End date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
           </div>
 
           {error && (
-            <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            <div className="text-sm text-error-700 bg-error-50 border border-error-500/25 rounded-lg p-3">
               {error}
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-3 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
-            >
+          <div className="flex justify-end gap-3 pt-3 border-t border-stone-200">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded disabled:opacity-60 transition"
-            >
+            </Button>
+            <Button type="submit" variant="primary" loading={saving}>
               {saving ? 'Creating…' : 'Create Deal'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

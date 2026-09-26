@@ -1,6 +1,10 @@
-﻿import { useNavigate, Navigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
 import RegisterForm from '../components/RegisterForm'
+import AuthSplitLayout from '../components/auth/AuthSplitLayout'
 import { useAuth } from '../context/AuthContext'
+
+const IMAGE =
+  'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1600&q=80'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -9,14 +13,16 @@ export default function Register() {
   if (!loading && user) return <Navigate to="/" replace />
 
   return (
-    <div className="max-w-sm mx-auto py-10">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Create account</h1>
-        <p className="text-sm text-gray-600">Join Amazon Rebuild today</p>
-      </div>
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <RegisterForm onSuccess={() => navigate('/', { replace: true })} />
-      </div>
-    </div>
+    <AuthSplitLayout
+      eyebrow="Join Avenzo"
+      heading="Everyday essentials, rare finds — curated for how you live."
+      quote="We built Avenzo for people who'd rather own less, and love it more."
+      quoteAttribution="The Avenzo Journal"
+      image={IMAGE}
+    >
+      <h1 className="heading-page">Create your account</h1>
+      <p className="text-body-sm mt-2 mb-9">Join Avenzo today.</p>
+      <RegisterForm onSuccess={() => navigate('/', { replace: true })} />
+    </AuthSplitLayout>
   )
 }

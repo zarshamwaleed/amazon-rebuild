@@ -1,9 +1,11 @@
-﻿import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { History, Trash2 } from 'lucide-react'
 import { supabase } from '../services/supabase'
 import { getRecentlyViewedIds } from '../hooks/useRecentlyViewed'
 import ProductGrid from '../components/ProductGrid'
 import EmptyState from '../components/EmptyState'
+import LoadingSkeleton from '../components/LoadingSkeleton'
+import Button from '../components/Button'
 
 export default function BrowsingHistory() {
   const [products, setProducts] = useState([])
@@ -32,27 +34,31 @@ export default function BrowsingHistory() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Browsing History</h1>
+      <div className="mb-6 md:mb-8 flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-label mb-1.5 flex items-center gap-1.5 text-brass-600">
+            <History className="w-3.5 h-3.5" /> Your activity
+          </p>
+          <h1 className="heading-page">Browsing History</h1>
+        </div>
+        {!loading && products.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={clear}>
+            <Trash2 className="w-3.5 h-3.5" />
+            Clear history
+          </Button>
+        )}
+      </div>
 
       {loading ? (
-        <div className="text-sm text-gray-600">Loading…</div>
+        <LoadingSkeleton cols={4} />
       ) : products.length === 0 ? (
         <EmptyState
+          icon={History}
           title="No browsing history yet"
           message="Products you view will show up here."
         />
       ) : (
-        <>
-          <ProductGrid products={products} cols={4} />
-          <div className="mt-6 text-center">
-            <button
-              onClick={clear}
-              className="text-sm text-blue-600 hover:text-[#c7511f] hover:underline"
-            >
-              Clear browsing history
-            </button>
-          </div>
-        </>
+        <ProductGrid products={products} cols={4} />
       )}
     </div>
   )

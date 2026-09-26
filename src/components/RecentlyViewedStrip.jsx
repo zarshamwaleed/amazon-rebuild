@@ -1,7 +1,9 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../services/supabase'
 import { getRecentlyViewedIds } from '../hooks/useRecentlyViewed'
-import ProductGrid from './ProductGrid'
+import ProductCard from './ProductCard'
+import SectionHeader from './SectionHeader'
+import Reveal from './home/Reveal'
 
 export default function RecentlyViewedStrip({ excludeId }) {
   const [products, setProducts] = useState([])
@@ -38,8 +40,14 @@ export default function RecentlyViewedStrip({ excludeId }) {
 
   return (
     <section>
-      <h2 className="text-xl font-bold text-gray-900 mb-4">Recently viewed</h2>
-      <ProductGrid products={products} cols={4} />
+      <SectionHeader title="Recently viewed" />
+      <div className="no-scrollbar -mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-2">
+        {products.map((p, i) => (
+          <Reveal key={p.id} as="div" variant="up" delay={Math.min(i, 6) * 40} className="w-44 shrink-0 snap-start sm:w-56">
+            <ProductCard product={p} />
+          </Reveal>
+        ))}
+      </div>
     </section>
   )
 }

@@ -32,3 +32,35 @@ export async function getProductRatingSummary(productId) {
   const average = total > 0 ? sum / total : 0
   return { average, total, breakdown }
 }
+
+export async function createReview({ productId, userId, authorName, rating, title, body }) {
+  const { data, error } = await supabase
+    .from('reviews')
+    .insert({
+      product_id: productId,
+      user_id: userId,
+      author_name: authorName,
+      rating,
+      title: title?.trim() || null,
+      body: body.trim(),
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Returns a Set of product_ids the given user has already reviewed,
+ * scoped to the provided list of product ids.
+ */
+export async function getReviewedProductIds(userId, productIds) {
+  if (!userId || !productIds?.length) return new Set()
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('product_id')
+    .eq('user_id', userId)
+    .in('product_id', productIds)
+  if (error) throw error
+  return new Set((data || []).map((r) => r.product_id))
+}

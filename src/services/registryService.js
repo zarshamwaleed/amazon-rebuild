@@ -1,3 +1,4 @@
+import { Baby, Heart, Cake, Gift } from 'lucide-react'
 import { supabase } from './supabase'
 
 /**
@@ -122,7 +123,7 @@ export const REGISTRY_TYPES = [
     name: 'Baby Registry',
     tagline: 'Everything you need for your new arrival.',
     emoji: '👶',
-    color: 'from-pink-500 to-rose-500',
+    color: 'from-brass-300 to-brass-500',
     fields: ['expected_date'],
   },
   {
@@ -130,7 +131,7 @@ export const REGISTRY_TYPES = [
     name: 'Wedding Registry',
     tagline: 'Build your registry for the big day.',
     emoji: '💍',
-    color: 'from-purple-500 to-fuchsia-500',
+    color: 'from-charcoal-600 to-charcoal-800',
     fields: ['event_date', 'co_registrant_name'],
   },
   {
@@ -138,7 +139,7 @@ export const REGISTRY_TYPES = [
     name: 'Birthday Registry',
     tagline: 'A wishlist for your birthday.',
     emoji: '🎂',
-    color: 'from-amber-500 to-orange-500',
+    color: 'from-brass-500 to-brass-700',
     fields: ['event_date'],
   },
   {
@@ -146,7 +147,7 @@ export const REGISTRY_TYPES = [
     name: 'Other Registry',
     tagline: 'Create a list for any occasion.',
     emoji: '🎁',
-    color: 'from-emerald-500 to-teal-500',
+    color: 'from-stone-500 to-stone-700',
     fields: ['event_date'],
   },
 ]
@@ -154,6 +155,13 @@ export const REGISTRY_TYPES = [
 export function getRegistryTypeMeta(typeId) {
   return REGISTRY_TYPES.find((t) => t.id === typeId) || REGISTRY_TYPES[3]
 }
+
+/**
+ * Shared type-to-icon mapping — used everywhere a registry type needs an
+ * icon badge (landing, search, manage list) so the mapping isn't redefined
+ * per file.
+ */
+export const REGISTRY_TYPE_ICONS = { baby: Baby, wedding: Heart, birthday: Cake, custom: Gift }
 
 /**
  * Fetch all items in a registry, joined with product data.

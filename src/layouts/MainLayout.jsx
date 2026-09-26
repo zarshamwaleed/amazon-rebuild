@@ -1,13 +1,24 @@
-﻿import { Outlet } from 'react-router-dom'
+﻿import { useState } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 import Header from '../components/header/Header'
 import Footer from '../components/Footer'
+import AlexaFloatingButton from '../components/AlexaFloatingButton'
+import AlexaDrawer from '../components/AlexaDrawer'
 
 export default function MainLayout() {
+  const { pathname } = useLocation()
+  const [alexaOpen, setAlexaOpen] = useState(false)
+
+  const hideAlexaDrawer =
+    pathname === '/alexa-shopping' ||
+    pathname.startsWith('/seller') ||
+    pathname.startsWith('/sell')
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-bone-100">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-gray-900 focus:px-4 focus:py-2 focus:rounded focus:shadow"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-bone-50 focus:text-charcoal-900 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-popover"
       >
         Skip to main content
       </a>
@@ -19,6 +30,10 @@ export default function MainLayout() {
         <Outlet />
       </main>
       <Footer />
+      <AlexaFloatingButton onOpen={() => setAlexaOpen(true)} hidden={alexaOpen} />
+      {!hideAlexaDrawer && (
+        <AlexaDrawer open={alexaOpen} onClose={() => setAlexaOpen(false)} />
+      )}
     </div>
   )
 }

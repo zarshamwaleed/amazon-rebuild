@@ -10,10 +10,15 @@ import {
   Eye,
   Save,
   X,
+  AlertTriangle,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { getSellerInventory, updateInventory } from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Button from '../../components/Button'
+import Badge from '../../components/Badge'
+import EmptyState from '../../components/EmptyState'
 
 const TABS = [
   { id: 'all', label: 'All Inventory' },
@@ -32,10 +37,10 @@ export default function SellerInventory() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchParams, setSearchParams] = useSearchParams()
-const [tab, setTab] = useState(() => {
-  const t = searchParams.get('tab')
-  return t && TABS.find((x) => x.id === t) ? t : 'all'
-})
+  const [tab, setTab] = useState(() => {
+    const t = searchParams.get('tab')
+    return t && TABS.find((x) => x.id === t) ? t : 'all'
+  })
   const [query, setQuery] = useState('')
   const [editing, setEditing] = useState(null) // { id, stock, price }
 
@@ -45,7 +50,7 @@ const [tab, setTab] = useState(() => {
       setLoading(true)
       const data = await getSellerInventory(user.id)
       setItems(data)
-    } catch (err) {
+    } catch {
       pushToast('Could not load inventory', { type: 'error' })
     } finally {
       setLoading(false)
@@ -118,7 +123,7 @@ const [tab, setTab] = useState(() => {
       pushToast('Inventory updated', { type: 'success' })
       setEditing(null)
       load()
-    } catch (err) {
+    } catch {
       pushToast('Could not update', { type: 'error' })
     }
   }
@@ -138,237 +143,213 @@ const [tab, setTab] = useState(() => {
   }
 
   function statusFor(p) {
-    if (p.available === 0) return { label: 'Out of stock', cls: 'bg-red-100 text-red-800' }
-    if (p.available <= (p.low_stock_threshold || 5))
-      return { label: 'Low stock', cls: 'bg-amber-100 text-amber-800' }
-    return { label: 'In stock', cls: 'bg-green-100 text-green-800' }
+    if (p.available === 0) return { label: 'Out of stock', color: 'red' }
+    if (p.available <= (p.low_stock_threshold || 5)) return { label: 'Low stock', color: 'yellow' }
+    return { label: 'In stock', color: 'green' }
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Manage Inventory</h1>
-          <p className="text-sm text-gray-600">
-            {items.length} SKU{items.length !== 1 ? 's' : ''} in your catalog
-          </p>
+      <SellerPageHeader
+        title="Manage Inventory"
+        description={`${items.length} SKU${items.length !== 1 ? 's' : ''} in your catalog`}
+        actions={
+          <Button variant="outline" onClick={load}>
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </Button>
+        }
+      >
+        <div className="flex gap-1 border-b border-stone-200 overflow-x-auto no-scrollbar">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => {
+                setTab(t.id)
+                if (t.id === 'all') setSearchParams({})
+                else setSearchParams({ tab: t.id })
+              }}
+              className={
+                'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-avenzo flex items-center gap-2 ' +
+                (tab === t.id
+                  ? 'border-brass-500 text-charcoal-900'
+                  : 'border-transparent text-charcoal-500 hover:text-charcoal-800')
+              }
+            >
+              {t.label}
+              {counts[t.id] > 0 && (
+                <span
+                  className={
+                    'text-xs px-1.5 py-0.5 rounded-full ' +
+                    (tab === t.id ? 'bg-brass-100 text-brass-700' : 'bg-stone-100 text-charcoal-500')
+                  }
+                >
+                  {counts[t.id]}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
-        <button
-          onClick={load}
-          className="border border-gray-300 bg-white hover:bg-gray-50 px-3 py-2 rounded text-sm flex items-center gap-2"
-        >
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 border-b overflow-x-auto no-scrollbar">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => {
-  setTab(t.id)
-  if (t.id === 'all') {
-    setSearchParams({})
-  } else {
-    setSearchParams({ tab: t.id })
-  }
-}}
-            className={
-              'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition flex items-center gap-2 ' +
-              (tab === t.id
-                ? 'border-[#c7511f] text-[#c7511f]'
-                : 'border-transparent text-gray-600 hover:text-gray-900')
-            }
-          >
-            {t.label}
-            {counts[t.id] > 0 && (
-              <span
-                className={
-                  'text-xs px-1.5 py-0.5 rounded-full ' +
-                  (tab === t.id ? 'bg-orange-100 text-[#c7511f]' : 'bg-gray-100 text-gray-600')
-                }
-              >
-                {counts[t.id]}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      </SellerPageHeader>
 
       {/* Search */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
-        <Search className="w-4 h-4 text-gray-400" />
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle p-4 flex items-center gap-3">
+        <Search className="w-4 h-4 text-charcoal-400" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search inventory by product or SKU..."
-          className="flex-1 text-sm focus:outline-none"
+          placeholder="Search inventory by product or SKU…"
+          className="flex-1 text-sm bg-transparent text-charcoal-800 placeholder:text-charcoal-400 focus:outline-none"
         />
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-sm text-gray-600">Loading inventory…</div>
+          <div className="p-5 space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton-shimmer h-14 rounded-lg" />
+            ))}
+          </div>
         ) : filtered.length === 0 ? (
-          <EmptyInventory tab={tab} hasQuery={query.length > 0} />
+          <div className="p-2">
+            <EmptyInventory tab={tab} hasQuery={query.length > 0} />
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="text-left px-5 py-3">Product</th>
-                  <th className="text-left px-4 py-3">SKU</th>
-                  <th className="text-right px-4 py-3">Available</th>
-                  <th className="text-right px-4 py-3">Reserved</th>
-                  <th className="text-right px-4 py-3">Inbound</th>
-                  <th className="text-right px-4 py-3">Price</th>
-                  <th className="text-center px-4 py-3">Fulfillment</th>
-                  <th className="text-center px-4 py-3">Status</th>
-                  <th className="text-right px-5 py-3">Actions</th>
+                  <th className="text-label text-left px-5 py-3">Product</th>
+                  <th className="text-label text-left px-4 py-3">SKU</th>
+                  <th className="text-label text-right px-4 py-3">Available</th>
+                  <th className="text-label text-right px-4 py-3">Reserved</th>
+                  <th className="text-label text-right px-4 py-3">Inbound</th>
+                  <th className="text-label text-right px-4 py-3">Price</th>
+                  <th className="text-label text-center px-4 py-3">Fulfillment</th>
+                  <th className="text-label text-center px-4 py-3">Status</th>
+                  <th className="text-label text-right px-5 py-3">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-stone-100">
                 {filtered.map((p) => {
                   const status = statusFor(p)
                   const isEditing = editing?.id === p.id
-                  const low =
-                    p.available > 0 && p.available <= (p.low_stock_threshold || 5)
+                  const low = p.available > 0 && p.available <= (p.low_stock_threshold || 5)
                   return (
-                    <tr key={p.id} className="border-t hover:bg-gray-50">
-                      <td className="px-5 py-3">
+                    <tr key={p.id} className="hover:bg-stone-50/60 transition-avenzo">
+                      <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
                           {p.image_url ? (
                             <img
                               src={p.image_url}
                               alt=""
-                              className="w-10 h-10 rounded object-cover border"
+                              className="w-10 h-10 rounded-lg object-cover border border-stone-200"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
-                              <Package className="w-4 h-4 text-gray-400" />
+                            <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center">
+                              <Package className="w-4 h-4 text-charcoal-400" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <div className="font-medium text-gray-900 truncate max-w-xs">
+                            <div className="font-medium text-charcoal-900 truncate max-w-xs">
                               {p.title}
                             </div>
                             {low && (
-                              <div className="text-xs text-amber-700 flex items-center gap-1 mt-0.5">
-                                ⚠ Low stock
+                              <div className="text-xs text-warning-700 flex items-center gap-1 mt-0.5">
+                                <AlertTriangle className="w-3 h-3" /> Low stock
                               </div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 font-mono text-xs">
+                      <td className="px-4 py-3.5 text-charcoal-500 font-mono text-xs">
                         {p.sku || '—'}
                       </td>
 
                       {/* Available — editable */}
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3.5 text-right">
                         {isEditing ? (
                           <input
                             type="number"
                             value={editing.stock}
-                            onChange={(e) =>
-                              setEditing((s) => ({ ...s, stock: e.target.value }))
-                            }
-                            className="w-20 text-right border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
+                            onChange={(e) => setEditing((s) => ({ ...s, stock: e.target.value }))}
+                            className="w-20 text-right border border-stone-300 rounded-lg px-2 py-1 text-sm bg-bone-50 focus:outline-none focus:border-brass-400"
                           />
                         ) : (
-                          <span className={p.available === 0 ? 'text-red-600' : 'text-gray-900'}>
+                          <span className={p.available === 0 ? 'text-error-700' : 'text-charcoal-900'}>
                             {p.available}
                           </span>
                         )}
                       </td>
 
-                      <td className="px-4 py-3 text-right text-gray-600">
-                        {p.reserved || 0}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-600">
-                        {p.inbound || 0}
-                      </td>
+                      <td className="px-4 py-3.5 text-right text-charcoal-500">{p.reserved || 0}</td>
+                      <td className="px-4 py-3.5 text-right text-charcoal-500">{p.inbound || 0}</td>
 
                       {/* Price — editable */}
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3.5 text-right">
                         {isEditing ? (
                           <input
                             type="number"
                             step="0.01"
                             value={editing.price}
-                            onChange={(e) =>
-                              setEditing((s) => ({ ...s, price: e.target.value }))
-                            }
-                            className="w-24 text-right border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
+                            onChange={(e) => setEditing((s) => ({ ...s, price: e.target.value }))}
+                            className="w-24 text-right border border-stone-300 rounded-lg px-2 py-1 text-sm bg-bone-50 focus:outline-none focus:border-brass-400"
                           />
                         ) : (
-                          <span className="text-gray-900">
-                            ${Number(p.price || 0).toFixed(2)}
-                          </span>
+                          <span className="text-charcoal-900">${Number(p.price || 0).toFixed(2)}</span>
                         )}
                       </td>
 
-                      <td className="px-4 py-3 text-center">
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
-                          {p.fulfillment_method || 'FBM'}
-                        </span>
+                      <td className="px-4 py-3.5 text-center">
+                        <Badge color="gray">{p.fulfillment_method || 'FBM'}</Badge>
                       </td>
 
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={
-                            'inline-block text-xs font-medium px-2 py-0.5 rounded-full ' +
-                            status.cls
-                          }
-                        >
-                          {status.label}
-                        </span>
+                      <td className="px-4 py-3.5 text-center">
+                        <Badge color={status.color}>{status.label}</Badge>
                       </td>
 
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-5 py-3.5 text-right">
                         {isEditing ? (
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={saveEdit}
-                              className="p-1.5 hover:bg-green-50 rounded"
+                              className="p-1.5 hover:bg-success-50 rounded-lg transition-avenzo"
                               title="Save"
                             >
-                              <Save className="w-4 h-4 text-green-600" />
+                              <Save className="w-4 h-4 text-success-700" />
                             </button>
                             <button
                               onClick={cancelEdit}
-                              className="p-1.5 hover:bg-gray-100 rounded"
+                              className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
                               title="Cancel"
                             >
-                              <X className="w-4 h-4 text-gray-500" />
+                              <X className="w-4 h-4 text-charcoal-500" />
                             </button>
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => startEdit(p)}
-                              className="p-1.5 hover:bg-gray-100 rounded"
+                              className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
                               title="Edit quantity & price"
                             >
-                              <Edit3 className="w-4 h-4 text-gray-600" />
+                              <Edit3 className="w-4 h-4 text-charcoal-600" />
                             </button>
                             <button
                               onClick={() => quickRestock(p)}
-                              className="p-1.5 hover:bg-gray-100 rounded"
+                              className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
                               title="Restock"
                             >
-                              <RefreshCw className="w-4 h-4 text-gray-600" />
+                              <RefreshCw className="w-4 h-4 text-charcoal-600" />
                             </button>
                             <Link
                               to={`/products/${p.id}`}
                               target="_blank"
-                              className="p-1.5 hover:bg-gray-100 rounded"
-                              title="View on Amazon"
+                              className="p-1.5 hover:bg-stone-100 rounded-lg transition-avenzo"
+                              title="View on Avenzo"
                             >
-                              <Eye className="w-4 h-4 text-gray-600" />
+                              <Eye className="w-4 h-4 text-charcoal-600" />
                             </Link>
                           </div>
                         )}
@@ -396,12 +377,10 @@ function EmptyInventory({ tab, hasQuery }) {
     reserved: 'No reserved inventory.',
   }
   return (
-    <div className="p-12 text-center">
-      <PackageX className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-      <h3 className="font-semibold text-gray-900 mb-1">
-        {hasQuery ? 'No inventory matches your search' : messages[tab] || 'No inventory'}
-      </h3>
-      {hasQuery && <p className="text-sm text-gray-600">Try a different keyword.</p>}
-    </div>
+    <EmptyState
+      icon={PackageX}
+      title={hasQuery ? 'No inventory matches your search' : messages[tab] || 'No inventory'}
+      message={hasQuery ? 'Try a different keyword.' : undefined}
+    />
   )
 }

@@ -1,18 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ArrowLeft,
-  Zap,
-  TrendingDown,
-  TrendingUp,
-  Info,
-} from 'lucide-react'
+import { Zap, TrendingDown, TrendingUp, Info } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import {
-  getSellerPricing,
-  upsertPricingRule,
-} from '../../services/sellerService'
+import { getSellerPricing, upsertPricingRule } from '../../services/sellerService'
+import SellerPageHeader from '../../components/seller/SellerPageHeader'
+import Button from '../../components/Button'
+import Input from '../../components/Input'
+import Badge from '../../components/Badge'
+import EmptyState from '../../components/EmptyState'
 
 // Deterministic simulated "competitor price" per product — stable across renders.
 function simulateCompetitorPrice(product) {
@@ -122,43 +118,41 @@ export default function SellerAutomatePricing() {
   }
 
   if (loading) {
-    return <div className="text-sm text-gray-600">Loading…</div>
+    return (
+      <div className="space-y-5">
+        <div className="h-16 rounded-xl skeleton-shimmer" />
+        <div className="grid lg:grid-cols-[320px_1fr] gap-5">
+          <div className="h-96 rounded-xl skeleton-shimmer" />
+          <div className="h-96 rounded-xl skeleton-shimmer" />
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-5 pb-10">
-      <div className="flex items-center gap-3 flex-wrap">
-        <Link
-          to="/seller/pricing"
-          className="p-2 hover:bg-white rounded border border-gray-200"
-          aria-label="Back"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">Automate Pricing</h1>
-          <p className="text-sm text-gray-600">
-            Set a rule so your price automatically adjusts within bounds.
-          </p>
-        </div>
-      </div>
+      <SellerPageHeader
+        backTo="/seller/pricing"
+        title="Automate Pricing"
+        description="Set a rule so your price automatically adjusts within bounds."
+      />
 
       {products.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-          <Zap className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <h3 className="font-semibold text-gray-900 mb-1">No products to automate</h3>
-          <p className="text-sm text-gray-600">
-            Add products first, then create automation rules here.
-          </p>
+        <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle overflow-hidden">
+          <EmptyState
+            icon={Zap}
+            title="No products to automate"
+            message="Add products first, then create automation rules here."
+          />
         </div>
       ) : (
         <div className="grid lg:grid-cols-[320px_1fr] gap-5">
           {/* Product list */}
-          <aside className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div className="px-4 py-3 border-b bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
+          <aside className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle overflow-hidden self-start">
+            <div className="px-4 py-3 border-b border-stone-200 bg-stone-50 text-label">
               Select a product
             </div>
-            <ul className="divide-y max-h-[600px] overflow-y-auto">
+            <ul className="divide-y divide-stone-100 max-h-[600px] overflow-y-auto">
               {products.map((p) => {
                 const active = selectedId === p.id
                 return (
@@ -166,19 +160,19 @@ export default function SellerAutomatePricing() {
                     <button
                       onClick={() => setSelectedId(p.id)}
                       className={
-                        'w-full text-left px-4 py-3 transition ' +
-                        (active ? 'bg-orange-50' : 'hover:bg-gray-50')
+                        'w-full text-left px-4 py-3 transition-avenzo ' +
+                        (active ? 'bg-brass-50' : 'hover:bg-stone-50')
                       }
                     >
-                      <div className="text-sm font-medium text-gray-900 truncate">
+                      <div className="text-sm font-medium text-charcoal-900 truncate">
                         {p.title}
                       </div>
-                      <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
+                      <div className="text-xs text-charcoal-500 mt-0.5 flex items-center gap-2">
                         <span>${Number(p.price || 0).toFixed(2)}</span>
                         {p.rule?.status === 'active' && (
-                          <span className="text-green-700 font-medium flex items-center gap-1">
+                          <Badge color="green" variant="chip">
                             <Zap className="w-3 h-3" /> Rule active
-                          </span>
+                          </Badge>
                         )}
                       </div>
                     </button>
@@ -190,48 +184,40 @@ export default function SellerAutomatePricing() {
 
           {/* Rule builder */}
           {selected && (
-            <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-6">
+            <section className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle p-6 space-y-6">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">{selected.title}</h2>
-                <p className="text-xs text-gray-500 font-mono mt-0.5">
-                  SKU: {selected.sku || '—'}
-                </p>
+                <h2 className="heading-sub">{selected.title}</h2>
+                <p className="text-caption font-mono mt-0.5">SKU: {selected.sku || '—'}</p>
               </div>
 
               {/* Current state */}
               <div className="grid sm:grid-cols-3 gap-4">
-                <div className="border rounded-lg p-4">
-                  <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
-                    Your current price
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">
+                <div className="border border-stone-200 rounded-lg p-4 bg-stone-50">
+                  <div className="text-label mb-1">Your current price</div>
+                  <div className="font-display text-2xl text-charcoal-900">
                     ${Number(selected.price || 0).toFixed(2)}
                   </div>
                 </div>
-                <div className="border rounded-lg p-4">
-                  <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
-                    Simulated competitor
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">
+                <div className="border border-stone-200 rounded-lg p-4 bg-stone-50">
+                  <div className="text-label mb-1">Simulated competitor</div>
+                  <div className="font-display text-2xl text-charcoal-900">
                     ${competitor.toFixed(2)}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs mt-1">
                     {competitor < Number(selected.price) ? (
-                      <span className="text-red-600 inline-flex items-center gap-1">
+                      <span className="text-error-700 inline-flex items-center gap-1">
                         <TrendingDown className="w-3 h-3" /> Competitor is lower
                       </span>
                     ) : (
-                      <span className="text-green-700 inline-flex items-center gap-1">
+                      <span className="text-success-700 inline-flex items-center gap-1">
                         <TrendingUp className="w-3 h-3" /> You are lower
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="border rounded-lg p-4 bg-orange-50 border-orange-200">
-                  <div className="text-xs uppercase tracking-wider text-[#c7511f] mb-1">
-                    Suggested price
-                  </div>
-                  <div className="text-2xl font-bold text-[#c7511f]">
+                <div className="border border-brass-300 rounded-lg p-4 bg-brass-50">
+                  <div className="text-label text-brass-700 mb-1">Suggested price</div>
+                  <div className="font-display text-2xl text-brass-700">
                     ${suggestedPrice.toFixed(2)}
                   </div>
                 </div>
@@ -240,68 +226,42 @@ export default function SellerAutomatePricing() {
               {/* Rule form */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-800 mb-1">
-                    Pricing rule
-                  </label>
-                  <div className="border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-[#c7511f]" />
-                    Stay <strong>${Number(undercutBy || 0).toFixed(2)}</strong> below the
+                  <label className="block text-label mb-1.5">Pricing rule</label>
+                  <div className="border border-stone-200 rounded-lg px-3 py-2.5 text-sm bg-stone-50 flex items-center gap-2 text-charcoal-800">
+                    <Zap className="w-4 h-4 text-brass-600 flex-shrink-0" />
+                    Stay <strong className="text-charcoal-900">${Number(undercutBy || 0).toFixed(2)}</strong> below the
                     lowest competing offer
                   </div>
                 </div>
 
                 <div className="grid sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-800 mb-1">
-                      Undercut by
-                    </label>
-                    <div className="flex items-center gap-1 border border-gray-300 rounded px-2 py-1.5 bg-white">
-                      <span className="text-sm text-gray-500">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={undercutBy}
-                        onChange={(e) => setUndercutBy(e.target.value)}
-                        className="flex-1 text-sm focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-800 mb-1">
-                      Minimum price
-                    </label>
-                    <div className="flex items-center gap-1 border border-gray-300 rounded px-2 py-1.5 bg-white">
-                      <span className="text-sm text-gray-500">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={minPrice}
-                        onChange={(e) => setMinPrice(e.target.value)}
-                        placeholder="35.00"
-                        className="flex-1 text-sm focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-800 mb-1">
-                      Maximum price
-                    </label>
-                    <div className="flex items-center gap-1 border border-gray-300 rounded px-2 py-1.5 bg-white">
-                      <span className="text-sm text-gray-500">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={maxPrice}
-                        onChange={(e) => setMaxPrice(e.target.value)}
-                        placeholder="50.00"
-                        className="flex-1 text-sm focus:outline-none"
-                      />
-                    </div>
-                  </div>
+                  <Input
+                    label="Undercut by (USD)"
+                    type="number"
+                    step="0.01"
+                    value={undercutBy}
+                    onChange={(e) => setUndercutBy(e.target.value)}
+                  />
+                  <Input
+                    label="Minimum price (USD)"
+                    type="number"
+                    step="0.01"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    placeholder="35.00"
+                  />
+                  <Input
+                    label="Maximum price (USD)"
+                    type="number"
+                    step="0.01"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    placeholder="50.00"
+                  />
                 </div>
 
-                <div className="flex items-start gap-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
-                  <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 text-xs text-charcoal-600 bg-stone-50 border border-stone-200 rounded-lg p-3">
+                  <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-charcoal-400" />
                   <div>
                     Your price will never fall below the minimum or rise above the
                     maximum. This is a simulated rule — pricing is not actually adjusted
@@ -310,21 +270,14 @@ export default function SellerAutomatePricing() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <Link
-                  to="/seller/pricing"
-                  className="px-5 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
-                >
-                  Cancel
+              <div className="flex justify-end gap-3 pt-4 border-t border-stone-200">
+                <Link to="/seller/pricing">
+                  <Button variant="outline">Cancel</Button>
                 </Link>
-                <button
-                  onClick={handleActivate}
-                  disabled={saving}
-                  className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-5 py-2 rounded flex items-center gap-2 disabled:opacity-60 transition"
-                >
+                <Button variant="secondary" onClick={handleActivate} loading={saving}>
                   <Zap className="w-4 h-4" />
-                  {saving ? 'Activating…' : selected.rule?.status === 'active' ? 'Update rule' : 'Activate rule'}
-                </button>
+                  {selected.rule?.status === 'active' ? 'Update rule' : 'Activate rule'}
+                </Button>
               </div>
             </section>
           )}

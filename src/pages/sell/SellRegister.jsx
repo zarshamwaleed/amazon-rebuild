@@ -1,9 +1,10 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, ArrowLeft, ArrowRight } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { createSellerProfile, getSellerProfile } from '../../services/sellerService'
+import Button from '../../components/Button'
 
 const STEPS = [
   'Business',
@@ -152,23 +153,19 @@ export default function SellRegister() {
   if (!authLoading && !user) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">Sign in to register</h1>
-        <p className="text-gray-600 mb-6">
-          You need an Amazon Rebuild account before registering as a seller.
+        <h1 className="heading-page mb-3">Sign in to register</h1>
+        <p className="text-av-body text-charcoal-600 mb-6">
+          You need an Avenzo account before registering as a seller.
         </p>
-        <Link
-          to="/login"
-          state={{ from: '/sell/register' }}
-          className="inline-block bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-6 py-2.5 rounded transition"
-        >
-          Sign in
+        <Link to="/login" state={{ from: '/sell/register' }}>
+          <Button size="lg">Sign in</Button>
         </Link>
       </div>
     )
   }
 
   return (
-    <div className="max-w-[900px] mx-auto px-4 py-10">
+    <div className="max-w-[900px] mx-auto px-4 py-10 md:py-14">
       {/* Step indicator */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
@@ -181,20 +178,20 @@ export default function SellRegister() {
                 <div className="flex flex-col items-center flex-1">
                   <div
                     className={
-                      'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition ' +
+                      'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-avenzo ' +
                       (done
-                        ? 'bg-green-600 border-green-600 text-white'
+                        ? 'bg-success-500 border-success-500 text-bone-50'
                         : active
-                        ? 'bg-[#febd69] border-[#febd69] text-gray-900'
-                        : 'bg-white border-gray-300 text-gray-500')
+                        ? 'bg-brass-400 border-brass-400 text-charcoal-900'
+                        : 'bg-bone-50 border-stone-300 text-charcoal-400')
                     }
                   >
                     {done ? <Check className="w-4 h-4" /> : n}
                   </div>
                   <span
                     className={
-                      'text-xs mt-1 hidden sm:block ' +
-                      (active ? 'font-bold text-gray-900' : 'text-gray-500')
+                      'text-av-caption mt-1 hidden sm:block ' +
+                      (active ? 'font-bold text-charcoal-900' : 'text-charcoal-400')
                     }
                   >
                     {label}
@@ -203,7 +200,7 @@ export default function SellRegister() {
                 {i < STEPS.length - 1 && (
                   <div
                     className={
-                      'h-0.5 flex-1 mx-1 ' + (done ? 'bg-green-600' : 'bg-gray-200')
+                      'h-0.5 flex-1 mx-1 ' + (done ? 'bg-success-500' : 'bg-stone-200')
                     }
                   />
                 )}
@@ -211,17 +208,17 @@ export default function SellRegister() {
             )
           })}
         </div>
-        <p className="text-xs text-gray-500 text-center mt-2">
+        <p className="text-av-caption text-charcoal-400 text-center mt-2">
           Step {step} of {STEPS.length}
         </p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6 md:p-8">
+      <div className="bg-bone-50 border border-stone-200 rounded-xl shadow-subtle p-6 md:p-8">
         {/* Step 1 */}
         {step === 1 && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Business information</h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <h1 className="heading-page mb-1">Business information</h1>
+            <p className="text-av-body-sm text-charcoal-600 mb-6">
               Tell us about your business. This information is simulated for the demo.
             </p>
             <div className="space-y-4">
@@ -231,20 +228,21 @@ export default function SellRegister() {
                   value={form.business_location}
                   onChange={(e) => update('business_location', e.target.value)}
                   placeholder="Pakistan"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
 
               <Field label="Business type">
                 <div className="space-y-2">
                   {BUSINESS_TYPES.map((b) => (
-                    <label key={b.value} className="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
+                    <label key={b.value} className="flex items-center gap-2 text-av-body-sm text-charcoal-800 cursor-pointer">
                       <input
                         type="radio"
                         name="business_type"
                         value={b.value}
                         checked={form.business_type === b.value}
                         onChange={() => update('business_type', b.value)}
+                        className="accent-charcoal-900"
                       />
                       {b.label}
                     </label>
@@ -258,7 +256,7 @@ export default function SellRegister() {
                   value={form.business_name}
                   onChange={(e) => update('business_name', e.target.value)}
                   placeholder="Zarsham Enterprises"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
 
@@ -268,7 +266,7 @@ export default function SellRegister() {
                   value={form.business_reg_number}
                   onChange={(e) => update('business_reg_number', e.target.value)}
                   placeholder="e.g. 1234567"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
 
@@ -278,7 +276,7 @@ export default function SellRegister() {
                   value={form.business_address}
                   onChange={(e) => update('business_address', e.target.value)}
                   placeholder="Street, city, postal code"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
 
@@ -288,7 +286,7 @@ export default function SellRegister() {
                   value={form.business_phone}
                   onChange={(e) => update('business_phone', e.target.value)}
                   placeholder="+92 300 1234567"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
             </div>
@@ -298,8 +296,8 @@ export default function SellRegister() {
         {/* Step 2 */}
         {step === 2 && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Seller information</h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <h1 className="heading-page mb-1">Seller information</h1>
+            <p className="text-av-body-sm text-charcoal-600 mb-6">
               Details about the person responsible for this seller account.
             </p>
             <div className="space-y-4">
@@ -309,7 +307,7 @@ export default function SellRegister() {
                   value={form.full_name}
                   onChange={(e) => update('full_name', e.target.value)}
                   placeholder="Zarsham Waleed"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
               <Field label="Date of birth">
@@ -318,7 +316,7 @@ export default function SellRegister() {
                   value={form.date_of_birth}
                   onChange={(e) => update('date_of_birth', e.target.value)}
                   placeholder="YYYY-MM-DD"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
               <Field label="Residential address">
@@ -327,7 +325,7 @@ export default function SellRegister() {
                   value={form.residential_address}
                   onChange={(e) => update('residential_address', e.target.value)}
                   placeholder="Street, city, postal code"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
               <Field label="Phone">
@@ -336,7 +334,7 @@ export default function SellRegister() {
                   value={form.seller_phone}
                   onChange={(e) => update('seller_phone', e.target.value)}
                   placeholder="+92 300 1234567"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
             </div>
@@ -346,30 +344,32 @@ export default function SellRegister() {
         {/* Step 3 */}
         {step === 3 && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Billing information</h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <h1 className="heading-page mb-1">Billing information</h1>
+            <p className="text-av-body-sm text-charcoal-600 mb-6">
               For the demo, use simulated billing information. Do not enter real card details.
             </p>
             <div className="space-y-4">
               <Field label="Payment method">
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm text-gray-800">
+                  <label className="flex items-center gap-2 text-av-body-sm text-charcoal-800">
                     <input
                       type="radio"
                       name="payment_method"
                       value="demo_card"
                       checked={form.payment_method === 'demo_card'}
                       onChange={() => update('payment_method', 'demo_card')}
+                      className="accent-charcoal-900"
                     />
                     Demo Credit / Debit Card
                   </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-800">
+                  <label className="flex items-center gap-2 text-av-body-sm text-charcoal-800">
                     <input
                       type="radio"
                       name="payment_method"
                       value="demo_bank"
                       checked={form.payment_method === 'demo_bank'}
                       onChange={() => update('payment_method', 'demo_bank')}
+                      className="accent-charcoal-900"
                     />
                     Demo Bank Account
                   </label>
@@ -382,7 +382,7 @@ export default function SellRegister() {
                   value={form.demo_bank_name}
                   onChange={(e) => update('demo_bank_name', e.target.value)}
                   placeholder="Demo Bank"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
 
@@ -395,12 +395,12 @@ export default function SellRegister() {
                     update('demo_account_last4', e.target.value.replace(/\D/g, ''))
                   }
                   placeholder="1234"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
 
-              <div className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded p-3">
-                ⚠️ All billing data is simulated. No real charges or verification.
+              <div className="text-av-caption text-charcoal-500 bg-stone-50 border border-stone-200 rounded-lg p-3">
+                All billing data is simulated. No real charges or verification.
               </div>
             </div>
           </>
@@ -409,8 +409,8 @@ export default function SellRegister() {
         {/* Step 4 */}
         {step === 4 && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Your store</h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <h1 className="heading-page mb-1">Your store</h1>
+            <p className="text-av-body-sm text-charcoal-600 mb-6">
               Choose your store name and the categories you'll sell in.
             </p>
             <div className="space-y-4">
@@ -420,7 +420,7 @@ export default function SellRegister() {
                   value={form.store_name}
                   onChange={(e) => update('store_name', e.target.value)}
                   placeholder="Zarsham Store"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-av-body-sm bg-bone-50 focus:outline-none focus:border-brass-400 focus:shadow-focus-ring transition-avenzo"
                 />
               </Field>
 
@@ -432,16 +432,17 @@ export default function SellRegister() {
                       <label
                         key={c}
                         className={
-                          'flex items-center gap-2 text-sm px-3 py-2 rounded border cursor-pointer transition ' +
+                          'flex items-center gap-2 text-av-body-sm px-3 py-2 rounded-lg border cursor-pointer transition-avenzo ' +
                           (active
-                            ? 'border-[#febd69] bg-orange-50'
-                            : 'border-gray-300 hover:border-gray-400')
+                            ? 'border-brass-400 bg-brass-50'
+                            : 'border-stone-300 hover:border-stone-400')
                         }
                       >
                         <input
                           type="checkbox"
                           checked={active}
                           onChange={() => toggleCategory(c)}
+                          className="accent-charcoal-900"
                         />
                         {c}
                       </label>
@@ -474,8 +475,8 @@ export default function SellRegister() {
         {/* Step 5 */}
         {step === 5 && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Verify your account</h1>
-            <p className="text-sm text-gray-600 mb-6">
+            <h1 className="heading-page mb-1">Verify your account</h1>
+            <p className="text-av-body-sm text-charcoal-600 mb-6">
               Review your details. Verification is simulated for the demo.
             </p>
 
@@ -489,9 +490,9 @@ export default function SellRegister() {
               <VerifyRow label="Store information" detail={form.store_name} />
             </div>
 
-            <div className="bg-green-50 border border-green-200 rounded p-4 mb-6">
-              <p className="text-sm text-green-800 font-medium">
-                ✓ Demo verification will complete instantly.
+            <div className="bg-success-50 border border-success-500/30 rounded-lg p-4 mb-6">
+              <p className="text-av-body-sm text-success-700 font-medium">
+                Demo verification will complete instantly.
               </p>
             </div>
           </>
@@ -499,45 +500,40 @@ export default function SellRegister() {
 
         {/* Error */}
         {error && (
-          <div className="mt-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+          <div className="mt-4 text-av-body-sm text-error-700 bg-error-50 border border-error-500/30 rounded-lg p-3">
             {error}
           </div>
         )}
 
         {/* Nav */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t">
+        <div className="flex items-center justify-between mt-8 pt-6 border-t border-stone-200">
           <button
             onClick={back}
             disabled={step === 1}
             className={
-              'flex items-center gap-1 text-sm font-medium ' +
-              (step === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:text-gray-900')
+              'flex items-center gap-1 text-av-body-sm font-medium transition-avenzo ' +
+              (step === 1 ? 'text-stone-300 cursor-not-allowed' : 'text-charcoal-700 hover:text-charcoal-900')
             }
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
 
           {step < 5 ? (
-            <button
-              onClick={next}
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-6 py-2.5 rounded flex items-center gap-2 transition"
-            >
+            <Button onClick={next}>
               Continue <ArrowRight className="w-4 h-4" />
-            </button>
+            </Button>
           ) : (
-            <button
-              onClick={completeVerification}
-              disabled={saving}
-              className="bg-[#febd69] hover:bg-[#f3a847] text-gray-900 font-medium px-6 py-2.5 rounded transition disabled:opacity-60"
-            >
+            <Button onClick={completeVerification} loading={saving}>
               {saving ? 'Verifying…' : 'Complete verification & enter Seller Central'}
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      <div className="text-center mt-6 text-xs text-gray-500">
-        <Link to="/sell" className="hover:underline">← Back to Sell landing</Link>
+      <div className="text-center mt-6 text-av-caption text-charcoal-400">
+        <Link to="/sell" className="hover:text-charcoal-700 hover:underline transition-avenzo">
+          &larr; Back to Sell landing
+        </Link>
       </div>
     </div>
   )
@@ -546,7 +542,7 @@ export default function SellRegister() {
 function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-800 mb-1">{label}</label>
+      <label className="block text-av-label text-charcoal-700 mb-1.5">{label}</label>
       {children}
     </div>
   )
@@ -554,17 +550,17 @@ function Field({ label, children }) {
 
 function CheckRow({ label, value, onChange }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-2 border-b last:border-b-0">
-      <span className="text-sm text-gray-800">{label}</span>
+    <div className="flex items-center justify-between gap-4 py-2 border-b border-stone-200 last:border-b-0">
+      <span className="text-av-body-sm text-charcoal-800">{label}</span>
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => onChange(true)}
           className={
-            'text-xs px-3 py-1.5 rounded border transition ' +
+            'text-av-caption px-3 py-1.5 rounded-lg border transition-avenzo ' +
             (value
-              ? 'bg-[#232f3e] text-white border-[#232f3e]'
-              : 'bg-white border-gray-300 hover:border-gray-500')
+              ? 'bg-charcoal-900 text-bone-50 border-charcoal-900'
+              : 'bg-bone-50 border-stone-300 hover:border-stone-400')
           }
         >
           Yes
@@ -573,10 +569,10 @@ function CheckRow({ label, value, onChange }) {
           type="button"
           onClick={() => onChange(false)}
           className={
-            'text-xs px-3 py-1.5 rounded border transition ' +
+            'text-av-caption px-3 py-1.5 rounded-lg border transition-avenzo ' +
             (!value
-              ? 'bg-[#232f3e] text-white border-[#232f3e]'
-              : 'bg-white border-gray-300 hover:border-gray-500')
+              ? 'bg-charcoal-900 text-bone-50 border-charcoal-900'
+              : 'bg-bone-50 border-stone-300 hover:border-stone-400')
           }
         >
           No
@@ -588,11 +584,11 @@ function CheckRow({ label, value, onChange }) {
 
 function VerifyRow({ label, detail }) {
   return (
-    <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded p-3">
-      <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+    <div className="flex items-center gap-3 bg-stone-50 border border-stone-200 rounded-lg p-3">
+      <Check className="w-5 h-5 text-success-500 flex-shrink-0" />
       <div className="flex-1">
-        <div className="text-sm font-medium text-gray-900">{label}</div>
-        {detail && <div className="text-xs text-gray-600">{detail}</div>}
+        <div className="text-av-body-sm font-medium text-charcoal-900">{label}</div>
+        {detail && <div className="text-av-caption text-charcoal-500">{detail}</div>}
       </div>
     </div>
   )

@@ -33,8 +33,10 @@ export async function createOrder({
     .maybeSingle()
   if (orderErr) throw orderErr
 
-  // Create order items (denormalized snapshot)
-  const rows = items.map((i) => ({
+  // Create order items (denormalized snapshot) — gift cards are issued separately
+  // via issueGiftCardsForOrder and are not real products, so they're excluded here.
+  const realItems = items.filter((i) => !i.giftCard)
+  const rows = realItems.map((i) => ({
     order_id: order.id,
     product_id: i.product.id,
     product_title: i.product.title,
@@ -42,8 +44,10 @@ export async function createOrder({
     price: Number(i.product.price),
     quantity: i.quantity,
   }))
-  const { error: itemsErr } = await supabase.from('order_items').insert(rows)
-  if (itemsErr) throw itemsErr
+  if (rows.length > 0) {
+    const { error: itemsErr } = await supabase.from('order_items').insert(rows)
+    if (itemsErr) throw itemsErr
+  }
 
   return order
 }
