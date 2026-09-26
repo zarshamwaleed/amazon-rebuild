@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 
 const NAV = [
-  { label: 'Overview', to: '/sell' },
   { label: 'How it works', to: '/sell#how-it-works' },
   { label: 'Pricing', to: '/sell#pricing' },
   { label: 'Resources', to: '/sell#resources' },
