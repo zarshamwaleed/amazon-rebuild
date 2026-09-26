@@ -36,7 +36,7 @@ const NAV = [
     icon: Box,
     children: [
       { label: 'Manage Inventory', to: '/seller/inventory' },
-      { label: 'FBA Inventory', to: '/seller/inventory/fba' },
+      
     ],
   },
   {
